@@ -32,6 +32,6 @@ install(TARGETS autopilot-manager RUNTIME DESTINATION bin)
 
 # Install custom action JSON examples and dummy scripts
 # Note: the default directory is specific to the AuterionOS
-set(CUSTOM_ACTION_DATA_DIR "/usr/src/app/autopilot-manager/data" CACHE FILEPATH "Path to custom action JSON examples and scripts")
-# set(CUSTOM_ACTION_DATA_DIR "/usr/local/share/autopilot-manager/data" CACHE FILEPATH "Path to custom action JSON examples and scripts")
+# set(CUSTOM_ACTION_DATA_DIR "/usr/src/app/autopilot-manager/data" CACHE FILEPATH "Path to custom action JSON examples and scripts")
+set(CUSTOM_ACTION_DATA_DIR "share/autopilot-manager/data" CACHE FILEPATH "Path to custom action JSON examples and scripts")
 install(DIRECTORY data/ DESTINATION ${CUSTOM_ACTION_DATA_DIR})

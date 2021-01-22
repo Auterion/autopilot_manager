@@ -50,12 +50,10 @@
 
 int main(int argc, char* argv[]) {
 	uint32_t mavlink_port{14590};
-	std::string path_to_custom_action_file{"/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json"};
-	// std::string path_to_custom_action_file{"/usr/local/share/autopilot-manager/data/example/custom_action/custom_action.json"};
+	// std::string path_to_custom_action_file{"/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json"};
+	std::string path_to_custom_action_file{"/usr/local/share/autopilot-manager/data/example/custom_action/custom_action.json"};
 
 	parse_argv(argc, argv, mavlink_port, path_to_custom_action_file);
-
-	std::cout << mavlink_port;
 
 	// Configure MAVSDK Mission Manager instance
 	mavsdk::Mavsdk mavsdk_mission_computer;
