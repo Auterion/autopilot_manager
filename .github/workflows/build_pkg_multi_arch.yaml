@@ -31,21 +31,40 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Disable the keychain credential helper
+        run: git config --global credential.helper ""
+      - name: Enable the local store credential helper
+        run: git config --global --add credential.helper store
+      - name: Add credential
+        run: echo "https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com" >> ~/.git-credentials
+      - name: Tell git to use https instead of ssh whenever it encounters it
+        run: 'git config --global url."https://github.com/".insteadof git@github.com:'
       - name: Prepare environment
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
         if: matrix.config.architecture != 'amd64'
       - name: Pull multibuild-env
         run:  docker pull auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0
-      - name: Build and package autopilot_manager
+      - name: Build and install MAVSDK
+        run: |
+          git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop
+          git fetch --all --tags
+          docker run -t -d \
+            -v $(pwd):/buildroot \
+            --workdir "/buildroot" \
+            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 sleep infinity
+          docker exec -t \
+            --workdir "/buildroot/MAVSDK" \
+            $(docker ps -q) \
+            /bin/bash -c "./tools/generate_debian_changelog.sh > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }};"
+      - name: Build autopilot_manager
         run: |
           git fetch --all --tags
           TAG_VERSION=$(bash -c 'if [ $(git show-ref --tags) ]; then echo \"$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1')\"; else echo 1.0.0; fi')
           echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
-          docker run -t \
-            -v $(pwd):/buildroot \
+          docker exec -t \
             --workdir "/buildroot" \
-            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 \
-            /bin/bash -c "./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
+            $(docker ps -q) \
+            /bin/bash -c "dpkg -i libmavsdk*.deb; sudo ldconfig; ./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
       - name: Upload autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }} artefact
         uses: actions/upload-artifact@v2
         with:
@@ -61,7 +80,7 @@ jobs:
             -v $(pwd):/buildroot \
             --workdir "/buildroot" \
             auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 \
-            /bin/bash -c "./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
+            /bin/bash -c "dpkg -i libmavsdk*.deb; sudo ldconfig; ./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
       - name: Publish artefacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v1-release

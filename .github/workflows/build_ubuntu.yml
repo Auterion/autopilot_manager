@@ -3,12 +3,12 @@ name: Build in Ubuntu
 on:
   push:
     branches:
-    - 'main'
+      - 'main'
     tags:
-    - '*'
+      - '*'
   pull_request:
     branches:
-    - '*'
+      - '*'
 
 jobs:
   build:
@@ -43,4 +43,4 @@ jobs:
     - name: Build
       run: |
         cmake -Bbuild -S.
-        cmake --build build -j`nproc --all` -- install
+        sudo cmake --build build -j`nproc --all` -- install

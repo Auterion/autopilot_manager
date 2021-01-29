@@ -30,7 +30,8 @@ $ autopilot-manager [OPTIONS...]
 
 # Packaging
 
-Keep in mind that when cross-compiling, the correct toolchain should be installed.
+Keep in mind that when cross-compiling, the correct toolchain should be installed. Also, MAVSDK should be also installed
+for that same target.
 
 ```sh
 ./tools/generate_debian_changelog.sh > debian/changelog;
