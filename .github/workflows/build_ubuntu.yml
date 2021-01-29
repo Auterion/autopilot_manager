@@ -43,4 +43,4 @@ jobs:
     - name: Build
       run: |
         cmake -Bbuild -S.
-        cmake --build build -j`nproc --all`
+        cmake --build build -j`nproc --all` -- install

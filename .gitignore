@@ -1,4 +1,5 @@
 *txt.user*
 build*/
+debian/changelog
 /.project
 /.vscode

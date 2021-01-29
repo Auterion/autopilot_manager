@@ -1,0 +1,73 @@
+name: Build/deb packaging for Skynode and other archs
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'develop'
+      - 'release/*'
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    env:
+      DOCKER_BUILDKIT: 1
+      PKG_VERSION: 1
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        config:
+          - {architecture: "amd64" }
+          - {architecture: "arm64" }
+          - {architecture: "armhf" }
+    steps:
+      - uses: actions/checkout@v2
+      - name: Docker Login
+        uses: Azure/docker-login@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Prepare environment
+        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        if: matrix.config.architecture != 'amd64'
+      - name: Pull multibuild-env
+        run:  docker pull auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0
+      - name: Build and package autopilot_manager
+        run: |
+          git fetch --all --tags
+          TAG_VERSION=$(bash -c 'if [ $(git show-ref --tags) ]; then echo \"$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1')\"; else echo 1.0.0; fi')
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          docker run -t \
+            -v $(pwd):/buildroot \
+            --workdir "/buildroot" \
+            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 \
+            /bin/bash -c "./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
+      - name: Upload autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }} artefact
+        uses: actions/upload-artifact@v2
+        with:
+          name: autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }}.deb
+          path: output/skynode/autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }}.deb
+          retention-days: 2
+      - name: Build and package autopilot-manager (Release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION=$(${GITHUB_REF} | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1/')
+          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+          docker run -t \
+            -v $(pwd):/buildroot \
+            --workdir "/buildroot" \
+            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 \
+            /bin/bash -c "./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
+      - name: Publish artefacts
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: output/skynode/*.deb
+          tag: ${{ github.ref }}
+          overwrite: true

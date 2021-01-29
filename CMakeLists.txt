@@ -28,7 +28,12 @@ target_link_libraries(
 )
 
 # Install autopilot-manager
-install(TARGETS autopilot-manager RUNTIME DESTINATION bin)
+install(
+  TARGETS autopilot-manager
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+)
 
 # Install custom action JSON examples and dummy scripts
 # Note: the default directory is specific to the AuterionOS
