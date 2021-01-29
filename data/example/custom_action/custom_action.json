@@ -46,19 +46,19 @@
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_safe_landing.py -a 127.0.0.1 -p 14561",
+                                "script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_safe_landing.py -a 127.0.0.1 -p 14561",
                                 "timestamp_start": null,
                                 "timestamp_stop": 10
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --open",
+                                "script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --open",
                                 "timestamp_start": null,
                                 "timestamp_stop": 5
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --close",
+                                "script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --close",
                                 "timestamp_start": null,
                                 "timestamp_stop": 5
                         },
@@ -107,14 +107,14 @@
         "action_1": {
                 "name": "Turn-on air quality sensor",
                 "description": "Example action to turn-on an onboard sensor",
-                "global_script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --on",
+                "global_script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --on",
                 "global_timeout": 3.0,
                 "stages": [{}]
         },
         "action_2": {
                 "name": "Turn-off air quality sensor",
                 "description": "Example action to turn-off an onboard sensor",
-                "global_script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --off",
+                "global_script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --off",
                 "global_timeout": 3.0,
                 "stages": [{}]
         },
@@ -125,13 +125,13 @@
                 "global_timeout": null,
                 "stages": [{
                                 "cmd": {},
-                                "script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --descend",
+                                "script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --descend",
                                 "timestamp_start": null,
                                 "timestamp_stop": 7.0
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /usr/src/app/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --raise",
+                                "script": "python3 /usr/local/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --raise",
                                 "timestamp_start": null,
                                 "timestamp_stop": 7.0
                         }
