@@ -1,4 +1,1 @@
-add_library(
-    helpers
-    helpers.cpp
-)
+add_library(helpers helpers.cpp)

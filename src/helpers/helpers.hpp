@@ -40,4 +40,5 @@
 #include <iostream>
 
 void help_argv_description(const char* pgm);
-void parse_argv(int argc, char* const argv[], uint32_t& mavlink_port, std::string& path_to_config_file);
+void parse_argv(int argc, char* const argv[], uint32_t& mavlink_port, std::string& path_to_apm_config_file,
+		std::string& path_to_custom_action_config_file);
