@@ -34,7 +34,8 @@ jobs:
             build-essential \
             cmake \
             colordiff \
-            git
+            git \
+            libdbus-glib-1-dev
         git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop
         cd MAVSDK
         cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON -Bbuild/default -H.
