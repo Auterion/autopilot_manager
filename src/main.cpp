@@ -47,6 +47,9 @@
 
 #include "helpers/helpers.hpp"
 #include "modules/MissionManager.hpp"
+#include <AutopilotManager.hpp>
+
+#include <DbusInterface.hpp>
 
 int main(int argc, char* argv[]) {
 	uint32_t mavlink_port{14590};
@@ -64,11 +67,16 @@ int main(int argc, char* argv[]) {
 	mavsdk::Mavsdk::Configuration config_cc(mavsdk::Mavsdk::Configuration::UsageType::CompanionComputer);
 	mavsdk_mission_computer.set_configuration(config_cc);
 
+	GMainLoop *mainloop = g_main_loop_new(NULL, false);
+	std::shared_ptr<AutopilotManager> autopilot_manager = std::make_shared<AutopilotManager>("/usr/src/app/autopilot-manager/data/config/autopilot_manager.conf");
+
+	std::cout << "Autopilot Manager Enabled: " << autopilot_manager->autopilotManagerEnabled() << std::endl;
+
 	auto system = std::shared_ptr<mavsdk::System>{nullptr};
 
 	mavsdk::ConnectionResult ret_comp = mavsdk_mission_computer.add_udp_connection(mavlink_port);
 	if (ret_comp == mavsdk::ConnectionResult::Success) {
-		std::cout << "Waiting to discover vehicle from the mission computer side..." << std::endl;
+		std::cout << "[AutopilotManagerMain] Waiting to discover vehicle from the mission computer side..." << std::endl;
 		std::promise<void> prom;
 		std::future<void> fut = prom.get_future();
 
@@ -90,6 +98,9 @@ int main(int argc, char* argv[]) {
 		auto mission_manager = std::make_shared<MissionManager>(system, path_to_custom_action_file);
 
 	} else {
-		std::cerr << "Failed to connect to port " << mavlink_port << std::endl;
+		std::cerr << "[AutopilotManagerMain] Failed to connect to port " << mavlink_port << std::endl;
 	}
+
+	g_main_loop_run(mainloop);
+	exit(0);
 }

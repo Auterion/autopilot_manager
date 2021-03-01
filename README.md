@@ -5,6 +5,16 @@
 
 An AuterionOS service for higher level interactivity with onboard and flight controller components, using Auterion SDKs and MAVSDK.
 
+# Dependencies
+
+1.  MAVSDK
+1.  DBUS
+1.  GLib
+
+```bash
+apt install libdbus-glib-1-dev
+```
+
 # Build
 
 ```bash

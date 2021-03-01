@@ -1,0 +1,53 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <dbus/dbus.h>
+#include <DbusInterface.hpp>
+
+#include <AutopilotManagerConfig.hpp>
+
+class AutopilotManager {
+public:
+    AutopilotManager(const std::string& configPath);
+    ~AutopilotManager() = default;
+    DBusMessage* HandleRequest(DBusMessage* request);
+
+    void setAutopilotManagerEnabled(bool enable) {
+        _autopilot_manager_enabled = enable;
+    }
+
+    bool autopilotManagerEnabled() {
+        return _autopilot_manager_enabled;
+    }
+
+    void setAutopilotFound() {
+        _autopilot_found = true;
+    }
+
+    bool autopilotFound() {
+        return _autopilot_found;
+    }
+
+private:
+    enum ResponseCode {
+        SUCCEED = 0,
+        FAILED = 1,
+        NO_AUTOPILOT_FOUND = 2
+    };
+
+    void initialProvisioning();
+    ResponseCode SetConfiguration(AutopilotManagerConfig &config);
+    ResponseCode GetConfiguration(AutopilotManagerConfig &config);
+
+    bool _autopilot_manager_enabled = false;
+    std::string _decision_maker_input_type = "";
+    double _simple_collision_avoid_distance_threshold = 0.0;
+    std::string _simple_collision_avoid_distance_on_condition_true = "";
+    std::string _simple_collision_avoid_distance_on_condition_false = "";
+
+    const std::string _configPath = "/shared_container_dir/autopilot_manager.conf";
+
+    bool _autopilot_found{false};
+};
