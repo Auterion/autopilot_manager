@@ -1,7 +1,7 @@
 <img align="right" height="20" src="https://auterion.com/wp-content/uploads/2020/05/auterion_logo_default_sunrise.svg">
 
 # Autopilot Manager
-[![Build in Ubuntu](https://github.com/Auterion/autopilot_manager/workflows/Build%20in%20Ubuntu/badge.svg?branch=main)](https://github.com/Auterion/autopilot_manager/actions?query=workflow%3A%22Build+in+Ubuntu%22) [![Build/deb packaging for Skynode and other archs](https://github.com/Auterion/autopilot_manager/workflows/Build/deb%20packaging%20for%20Skynode%20and%20other%20archs/badge.svg?branch=develop)](https://github.com/Auterion/autopilot_manager/actions?query=workflow%3A%22Build+for+Skynode+with+cross-compilation%22)
+[![Build in Ubuntu](https://github.com/Auterion/autopilot_manager/workflows/Build%20in%20Ubuntu/badge.svg?branch=main)](https://github.com/Auterion/autopilot_manager/actions?query=workflow%3A%22Build+in+Ubuntu%22branch%3Amain) [![Build/deb packaging for Skynode and other archs](https://github.com/Auterion/autopilot_manager/workflows/Build/deb%20packaging%20for%20Skynode%20and%20other%20archs/badge.svg?branch=main)](https://github.com/Auterion/autopilot_manager/actions/workflows/build_pkg_multi_arch.yaml?query=branch%3Amain)
 
 An AuterionOS service for higher level interactivity with onboard and flight controller components, using Auterion SDKs and MAVSDK.
 
