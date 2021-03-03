@@ -23,7 +23,12 @@ public:
 	bool autopilotFound() { return _autopilot_found; }
 
 private:
-	enum ResponseCode { SUCCEED = 0, FAILED = 1, NO_AUTOPILOT_FOUND = 2 };
+	enum ResponseCode {
+		SUCCEED_WITH_COLL_AVOID_OFF = 0,
+		SUCCEED_WITH_COLL_AVOID_ON = 1,
+		FAILED = 2,
+		UNKNOWN = 999
+	};
 
 	void initialProvisioning();
 	ResponseCode SetConfiguration(AutopilotManagerConfig& config);
@@ -31,6 +36,7 @@ private:
 
 	bool _autopilot_manager_enabled = false;
 	std::string _decision_maker_input_type = "";
+	bool _simple_collision_avoid_enabled = false;
 	double _simple_collision_avoid_distance_threshold = 0.0;
 	std::string _simple_collision_avoid_distance_on_condition_true = "";
 	std::string _simple_collision_avoid_distance_on_condition_false = "";

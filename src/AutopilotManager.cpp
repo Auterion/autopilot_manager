@@ -9,7 +9,8 @@ const auto METHOD_SET_CONFIG = "set_config";
 }  // namespace
 
 AutopilotManager::AutopilotManager(const std::string& configPath = "")
-    : _configPath(configPath.empty() ? _configPath : configPath) {
+    : _configPath(configPath.empty() ? _configPath : configPath)
+{
 	initialProvisioning();
 }
 
@@ -62,19 +63,33 @@ void AutopilotManager::initialProvisioning() {
 AutopilotManager::ResponseCode AutopilotManager::SetConfiguration(AutopilotManagerConfig& config) {
 	_autopilot_manager_enabled = config.autopilot_manager_enabled;
 	_decision_maker_input_type = config.decision_maker_input_type;
+    _simple_collision_avoid_enabled = config.simple_collision_avoid_enabled;
 	_simple_collision_avoid_distance_threshold = config.simple_collision_avoid_distance_threshold;
 	_simple_collision_avoid_distance_on_condition_true = config.simple_collision_avoid_distance_on_condition_true;
 	_simple_collision_avoid_distance_on_condition_false = config.simple_collision_avoid_distance_on_condition_false;
 
-	return ResponseCode::SUCCEED;
+    if (!config.simple_collision_avoid_enabled) {
+        return ResponseCode::SUCCEED_WITH_COLL_AVOID_OFF;
+    } else {
+        return ResponseCode::SUCCEED_WITH_COLL_AVOID_ON;
+    }
+
+	return ResponseCode::UNKNOWN;
 }
 
 AutopilotManager::ResponseCode AutopilotManager::GetConfiguration(AutopilotManagerConfig& config) {
 	config.autopilot_manager_enabled = _autopilot_manager_enabled;
 	config.decision_maker_input_type = _decision_maker_input_type;
+    config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
 	config.simple_collision_avoid_distance_threshold = _simple_collision_avoid_distance_threshold;
 	config.simple_collision_avoid_distance_on_condition_true = _simple_collision_avoid_distance_on_condition_true;
 	config.simple_collision_avoid_distance_on_condition_false = _simple_collision_avoid_distance_on_condition_false;
 
-	return ResponseCode::SUCCEED;
+    if (!config.simple_collision_avoid_enabled) {
+        return ResponseCode::SUCCEED_WITH_COLL_AVOID_OFF;
+    } else {
+        return ResponseCode::SUCCEED_WITH_COLL_AVOID_ON;
+    }
+
+	return ResponseCode::UNKNOWN;
 }

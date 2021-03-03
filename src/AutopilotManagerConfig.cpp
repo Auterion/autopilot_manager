@@ -6,6 +6,7 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 		dbus_error_init(&error);
 		bool* returnedEnabled = nullptr;
 		char* returnedDecisionMakerType = nullptr;
+		bool* returnedCollAvoidEnabled = nullptr;
 		double* returnedCollAvoidThr = nullptr;
 		char* returnedCollAvoidOnCondTrue = nullptr;
 		char* returnedCollAvoidOnCondFalse = nullptr;
@@ -20,6 +21,7 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 		} else {
 			autopilot_manager_enabled = (*returnedEnabled);
 			decision_maker_input_type = (*returnedDecisionMakerType);
+			simple_collision_avoid_enabled = (*returnedCollAvoidEnabled);
 			simple_collision_avoid_distance_threshold = (*returnedCollAvoidThr);
 			simple_collision_avoid_distance_on_condition_true = (*returnedCollAvoidOnCondTrue);
 			simple_collision_avoid_distance_on_condition_false = (*returnedCollAvoidOnCondFalse);
@@ -27,6 +29,8 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 			std::cout << "[AutopilotManagerConfig] Received: [" << std::endl;
 			std::cout << "    autopilot_manager_enabled: " << autopilot_manager_enabled << std::endl;
 			std::cout << "    decision_maker_input_type: " << decision_maker_input_type << std::endl;
+			std::cout << "    simple_collision_avoid_enabled: " << simple_collision_avoid_enabled
+				  << std::endl;
 			std::cout << "    simple_collision_avoid_distance_threshold: "
 				  << simple_collision_avoid_distance_threshold << std::endl;
 			std::cout << "    simple_collision_avoid_distance_on_condition_true: "
@@ -43,7 +47,8 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 bool AutopilotManagerConfig::AppendToMessage(DBusMessage* reply) const {
 	if (reply != nullptr) {
 		dbus_message_append_args(reply, DBUS_TYPE_BOOLEAN, &autopilot_manager_enabled, DBUS_TYPE_STRING,
-					 &decision_maker_input_type, DBUS_TYPE_DOUBLE,
+					 &decision_maker_input_type, DBUS_TYPE_DOUBLE, DBUS_TYPE_BOOLEAN,
+					 &simple_collision_avoid_enabled,
 					 &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
 					 &simple_collision_avoid_distance_on_condition_true, DBUS_TYPE_STRING,
 					 &simple_collision_avoid_distance_on_condition_false, DBUS_TYPE_INVALID);
@@ -59,6 +64,7 @@ bool AutopilotManagerConfig::WriteToFile(const std::string& config_path) const {
 		file << "[AutopilotManagerConfig]" << std::endl;
 		file << "autopilot_manager_enabled=" << std::to_string(autopilot_manager_enabled) << std::endl;
 		file << "decision_maker_input_type=" << decision_maker_input_type << std::endl;
+		file << "simple_collision_avoid_enabled=" << std::to_string(simple_collision_avoid_enabled) << std::endl;
 		file << "simple_collision_avoid_distance_threshold="
 		     << std::to_string(simple_collision_avoid_distance_threshold) << std::endl;
 		file << "simple_collision_avoid_distance_on_condition_true="
@@ -91,6 +97,10 @@ bool AutopilotManagerConfig::InitFromFile(const std::string& config_path) {
 			if (line.find("decision_maker_input_type") != std::string::npos) {
 				std::cout << "decision_maker_input_type: " << sin.str() << std::endl;
 				decision_maker_input_type = sin.str();
+			}
+			if (line.find("simple_collision_avoid_enabled") != std::string::npos) {
+				std::cout << "simple_collision_avoid_enabled: " << sin.str() << std::endl;
+				simple_collision_avoid_enabled = (sin.str() == "true");
 			}
 			if (line.find("simple_collision_avoid_distance_threshold") != std::string::npos) {
 				std::cout << "simple_collision_avoid_distance_threshold: " << sin.str() << std::endl;
