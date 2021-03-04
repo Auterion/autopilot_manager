@@ -17,24 +17,6 @@ public:
 	~AutopilotManager();
 	DBusMessage* HandleRequest(DBusMessage* request);
 
-	void setAutopilotManagerEnabled(const bool& enable) { _autopilot_manager_enabled = enable; }
-	bool autopilotManagerEnabled() { return _autopilot_manager_enabled; }
-
-	void setDecisionMakerInputType(const std::string& decision_maker_input) { _decision_maker_input_type = decision_maker_input; }
-	std::string decisionMakerInputType() { return _decision_maker_input_type; }
-
-	void setSimpleCollAvoidEnabled(const bool& enable) { _simple_collision_avoid_enabled = enable; }
-	bool simpleCollAvoidEnabled() { return _simple_collision_avoid_enabled; }
-
-	void setSimpleCollAvoidDistanceThreshold(const double& thr) { _simple_collision_avoid_distance_threshold = thr; }
-	double simpleCollAvoidDistanceThreshold() { return _simple_collision_avoid_distance_threshold; }
-
-	void setSimpleCollAvoidOnConditionTrueAction(const std::string& action) { _simple_collision_avoid_distance_on_condition_true = action; }
-	std::string simpleCollAvoidOnConditionTrueAction() { return _simple_collision_avoid_distance_on_condition_true; }
-
-	void setSimpleCollAvoidOnConditionFalseAction(const std::string& action) { _simple_collision_avoid_distance_on_condition_false = action; }
-	std::string simpleCollAvoidOnConditionFalseAction() { return _simple_collision_avoid_distance_on_condition_false; }
-
 private:
 	enum ResponseCode {
 		SUCCEED_WITH_COLL_AVOID_OFF = 0,
@@ -43,8 +25,11 @@ private:
 		UNKNOWN = 999
 	};
 
-	int start();
+	void start();
 	void initialProvisioning();
+
+	void init_mission_manager();
+	void init_sensor_manager();
 
 	ResponseCode SetConfiguration(AutopilotManagerConfig& config);
 	ResponseCode GetConfiguration(AutopilotManagerConfig& config);
@@ -57,6 +42,8 @@ private:
 	std::string _simple_collision_avoid_distance_on_condition_false = "";
 
 	std::shared_ptr<MissionManager> _mission_manager = {nullptr};
+
+	std::mutex _config_mutex;
 
 	uint32_t _mavlink_port = 0;
 	std::string _config_path = "/shared_container_dir/autopilot_manager.conf";

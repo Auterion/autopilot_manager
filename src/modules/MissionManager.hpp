@@ -44,10 +44,11 @@
 #include <iostream>
 #include <string>
 
-#include "ModuleBase.hpp"
+#include <ModuleBase.hpp>
 
 // MAVSDK dependencies
 #include <mavsdk/mavsdk.h>
+#include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
@@ -58,7 +59,7 @@ public:
 	CustomActionHandler(const CustomActionHandler&) = delete;
 	const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
 
-	int start();
+	bool start();
 	void run();
 
 private:
@@ -72,7 +73,6 @@ private:
 	std::atomic<bool> _mission_finished{false};
 	std::atomic<bool> _action_stopped{false};
 	std::atomic<bool> _new_action{false};
-	std::atomic<bool> _new_actions_check_int{false};
 
 	std::mutex cancel_mtx;
 	std::condition_variable cancel_signal;
@@ -90,6 +90,7 @@ private:
 };
 
 class MissionManager : public ModuleBase {
+
 public:
 	MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
 	~MissionManager();
@@ -100,9 +101,27 @@ public:
 	void deinit() override;
 	void run() override;
 
+	struct MissionManagerConfiguration {
+		std::string decision_maker_input_type = "";
+		bool simple_collision_avoid_enabled = false;
+		double simple_collision_avoid_distance_threshold = 0.0;
+		std::string simple_collision_avoid_distance_on_condition_true = "";
+		std::string simple_collision_avoid_distance_on_condition_false = "";
+	};
+
+	void setConfigUpdateCallback(std::function<MissionManagerConfiguration()> callback) { _config_update_callback = callback; }
+
 private:
+	void decision_maker_run();
+
+	std::function<MissionManagerConfiguration()> _config_update_callback;
+
 	std::shared_ptr<mavsdk::System> _mavsdk_system;
 	std::shared_ptr<CustomActionHandler> _custom_action_handler;
 
 	std::string _path_to_custom_action_file;
+
+	MissionManagerConfiguration _mission_manager_config;
+
+	std::shared_ptr<mavsdk::Action> _action;
 };

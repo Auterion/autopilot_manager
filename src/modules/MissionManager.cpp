@@ -48,7 +48,7 @@
 #include <sys/signalfd.h>
 #include <unistd.h>
 
-#include "MissionManager.hpp"
+#include <MissionManager.hpp>
 
 using namespace std::chrono_literals;
 
@@ -66,26 +66,61 @@ static void wait_for_termination_signal() {
 	}
 }
 
-MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
-    : _mavsdk_system{system}, _path_to_custom_action_file{path_to_custom_action_file} {
-	this->init();
-}
+static std::atomic<bool> int_signal{false};
 
-MissionManager::~MissionManager() { this->deinit(); }
+MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
+    : _config_update_callback([]() { return MissionManagerConfiguration{}; } ),
+	  _mavsdk_system{system},
+	  _path_to_custom_action_file{path_to_custom_action_file},
+	  _mission_manager_config{}
+{ }
+
+MissionManager::~MissionManager() {
+	deinit();
+}
 
 void MissionManager::init() {
 	std::cout << "[Mission Manager] Started!" << std::endl;
 	_custom_action_handler = std::make_shared<CustomActionHandler>(_mavsdk_system, _path_to_custom_action_file);
 
-	this->run();
+	run();
 }
 
-void MissionManager::deinit() { _custom_action_handler.reset(); }
+void MissionManager::deinit() {
+	_custom_action_handler.reset();
+}
 
 void MissionManager::run() {
+	auto decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
+
 	// Start custom action handler
 	if (_custom_action_handler->start()) {
 		_custom_action_handler->run();
+	}
+
+	decision_maker_th.join();
+
+	wait_for_termination_signal();
+}
+
+void MissionManager::decision_maker_run() {
+	while (!int_signal) {
+		// Update configuration at each iteration
+		_mission_manager_config = _config_update_callback();
+
+		if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
+			if (_mission_manager_config.simple_collision_avoid_enabled) {
+				// std::cout << "Collision avoidance enabled" << std::endl;
+
+				if (_mavsdk_system->is_connected() && _mavsdk_system->has_autopilot()) {
+					// Actions are processed and executed in the Mission Manager
+					_action = std::make_shared<mavsdk::Action>(_mavsdk_system);
+				}
+			}
+		}
+
+		// Decision maker runs at 100hz
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }
 
@@ -93,7 +128,7 @@ CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> system,
 					 const std::string &path_to_custom_action_file)
     : _mavsdk_system{system}, _path_to_custom_action_file{path_to_custom_action_file} {}
 
-int CustomActionHandler::start() {
+bool CustomActionHandler::start() {
 	if (_mavsdk_system->is_connected() && _mavsdk_system->has_autopilot()) {
 		// Telemetry checks are fundamental for proper execution
 		_telemetry = std::make_shared<mavsdk::Telemetry>(_mavsdk_system);
@@ -143,9 +178,11 @@ void CustomActionHandler::run() {
 		    }
 	    });
 
-	wait_for_termination_signal();
+	while(true) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
 
-	_new_actions_check_int.store(true, std::memory_order_relaxed);
+	int_signal.store(true, std::memory_order_relaxed);
 	new_actions_check_th.join();
 }
 
@@ -173,7 +210,7 @@ void CustomActionHandler::send_progress_status(mavsdk::CustomAction::ActionToExe
 }
 
 void CustomActionHandler::new_action_check() {
-	while (!_new_actions_check_int) {
+	while (!int_signal) {
 		if (_new_action.load()) {
 			process_custom_action(_actions.back());
 			_new_action.store(false, std::memory_order_relaxed);

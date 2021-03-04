@@ -9,6 +9,7 @@ add_library(
 target_link_libraries(
     mission-manager
     PUBLIC
+    MAVSDK::mavsdk_action
     MAVSDK::mavsdk_telemetry
     MAVSDK::mavsdk_custom_action
     MAVSDK::mavsdk

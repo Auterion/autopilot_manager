@@ -88,31 +88,32 @@ bool AutopilotManagerConfig::InitFromFile(const std::string& config_path) {
 	if (file.is_open()) {
 		std::istringstream sin;
 		std::string line;
+		std::cout << "[Autopilot Manager Config] Loaded config from file:" << std::endl;
 		while (std::getline(file, line)) {
 			sin.str(line.substr(line.find("=") + 1));
 			if (line.find("autopilot_manager_enabled") != std::string::npos) {
-				std::cout << "autopilot_manager_enabled: " << sin.str() << std::endl;
+				std::cout << "\tautopilot_manager_enabled: " << sin.str() << std::endl;
 				autopilot_manager_enabled = (sin.str() == "true");
 			}
 			if (line.find("decision_maker_input_type") != std::string::npos) {
-				std::cout << "decision_maker_input_type: " << sin.str() << std::endl;
+				std::cout << "\tdecision_maker_input_type: " << sin.str() << std::endl;
 				decision_maker_input_type = sin.str();
 			}
 			if (line.find("simple_collision_avoid_enabled") != std::string::npos) {
-				std::cout << "simple_collision_avoid_enabled: " << sin.str() << std::endl;
+				std::cout << "\tsimple_collision_avoid_enabled: " << sin.str() << std::endl;
 				simple_collision_avoid_enabled = (sin.str() == "true");
 			}
 			if (line.find("simple_collision_avoid_distance_threshold") != std::string::npos) {
-				std::cout << "simple_collision_avoid_distance_threshold: " << sin.str() << std::endl;
+				std::cout << "\tsimple_collision_avoid_distance_threshold: " << sin.str() << std::endl;
 				simple_collision_avoid_distance_threshold = std::stod(sin.str());
 			}
 			if (line.find("simple_collision_avoid_distance_on_condition_true") != std::string::npos) {
-				std::cout << "simple_collision_avoid_distance_on_condition_true: " << sin.str()
+				std::cout << "\tsimple_collision_avoid_distance_on_condition_true: " << sin.str()
 					  << std::endl;
 				simple_collision_avoid_distance_on_condition_true = sin.str();
 			}
 			if (line.find("simple_collision_avoid_distance_on_condition_false") != std::string::npos) {
-				std::cout << "simple_collision_avoid_distance_on_condition_false: " << sin.str()
+				std::cout << "\tsimple_collision_avoid_distance_on_condition_false: " << sin.str()
 					  << std::endl;
 				simple_collision_avoid_distance_on_condition_false = sin.str();
 			}
