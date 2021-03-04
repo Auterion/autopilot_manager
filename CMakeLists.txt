@@ -19,7 +19,7 @@ else()
     add_definitions("-WX -W2")
 endif()
 
-include_directories(include)
+include_directories(include src/modules src/helpers)
 
 add_subdirectory(src/helpers)
 add_subdirectory(src/modules)
