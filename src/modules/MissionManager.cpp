@@ -69,15 +69,12 @@ static void wait_for_termination_signal() {
 static std::atomic<bool> int_signal{false};
 
 MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
-    : _config_update_callback([]() { return MissionManagerConfiguration{}; } ),
-	  _mavsdk_system{system},
-	  _path_to_custom_action_file{path_to_custom_action_file},
-	  _mission_manager_config{}
-{ }
+    : _config_update_callback([]() { return MissionManagerConfiguration{}; }),
+      _mavsdk_system{system},
+      _path_to_custom_action_file{path_to_custom_action_file},
+      _mission_manager_config{} {}
 
-MissionManager::~MissionManager() {
-	deinit();
-}
+MissionManager::~MissionManager() { deinit(); }
 
 void MissionManager::init() {
 	std::cout << "[Mission Manager] Started!" << std::endl;
@@ -86,9 +83,7 @@ void MissionManager::init() {
 	run();
 }
 
-void MissionManager::deinit() {
-	_custom_action_handler.reset();
-}
+void MissionManager::deinit() { _custom_action_handler.reset(); }
 
 void MissionManager::run() {
 	auto decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
@@ -107,6 +102,8 @@ void MissionManager::decision_maker_run() {
 	while (!int_signal) {
 		// Update configuration at each iteration
 		_mission_manager_config = _config_update_callback();
+
+		// std::cout << _mission_manager_config.decision_maker_input_type << std::endl;
 
 		if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
 			if (_mission_manager_config.simple_collision_avoid_enabled) {
@@ -178,7 +175,7 @@ void CustomActionHandler::run() {
 		    }
 	    });
 
-	while(true) {
+	while (true) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 

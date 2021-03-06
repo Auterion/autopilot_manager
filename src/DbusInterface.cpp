@@ -14,14 +14,12 @@ DBusInterface::DBusInterface(HandlerFunction handler) : handler_(handler) {
 	if (!dbus_connection_) {
 		throw std::runtime_error("[DbusInterface] Unable to get Dbus connection");
 	}
-	const DBusObjectPathVTable server_vtable = {
-		.unregister_function = NULL,
-		.message_function = &DBusInterface::MessageHandler,
-		.dbus_internal_pad1 = NULL,
-		.dbus_internal_pad2 = NULL,
-		.dbus_internal_pad3 = NULL,
-		.dbus_internal_pad4 = NULL
-	};
+	const DBusObjectPathVTable server_vtable = {.unregister_function = NULL,
+						    .message_function = &DBusInterface::MessageHandler,
+						    .dbus_internal_pad1 = NULL,
+						    .dbus_internal_pad2 = NULL,
+						    .dbus_internal_pad3 = NULL,
+						    .dbus_internal_pad4 = NULL};
 	if (!dbus_connection_register_object_path(dbus_connection_, OBJECT_NAME, &server_vtable, this)) {
 		std::cerr << std::endl
 			  << "[DBusInterface] dbus_connection_register_object_path: " << dbus_error.message

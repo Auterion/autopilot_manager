@@ -90,7 +90,6 @@ private:
 };
 
 class MissionManager : public ModuleBase {
-
 public:
 	MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
 	~MissionManager();
@@ -109,7 +108,9 @@ public:
 		std::string simple_collision_avoid_distance_on_condition_false = "";
 	};
 
-	void setConfigUpdateCallback(std::function<MissionManagerConfiguration()> callback) { _config_update_callback = callback; }
+	void setConfigUpdateCallback(std::function<MissionManagerConfiguration()> callback) {
+		_config_update_callback = callback;
+	}
 
 private:
 	void decision_maker_run();

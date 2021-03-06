@@ -50,8 +50,7 @@
 
 int main(int argc, char* argv[]) {
 	uint32_t mavlink_port{14590};
-	std::string path_to_apm_config_file{
-	    "/shared_container_dir/autopilot_manager.conf"};
+	std::string path_to_apm_config_file{"/shared_container_dir/autopilot_manager.conf"};
 	std::string path_to_custom_action_file{
 	    "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json"};
 	// std::string
@@ -60,8 +59,8 @@ int main(int argc, char* argv[]) {
 	parse_argv(argc, argv, mavlink_port, path_to_apm_config_file, path_to_custom_action_file);
 
 	GMainLoop* mainloop = g_main_loop_new(NULL, false);
-	std::shared_ptr<AutopilotManager> autopilot_manager =
-	    std::make_shared<AutopilotManager>(mavlink_port, path_to_apm_config_file, path_to_custom_action_file);
+	std::shared_ptr<AutopilotManager> autopilot_manager = std::make_shared<AutopilotManager>(
+	    std::to_string(mavlink_port), path_to_apm_config_file, path_to_custom_action_file);
 
 	g_main_loop_run(mainloop);
 

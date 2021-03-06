@@ -13,7 +13,8 @@
 
 class AutopilotManager {
 public:
-	AutopilotManager(const uint32_t& mavlinkPort, const std::string& configPath, const std::string& customActionConfigPath);
+	AutopilotManager(const std::string& mavlinkPort, const std::string& configPath,
+			 const std::string& customActionConfigPath);
 	~AutopilotManager();
 	DBusMessage* HandleRequest(DBusMessage* request);
 
@@ -45,7 +46,8 @@ private:
 
 	std::mutex _config_mutex;
 
-	uint32_t _mavlink_port = 0;
+	std::string _mavlink_port = "14590";
 	std::string _config_path = "/shared_container_dir/autopilot_manager.conf";
-	std::string _custom_action_config_path = "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
+	std::string _custom_action_config_path =
+	    "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
 };

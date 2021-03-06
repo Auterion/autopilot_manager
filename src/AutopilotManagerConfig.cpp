@@ -47,9 +47,8 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 bool AutopilotManagerConfig::AppendToMessage(DBusMessage* reply) const {
 	if (reply != nullptr) {
 		dbus_message_append_args(reply, DBUS_TYPE_BOOLEAN, &autopilot_manager_enabled, DBUS_TYPE_STRING,
-					 &decision_maker_input_type, DBUS_TYPE_DOUBLE, DBUS_TYPE_BOOLEAN,
-					 &simple_collision_avoid_enabled,
-					 &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
+					 &decision_maker_input_type, DBUS_TYPE_BOOLEAN, &simple_collision_avoid_enabled,
+					 DBUS_TYPE_DOUBLE, &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
 					 &simple_collision_avoid_distance_on_condition_true, DBUS_TYPE_STRING,
 					 &simple_collision_avoid_distance_on_condition_false, DBUS_TYPE_INVALID);
 		return true;
@@ -64,7 +63,8 @@ bool AutopilotManagerConfig::WriteToFile(const std::string& config_path) const {
 		file << "[AutopilotManagerConfig]" << std::endl;
 		file << "autopilot_manager_enabled=" << std::to_string(autopilot_manager_enabled) << std::endl;
 		file << "decision_maker_input_type=" << decision_maker_input_type << std::endl;
-		file << "simple_collision_avoid_enabled=" << std::to_string(simple_collision_avoid_enabled) << std::endl;
+		file << "simple_collision_avoid_enabled=" << std::to_string(simple_collision_avoid_enabled)
+		     << std::endl;
 		file << "simple_collision_avoid_distance_threshold="
 		     << std::to_string(simple_collision_avoid_distance_threshold) << std::endl;
 		file << "simple_collision_avoid_distance_on_condition_true="
