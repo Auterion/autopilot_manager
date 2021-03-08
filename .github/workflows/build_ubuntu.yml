@@ -38,7 +38,7 @@ jobs:
         sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
         # Install ROS 2 Foxy packages
         sudo apt update
-        sudo apt install -y ros-foxy-ros-base ros-foxy-sensor-msgs ros-foxy-image-pipeline
+        sudo apt install -y python3-colcon-common-extensions ros-foxy-ros-base ros-foxy-sensor-msgs ros-foxy-image-pipeline
         # Setup environment
         source /opt/ros/foxy/setup.bash
         # Install MAVSDK from source
@@ -55,4 +55,5 @@ jobs:
         mkdir -p colcon_ws/src
         cd colcon_ws
         ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
+        source /opt/ros/foxy/setup.bash
         colcon build

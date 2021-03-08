@@ -12,25 +12,16 @@ on:
       - '*'
 
 jobs:
-  build:
-    env:
-      DOCKER_BUILDKIT: 1
-      PKG_VERSION: 1
+  packaging:
+    name: "ROS 2 ${{ matrix.ros2_distro }} - ${{ matrix.arch }}"
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        config:
-          - {architecture: "amd64" }
-          - {architecture: "arm64" }
-          - {architecture: "armhf" }
+        ros2_distro: [foxy]
+        arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Login
-        uses: Azure/docker-login@v1
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Disable the keychain credential helper
+      - name: Fisable the keychain credential helper
         run: git config --global credential.helper ""
       - name: Enable the local store credential helper
         run: git config --global --add credential.helper store
@@ -38,54 +29,55 @@ jobs:
         run: echo "https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com" >> ~/.git-credentials
       - name: Tell git to use https instead of ssh whenever it encounters it
         run: 'git config --global url."https://github.com/".insteadof git@github.com:'
-      - name: Prepare environment
-        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-        if: matrix.config.architecture != 'amd64'
-      - name: Pull multibuild-env
-        run:  docker pull auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0
-      - name: Build and install MAVSDK
+      - name: Process Github reference
+        id: github_refs
         run: |
-          git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop
-          git fetch --all --tags
-          docker run -t -d \
-            -v $(pwd):/buildroot \
-            --workdir "/buildroot" \
-            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 sleep infinity
-          docker exec -t \
-            --workdir "/buildroot/MAVSDK" \
-            $(docker ps -q) \
-            /bin/bash -c "./tools/generate_debian_changelog.sh > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }};"
-      - name: Build autopilot_manager
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+      - name: Install dependencies
         run: |
+          sudo apt update && sudo apt install -y --no-install-recommends \
+            git \
+            python3-pip \
+            qemu-user-static
+          sudo pip3 install ros_cross_compile
+      - name: Configure workspace
+        run: |
+          unset ROS_DISTRO
+          mkdir -p /tmp/colcon_ws/src
+          cp -ar ${GITHUB_WORKSPACE} /tmp/colcon_ws/src/autopilot_manager/
+      - name: Build & Packaging (autopilot_manager)
+        run: |
+          # Clone MAVSDK to be built from source
+          git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop /tmp/MAVSDK
+          # Add COLCON_IGNORE to the MAVSDK dir so colcon doesn't build it
+          touch /tmp/MAVSDK/COLCON_IGNORE
+          # Run cross compilation
+          ros_cross_compile /tmp/colcon_ws \
+            --arch ${{ matrix.arch }} \
+            --os ubuntu \
+            --rosdistro ${{ matrix.ros2_distro }} \
+            --custom-setup-script scripts/cross_compile_dependencies.sh \
+            --custom-data-dir /tmp/MAVSDK
+      - name: Build zip
+        run: |
+          cd /tmp/colcon_ws/
+          mv install_${{ matrix.arch }} install
           git fetch --all --tags
           TAG_VERSION=$(bash -c 'if [ $(git show-ref --tags) ]; then echo \"$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1')\"; else echo 1.0.0; fi')
-          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
-          docker exec -t \
-            --workdir "/buildroot" \
-            $(docker ps -q) \
-            /bin/bash -c "dpkg -i libmavsdk*.deb; sudo ldconfig; ./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
-      - name: Upload autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }} artefact
+          zip -r autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip install
+      - name: Upload autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip artefact
         uses: actions/upload-artifact@v2
         with:
-          name: autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }}.deb
-          path: output/skynode/autopilot-manager_${{ env.TAG_VERSION }}-${{ env.PKG_VERSION }}_${{ matrix.config.architecture }}.deb
+          name: autopilot_manager_${{ matrix.ros2_distro }}_${TAG_VERSION}-1_${{ matrix.arch }}.zip
+          path: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
           retention-days: 2
-      - name: Build and package autopilot-manager (Release)
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: |
-          TAG_VERSION=$(${GITHUB_REF} | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1/')
-          echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
-          docker run -t \
-            -v $(pwd):/buildroot \
-            --workdir "/buildroot" \
-            auterion/multi-buildenv:${{ matrix.config.architecture }}-v1.1.0 \
-            /bin/bash -c "dpkg -i libmavsdk*.deb; sudo ldconfig; ./tools/generate_debian_changelog.sh ${{ env.PKG_VERSION }} $TAG_VERSION > debian/changelog; dpkg-buildpackage -us -uc -nc -b --host-arch ${{ matrix.config.architecture }}; mkdir -p output/skynode; cd ..; for i in autopilot-manager*.deb; do mv "\$i" "buildroot/output/skynode/\${i}"; done"
       - name: Publish artefacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file_glob: true
-          file: output/skynode/*.deb
-          tag: ${{ github.ref }}
+          file: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
+          asset_name: autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
+          tag: ${{ steps.github_refs.outputs.branch }}-${{ steps.github_refs.outputs.sha_short }}
           overwrite: true
