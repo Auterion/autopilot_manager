@@ -1,26 +1,61 @@
 #!/usr/bin/make -f
-# See debhelper(7) (uncomment to enable)
-# output every command that modifies files on the build system.
-#export DH_VERBOSE = 1
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
 
-
-# see FEATURE AREAS in dpkg-buildflags(1)
-#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-
-# see ENVIRONMENT in dpkg-buildflags(1)
-# package maintainers to append CFLAGS
-#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
-# package maintainers to append LDFLAGS
-#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+# TODO: remove the LDFLAGS override.  It's here to avoid esoteric problems
+# of this sort:
+#  https://code.ros.org/trac/ros/ticket/2977
+#  https://code.ros.org/trac/ros/ticket/3842
+export LDFLAGS=
+export PKG_CONFIG_PATH=/usr/lib/pkgconfig
+# Explicitly enable -DNDEBUG, see:
+# 	https://github.com/ros-infrastructure/bloom/issues/327
+export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 
 %:
-	# don't use build stamp so we can incrementally recompile and rebuild
-	# package on source changes
-	dh $@ --without=build-stamp
+	dh $@ -v --buildsystem=cmake
 
+override_dh_auto_configure:
+	# In case we're installing to a non-standard location, look for a setup.sh
+	# in the install tree and source it.  It will set things like
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	if [ -f "/usr/setup.sh" ]; then . "/usr/setup.sh"; fi && \
+	dh_auto_configure -- \
+		-DCMAKE_INSTALL_PREFIX="/usr" \
+		-DAMENT_PREFIX_PATH="/usr" \
+		-DCMAKE_PREFIX_PATH="/usr"
 
-# dh_make generated override targets
-# This is example for Cmake (See https://bugs.debian.org/641051 )
-#override_dh_auto_configure:
-#	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+override_dh_auto_build:
+	# In case we're installing to a non-standard location, look for a setup.sh
+	# in the install tree and source it.  It will set things like
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	if [ -f "/usr/setup.sh" ]; then . "/usr/setup.sh"; fi && \
+	dh_auto_build
+
+override_dh_auto_test:
+	# In case we're installing to a non-standard location, look for a setup.sh
+	# in the install tree and source it.  It will set things like
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	echo -- Running tests. Even if one of them fails the build is not canceled.
+	if [ -f "/usr/setup.sh" ]; then . "/usr/setup.sh"; fi && \
+	dh_auto_test || true
+
+override_dh_shlibdeps:
+	# In case we're installing to a non-standard location, look for a setup.sh
+	# in the install tree and source it.  It will set things like
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	if [ -f "/usr/setup.sh" ]; then . "/usr/setup.sh"; fi && \
+	dh_shlibdeps -l$(CURDIR)/debian/autopilot-manager//usr/lib/
+
+override_dh_auto_install:
+	# In case we're installing to a non-standard location, look for a setup.sh
+	# in the install tree and source it.  It will set things like
+	# CMAKE_PREFIX_PATH, PKG_CONFIG_PATH, and PYTHONPATH.
+	if [ -f "/usr/setup.sh" ]; then . "/usr/setup.sh"; fi && \
+	dh_auto_install

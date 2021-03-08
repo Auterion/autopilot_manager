@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(mission_manager)
+
 find_package(MAVSDK REQUIRED)
 find_package(Threads REQUIRED)
 

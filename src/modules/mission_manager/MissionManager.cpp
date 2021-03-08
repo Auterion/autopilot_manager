@@ -52,20 +52,6 @@
 
 using namespace std::chrono_literals;
 
-/**
- * @brief Waits until we receive one of the signals requesting graceful termination.
- */
-static void wait_for_termination_signal() {
-	sigset_t sigs;
-	sigemptyset(&sigs);
-	sigaddset(&sigs, SIGINT);
-	sigaddset(&sigs, SIGTERM);
-	int sigfd = ::signalfd(-1, &sigs, SFD_CLOEXEC);
-	struct signalfd_siginfo si;
-	while (::read(sigfd, &si, sizeof(si)) == 0) {
-	}
-}
-
 static std::atomic<bool> int_signal{false};
 
 MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
@@ -74,7 +60,9 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std
       _path_to_custom_action_file{path_to_custom_action_file},
       _mission_manager_config{} {}
 
-MissionManager::~MissionManager() { deinit(); }
+MissionManager::~MissionManager() {
+	deinit();
+}
 
 void MissionManager::init() {
 	std::cout << "[Mission Manager] Started!" << std::endl;
@@ -83,7 +71,9 @@ void MissionManager::init() {
 	run();
 }
 
-void MissionManager::deinit() { _custom_action_handler.reset(); }
+void MissionManager::deinit() {
+	_custom_action_handler.reset();
+}
 
 void MissionManager::run() {
 	auto decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
@@ -94,8 +84,6 @@ void MissionManager::run() {
 	}
 
 	decision_maker_th.join();
-
-	wait_for_termination_signal();
 }
 
 void MissionManager::decision_maker_run() {
@@ -116,8 +104,8 @@ void MissionManager::decision_maker_run() {
 			}
 		}
 
-		// Decision maker runs at 100hz
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		// Decision maker runs at 10hz
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 

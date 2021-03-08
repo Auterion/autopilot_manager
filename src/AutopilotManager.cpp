@@ -1,5 +1,14 @@
 #include <AutopilotManager.hpp>
 
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/signalfd.h>
+#include <unistd.h>
+
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/utilities.hpp>
+
 namespace {
 const auto METHOD_GET_CONFIG = "get_config";
 const auto METHOD_SET_CONFIG = "set_config";
@@ -21,7 +30,9 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
 
 AutopilotManager::~AutopilotManager() {
 	_mission_manager_th.join();
+	_sensor_manager_th.join();
 	_mission_manager.reset();
+	_sensor_manager.reset();
 }
 
 DBusMessage* AutopilotManager::HandleRequest(DBusMessage* message) {
@@ -148,6 +159,7 @@ void AutopilotManager::start() {
 
 		// Create Mission Manager
 		_mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
+		_mission_manager_th = std::thread(&AutopilotManager::init_mission_manager, this);
 
 		// Init the callback for setting the Mission Manager parameters
 		_mission_manager->setConfigUpdateCallback([this]() {
@@ -162,7 +174,9 @@ void AutopilotManager::start() {
 				_simple_collision_avoid_distance_on_condition_false};
 		});
 
-		_mission_manager_th = std::thread(&AutopilotManager::init_mission_manager, this);
+		// Create Sensor Manager
+		_sensor_manager = std::make_shared<SensorManager>();
+		_sensor_manager_th = std::thread(&AutopilotManager::init_and_run_sensor_manager, this);
 
 	} else {
 		std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
@@ -175,7 +189,13 @@ void AutopilotManager::init_mission_manager() {
 	_mission_manager->init();
 }
 
-void AutopilotManager::init_sensor_manager() {
-	// Init the Sensor Manager module
-	// _sensor_manager->init();
+void AutopilotManager::init_and_run_sensor_manager() {
+	// Init the Sensor Manager node
+	rclcpp::executors::SingleThreadedExecutor executor;
+	executor.add_node(_sensor_manager);
+	executor.spin_some();
+
+	while (rclcpp::ok()) {
+		// empty loop
+	}
 }

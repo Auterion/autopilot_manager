@@ -31,55 +31,60 @@
  *
  ****************************************************************************/
 
-/**
- * @file main.cpp
- *
- * @author Nuno Marques <nuno@auterion.com>
- */
+ /**
+  * @brief Sensor Manager
+  * @file SensorManager.hpp
+  * @author Nuno Marques <nuno@auterion.com>
+  * @author Julian Kent <julian@auterion.com>
+  */
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/signalfd.h>
-#include <unistd.h>
+#pragma once
 
-#include <DbusInterface.hpp>
+#include <chrono>
+#include <iostream>
+#include <eigen3/Eigen/Core>
 
-#include <AutopilotManager.hpp>
-#include <helpers.hpp>
+#include <ModuleBase.hpp>
 
+// ROS dependencies
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
-int main(int argc, char* argv[]) {
-	uint32_t mavlink_port{14590};
-	std::string path_to_apm_config_file{"/shared_container_dir/autopilot_manager.conf"};
-	std::string path_to_custom_action_file{
-	    "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json"};
-	// std::string
-	// path_to_custom_action_file{"/usr/local/share/autopilot-manager/data/example/custom_action/custom_action.json"};
+class SensorManager : public rclcpp::Node, ModuleBase {
+public:
+    SensorManager();
+    ~SensorManager();
+	SensorManager(const SensorManager&) = delete;
+    const SensorManager& operator=(const SensorManager&) = delete;
 
-	parse_argv(argc, argv, mavlink_port, path_to_apm_config_file, path_to_custom_action_file);
+    void init() override;
+	void deinit() override;
+	void run() override;
 
-	// Initialize communications via the rmw implementation and set up a global signal handler.
-	rclcpp::init(argc, argv);
+    struct ROISettings {
+        float width_fraction {0.5f};
+        float height_fraction {0.5f};
+        float width_center {0.5f};
+        float height_center {0.5f};
+    };
 
-	// Uninstall the global signal handler for rclcpp
-	rclcpp::uninstall_signal_handlers();
+    void set_roi(const ROISettings& settings) {
+        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
+        _roi_settings = settings;
+    }
 
-	// Init main event loop for GLib/DBUS
-	GMainLoop* mainloop = g_main_loop_new(NULL, false);
+    float get_latest_depth() {
+        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
+        return _depth;
+    }
 
-	std::shared_ptr<AutopilotManager> autopilot_manager = std::make_shared<AutopilotManager>(
-	    std::to_string(mavlink_port), path_to_apm_config_file, path_to_custom_action_file);
+private:
+    void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
 
-	// Register autopilot_manager dbus requests
-	DBusInterface dbus([autopilot_manager](DBusMessage* request) {
-		return autopilot_manager->HandleRequest(request);
-	});
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub;
 
-	g_main_loop_run(mainloop);
+    std::mutex _sensor_manager_mutex;
 
-	rclcpp::shutdown();
-
-	return 0;
-}
+    ROISettings _roi_settings;
+    float _depth{NAN};
+};

@@ -12,11 +12,8 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, ubuntu-20.04]
+    name: Ubuntu 20.04 with ROS 2 Foxy build
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
     - name: Disable the keychain credential helper
@@ -29,19 +26,33 @@ jobs:
       run: 'git config --global url."https://github.com/".insteadof git@github.com:'
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-            build-essential \
-            cmake \
-            colordiff \
-            git \
-            libdbus-glib-1-dev
+        # Set locale
+        sudo apt update
+        sudo apt install -y locales
+        sudo locale-gen en_US en_US.UTF-8
+        sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+        export LANG=en_US.UTF-8
+        # Setup ROS 2 sources
+        sudo apt install -y curl gnupg2 lsb-release
+        curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add
+        sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
+        # Install ROS 2 Foxy packages
+        sudo apt update
+        sudo apt install -y ros-foxy-ros-base ros-foxy-sensor-msgs ros-foxy-image-pipeline
+        # Setup environment
+        source /opt/ros/foxy/setup.bash
+        # Install MAVSDK from source
+        sudo apt install -y colordiff git
         git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop
         cd MAVSDK
         cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON -Bbuild/default -H.
         sudo cmake --build build/default --target install -j`nproc --all`
         sudo ldconfig
+        # Install DBUS
+        sudo apt install -y libdbus-glib-1-dev
     - name: Build
       run: |
-        cmake -Bbuild -S.
-        sudo cmake --build build -j`nproc --all` -- install
+        mkdir -p colcon_ws/src
+        cd colcon_ws
+        ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
+        colcon build

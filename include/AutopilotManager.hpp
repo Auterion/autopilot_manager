@@ -9,7 +9,8 @@
 #include <mavsdk/mavsdk.h>
 
 #include <AutopilotManagerConfig.hpp>
-#include <MissionManager.hpp>
+#include <mission_manager/MissionManager.hpp>
+#include <sensor_manager/SensorManager.hpp>
 
 class AutopilotManager {
 public:
@@ -30,7 +31,7 @@ private:
 	void initialProvisioning();
 
 	void init_mission_manager();
-	void init_sensor_manager();
+	void init_and_run_sensor_manager();
 
 	ResponseCode SetConfiguration(AutopilotManagerConfig& config);
 	ResponseCode GetConfiguration(AutopilotManagerConfig& config);
@@ -43,8 +44,10 @@ private:
 	std::string _simple_collision_avoid_distance_on_condition_false = "";
 
 	std::thread _mission_manager_th;
+	std::thread _sensor_manager_th;
 
 	std::shared_ptr<MissionManager> _mission_manager = {nullptr};
+	std::shared_ptr<SensorManager> _sensor_manager = {nullptr};
 
 	std::mutex _config_mutex;
 
