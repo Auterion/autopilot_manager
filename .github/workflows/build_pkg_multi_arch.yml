@@ -30,8 +30,13 @@ jobs:
       - name: Tell git to use https instead of ssh whenever it encounters it
         run: 'git config --global url."https://github.com/".insteadof git@github.com:'
       - name: Process Github reference
-        id: github_refs
+        id: refs
         run: |
+          git fetch --all --tags
+          TAG_VERSION=$(bash -c 'if [ $(git show-ref --tags) ]; then echo \"$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1')\"; else echo 1.0.0; fi')
+          ARCH=$(bash -c "if [ \"${{ matrix.arch }}\" = \"x86_64\" ]; then echo amd64; elif [ \"${{ matrix.arch }}\" = \"aarch64\" ]; then echo arm64; fi")
+          echo "::set-output name=tag_version::${TAG_VERSION}"
+          echo "::set-output name=package_arch::${ARCH}"
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
           echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
       - name: Install dependencies
@@ -52,32 +57,29 @@ jobs:
           git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop /tmp/MAVSDK
           # Add COLCON_IGNORE to the MAVSDK dir so colcon doesn't build it
           touch /tmp/MAVSDK/COLCON_IGNORE
-          # Run cross compilation
+          # Run cross-compilation
           ros_cross_compile /tmp/colcon_ws \
             --arch ${{ matrix.arch }} \
             --os ubuntu \
             --rosdistro ${{ matrix.ros2_distro }} \
             --custom-setup-script scripts/cross_compile_dependencies.sh \
             --custom-data-dir /tmp/MAVSDK
-      - name: Build zip
+      - name: Create zip
         run: |
-          cd /tmp/colcon_ws/
-          mv install_${{ matrix.arch }} install
-          git fetch --all --tags
-          TAG_VERSION=$(bash -c 'if [ $(git show-ref --tags) ]; then echo \"$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1')\"; else echo 1.0.0; fi')
-          zip -r autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip install
-      - name: Upload autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip artefact
+          cd /tmp/colcon_ws/install_${{ matrix.arch }}
+          zip -r autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip .
+      - name: Upload autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip artifact
         uses: actions/upload-artifact@v2
         with:
-          name: autopilot_manager_${{ matrix.ros2_distro }}_${TAG_VERSION}-1_${{ matrix.arch }}.zip
-          path: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
+          name: autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
+          path: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
           retention-days: 2
-      - name: Publish artefacts
+      - name: Publish artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
-          asset_name: autopilot_manager_${{ matrix.ros2_distro }}_$TAG_VERSION-1_${{ matrix.arch }}.zip
-          tag: ${{ steps.github_refs.outputs.branch }}-${{ steps.github_refs.outputs.sha_short }}
+          file: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
+          asset_name: autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
+          tag: ${{ steps.refs.outputs.branch }}-${{ steps.refs.outputs.sha_short }}
           overwrite: true
