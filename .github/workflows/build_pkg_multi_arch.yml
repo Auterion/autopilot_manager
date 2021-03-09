@@ -72,14 +72,14 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
-          path: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
+          path: /tmp/colcon_ws/install_${{ matrix.arch }}/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
           retention-days: 2
       - name: Publish artifacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v1-release
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /tmp/colcon_ws/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
+          file: /tmp/colcon_ws/install_${{ matrix.arch }}/autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
           asset_name: autopilot_manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}-1_${{ steps.refs.outputs.package_arch }}.zip
           tag: ${{ steps.refs.outputs.branch }}-${{ steps.refs.outputs.sha_short }}
           overwrite: true
