@@ -32,8 +32,8 @@
  ****************************************************************************/
 
 /**
+ * @brief Module Base
  * @file ModuleBase.hpp
- *
  * @author Nuno Marques <nuno@auterion.com>
  */
 

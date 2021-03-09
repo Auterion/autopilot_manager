@@ -32,16 +32,10 @@
  ****************************************************************************/
 
 /**
+ * @brief Autopilot Manager main
  * @file main.cpp
- *
  * @author Nuno Marques <nuno@auterion.com>
  */
-
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/signalfd.h>
-#include <unistd.h>
 
 #include <DbusInterface.hpp>
 
@@ -73,9 +67,8 @@ int main(int argc, char* argv[]) {
 	    std::to_string(mavlink_port), path_to_apm_config_file, path_to_custom_action_file);
 
 	// Register autopilot_manager dbus requests
-	DBusInterface dbus([autopilot_manager](DBusMessage* request) {
-		return autopilot_manager->HandleRequest(request);
-	});
+	DBusInterface dbus(
+	    [autopilot_manager](DBusMessage* request) { return autopilot_manager->HandleRequest(request); });
 
 	g_main_loop_run(mainloop);
 

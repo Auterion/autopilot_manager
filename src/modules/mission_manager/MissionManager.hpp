@@ -32,8 +32,8 @@
  ****************************************************************************/
 
 /**
+ * @brief Mission Manager
  * @file MissionManager.hpp
- *
  * @author Nuno Marques <nuno@auterion.com>
  */
 

@@ -1,3 +1,42 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2021 Auterion AG. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name Auterion nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/**
+ * @brief Autopilot Manager config
+ * @file AutopilotManagerConfig.cpp
+ * @author Nuno Marques <nuno@auterion.com>
+ */
+
 #include <AutopilotManagerConfig.hpp>
 
 bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
@@ -7,14 +46,11 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 		char* returnedDecisionMakerType = nullptr;
 		char* returnedCollAvoidOnCondTrue = nullptr;
 		char* returnedCollAvoidOnCondFalse = nullptr;
-		dbus_message_get_args(request, &error,
-					 DBUS_TYPE_UINT32, &autopilot_manager_enabled,
-					 DBUS_TYPE_STRING, &returnedDecisionMakerType,
-					 DBUS_TYPE_UINT32, &simple_collision_avoid_enabled,
-					 DBUS_TYPE_DOUBLE, &simple_collision_avoid_distance_threshold,
-					 DBUS_TYPE_STRING, &returnedCollAvoidOnCondTrue,
-					 DBUS_TYPE_STRING, &returnedCollAvoidOnCondFalse,
-					 DBUS_TYPE_INVALID);
+		dbus_message_get_args(request, &error, DBUS_TYPE_UINT32, &autopilot_manager_enabled, DBUS_TYPE_STRING,
+				      &returnedDecisionMakerType, DBUS_TYPE_UINT32, &simple_collision_avoid_enabled,
+				      DBUS_TYPE_DOUBLE, &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
+				      &returnedCollAvoidOnCondTrue, DBUS_TYPE_STRING, &returnedCollAvoidOnCondFalse,
+				      DBUS_TYPE_INVALID);
 		if (dbus_error_is_set(&error)) {
 			std::cerr << "[Autopilot Manager Config] Failed getting message arguments: " << error.message
 				  << std::endl;
@@ -44,14 +80,11 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
 
 bool AutopilotManagerConfig::AppendToMessage(DBusMessage* reply) const {
 	if (reply != nullptr) {
-		dbus_message_append_args(reply,
-					 DBUS_TYPE_UINT32, &autopilot_manager_enabled,
-					 DBUS_TYPE_STRING, &decision_maker_input_type,
-					 DBUS_TYPE_UINT32, &simple_collision_avoid_enabled,
-					 DBUS_TYPE_DOUBLE, &simple_collision_avoid_distance_threshold,
-					 DBUS_TYPE_STRING, &simple_collision_avoid_distance_on_condition_true,
-					 DBUS_TYPE_STRING, &simple_collision_avoid_distance_on_condition_false,
-					 DBUS_TYPE_INVALID);
+		dbus_message_append_args(reply, DBUS_TYPE_UINT32, &autopilot_manager_enabled, DBUS_TYPE_STRING,
+					 &decision_maker_input_type, DBUS_TYPE_UINT32, &simple_collision_avoid_enabled,
+					 DBUS_TYPE_DOUBLE, &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
+					 &simple_collision_avoid_distance_on_condition_true, DBUS_TYPE_STRING,
+					 &simple_collision_avoid_distance_on_condition_false, DBUS_TYPE_INVALID);
 		return true;
 	}
 	return false;
@@ -64,10 +97,9 @@ bool AutopilotManagerConfig::WriteToFile(const std::string& config_path) const {
 		file << "[AutopilotManagerConfig]" << std::endl;
 		file << "autopilot_manager_enabled=" << autopilot_manager_enabled << std::endl;
 		file << "decision_maker_input_type=" << decision_maker_input_type << std::endl;
-		file << "simple_collision_avoid_enabled=" << simple_collision_avoid_enabled
+		file << "simple_collision_avoid_enabled=" << simple_collision_avoid_enabled << std::endl;
+		file << "simple_collision_avoid_distance_threshold=" << simple_collision_avoid_distance_threshold
 		     << std::endl;
-		file << "simple_collision_avoid_distance_threshold="
-		     << simple_collision_avoid_distance_threshold << std::endl;
 		file << "simple_collision_avoid_distance_on_condition_true="
 		     << simple_collision_avoid_distance_on_condition_true << std::endl;
 		file << "simple_collision_avoid_distance_on_condition_false="

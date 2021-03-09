@@ -1,3 +1,42 @@
+/****************************************************************************
+ *
+ *   Copyright (c) 2021 Auterion AG. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ * 3. Neither the name Auterion nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ ****************************************************************************/
+
+/**
+ * @brief Autopilot Manager
+ * @file AutopilotManager.cpp
+ * @author Nuno Marques <nuno@auterion.com>
+ */
+
 #include <AutopilotManager.hpp>
 
 #include <signal.h>
@@ -159,7 +198,7 @@ void AutopilotManager::start() {
 
 		// Create Mission Manager
 		_mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
-		_mission_manager_th = std::thread(&AutopilotManager::init_mission_manager, this);
+		_mission_manager_th = std::thread(&AutopilotManager::init_and_run_mission_manager, this);
 
 		// Init the callback for setting the Mission Manager parameters
 		_mission_manager->setConfigUpdateCallback([this]() {
@@ -176,7 +215,7 @@ void AutopilotManager::start() {
 
 		// Create Sensor Manager
 		_sensor_manager = std::make_shared<SensorManager>();
-		_sensor_manager_th = std::thread(&AutopilotManager::init_and_run_sensor_manager, this);
+		_sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
 
 	} else {
 		std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
@@ -184,18 +223,12 @@ void AutopilotManager::start() {
 	}
 }
 
-void AutopilotManager::init_mission_manager() {
+void AutopilotManager::init_and_run_mission_manager() {
 	// Init the Mission Manager module
 	_mission_manager->init();
 }
 
-void AutopilotManager::init_and_run_sensor_manager() {
+void AutopilotManager::run_sensor_manager() {
 	// Init the Sensor Manager node
-	rclcpp::executors::SingleThreadedExecutor executor;
-	executor.add_node(_sensor_manager);
-	executor.spin_some();
-
-	while (rclcpp::ok()) {
-		// empty loop
-	}
+	spin(_sensor_manager);
 }

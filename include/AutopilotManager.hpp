@@ -30,8 +30,8 @@ private:
 	void start();
 	void initialProvisioning();
 
-	void init_mission_manager();
-	void init_and_run_sensor_manager();
+	void init_and_run_mission_manager();
+	void run_sensor_manager();
 
 	ResponseCode SetConfiguration(AutopilotManagerConfig& config);
 	ResponseCode GetConfiguration(AutopilotManagerConfig& config);
@@ -46,8 +46,8 @@ private:
 	std::thread _mission_manager_th;
 	std::thread _sensor_manager_th;
 
-	std::shared_ptr<MissionManager> _mission_manager = {nullptr};
-	std::shared_ptr<SensorManager> _sensor_manager = {nullptr};
+	std::shared_ptr<MissionManager> _mission_manager;
+	std::shared_ptr<SensorManager> _sensor_manager;
 
 	std::mutex _config_mutex;
 

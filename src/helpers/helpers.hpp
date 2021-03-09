@@ -31,6 +31,12 @@
  *
  ****************************************************************************/
 
+ /**
+  * @brief Helper functions
+  * @file helpers.hpp
+  * @author Nuno Marques <nuno@auterion.com>
+  */
+
 #pragma once
 
 #include <getopt.h>

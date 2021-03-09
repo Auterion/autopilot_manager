@@ -31,60 +31,61 @@
  *
  ****************************************************************************/
 
- /**
-  * @brief Sensor Manager
-  * @file SensorManager.hpp
-  * @author Nuno Marques <nuno@auterion.com>
-  * @author Julian Kent <julian@auterion.com>
-  */
+/**
+ * @brief Sensor Manager
+ * @file SensorManager.hpp
+ * @author Nuno Marques <nuno@auterion.com>
+ * @author Julian Kent <julian@auterion.com>
+ */
 
 #pragma once
 
 #include <chrono>
-#include <iostream>
 #include <eigen3/Eigen/Core>
+#include <iostream>
 
 #include <ModuleBase.hpp>
 
 // ROS dependencies
+#include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
 class SensorManager : public rclcpp::Node, ModuleBase {
 public:
-    SensorManager();
-    ~SensorManager();
-	SensorManager(const SensorManager&) = delete;
-    const SensorManager& operator=(const SensorManager&) = delete;
+	SensorManager();
+	~SensorManager();
+	// SensorManager(const SensorManager&) = delete;
+	// const SensorManager& operator=(const SensorManager&) = delete;
 
-    void init() override;
+	void init() override;
 	void deinit() override;
 	void run() override;
 
-    struct ROISettings {
-        float width_fraction {0.5f};
-        float height_fraction {0.5f};
-        float width_center {0.5f};
-        float height_center {0.5f};
-    };
+	struct ROISettings {
+		float width_fraction{0.5f};
+		float height_fraction{0.5f};
+		float width_center{0.5f};
+		float height_center{0.5f};
+	};
 
-    void set_roi(const ROISettings& settings) {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        _roi_settings = settings;
-    }
+	void set_roi(const ROISettings& settings) {
+		std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
+		_roi_settings = settings;
+	}
 
-    float get_latest_depth() {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        return _depth;
-    }
+	float get_latest_depth() {
+		std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
+		return _depth;
+	}
 
 private:
-    void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
+	void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub;
+	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub{};
 
-    std::mutex _sensor_manager_mutex;
+	std::mutex _sensor_manager_mutex;
 
-    ROISettings _roi_settings;
-    float _depth{NAN};
+	ROISettings _roi_settings{};
+	float _depth{NAN};
 };

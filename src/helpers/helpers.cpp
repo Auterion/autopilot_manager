@@ -31,6 +31,12 @@
  *
  ****************************************************************************/
 
+ /**
+  * @brief Helper functions
+  * @file helpers.cpp
+  * @author Nuno Marques <nuno@auterion.com>
+  */
+
 #include "helpers.hpp"
 
 void help_argv_description(const char* pgm) {

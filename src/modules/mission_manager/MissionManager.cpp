@@ -32,8 +32,8 @@
  ****************************************************************************/
 
 /**
+ * @brief Mission Manager
  * @file MissionManager.cpp
- *
  * @author Nuno Marques <nuno@auterion.com>
  */
 
@@ -41,12 +41,6 @@
 #include <future>
 #include <iostream>
 #include <string>
-
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/signalfd.h>
-#include <unistd.h>
 
 #include <MissionManager.hpp>
 
@@ -60,9 +54,7 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std
       _path_to_custom_action_file{path_to_custom_action_file},
       _mission_manager_config{} {}
 
-MissionManager::~MissionManager() {
-	deinit();
-}
+MissionManager::~MissionManager() { deinit(); }
 
 void MissionManager::init() {
 	std::cout << "[Mission Manager] Started!" << std::endl;
@@ -71,9 +63,7 @@ void MissionManager::init() {
 	run();
 }
 
-void MissionManager::deinit() {
-	_custom_action_handler.reset();
-}
+void MissionManager::deinit() { _custom_action_handler.reset(); }
 
 void MissionManager::run() {
 	auto decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
