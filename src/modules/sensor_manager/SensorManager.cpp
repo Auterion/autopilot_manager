@@ -44,7 +44,7 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
 
-using PIXEL = uint16_t;
+using PIXEL = float;
 
 SensorManager::SensorManager() : Node("sensor_manager") { init(); }
 
@@ -94,7 +94,7 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
 	if (cols_pixels > 0 && cols_pixels < img.cols() && rows_pixels > 0 && rows_pixels < img.rows() &&
 	    cols_offset >= 0 && cols_offset + cols_pixels < img.cols() && rows_offset >= 0 &&
 	    rows_offset + rows_pixels < img.rows()) {
-		depth = img.block(rows_offset, cols_offset, rows_pixels, cols_pixels).mean();
+		depth = img.block(rows_offset, cols_offset, rows_pixels, cols_pixels).minCoeff();
 	}
 
 	std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
