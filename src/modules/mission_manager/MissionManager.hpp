@@ -55,7 +55,7 @@
 class CustomActionHandler {
 public:
 	CustomActionHandler(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
-	~CustomActionHandler() = default;
+	~CustomActionHandler();
 	CustomActionHandler(const CustomActionHandler&) = delete;
 	const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
 
@@ -63,6 +63,11 @@ public:
 	void run(std::shared_ptr<mavsdk::Telemetry> telemetry);
 
 private:
+	void new_action_check();
+	void send_progress_status(mavsdk::CustomAction::ActionToExecute action);
+	void process_custom_action(mavsdk::CustomAction::ActionToExecute action);
+	void execute_custom_action(mavsdk::CustomAction::ActionMetadata action_metadata);
+
 	std::shared_ptr<mavsdk::System> _mavsdk_system;
 	std::shared_ptr<mavsdk::CustomAction> _custom_action;
 
@@ -82,14 +87,10 @@ private:
 	std::vector<mavsdk::CustomAction::ActionMetadata> _actions_metadata;
 	std::vector<std::thread> _progress_threads;
 
-	void new_action_check();
-	void send_progress_status(mavsdk::CustomAction::ActionToExecute action);
-	void process_custom_action(mavsdk::CustomAction::ActionToExecute action);
-	void execute_custom_action(mavsdk::CustomAction::ActionMetadata action_metadata);
+	std::thread _new_actions_check_th;
 };
 
 class MissionManager : public ModuleBase {
-
 public:
 	MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
 	~MissionManager();

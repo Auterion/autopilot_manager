@@ -79,12 +79,11 @@ void MissionManager::run() {
 	if (_custom_action_handler->start()) {
 		_custom_action_handler->run(_telemetry);
 	}
-
 }
 
 void MissionManager::decision_maker_run() {
-    auto new_action_time = std::chrono::system_clock::now() + std::chrono::minutes(1);  // dummy init
-    auto start_time = new_action_time;
+	auto new_action_time = std::chrono::system_clock::now() + std::chrono::minutes(1);  // dummy init
+	auto start_time = new_action_time;
 
 	while (!int_signal) {
 		// Update configuration at each iteration
@@ -92,55 +91,76 @@ void MissionManager::decision_maker_run() {
 
 		if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
 			if (_mission_manager_config.simple_collision_avoid_enabled) {
-                std::cout << "Depth measured: " << _distance_to_obstacle_update_callback() << "| threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold << std::endl;
+				std::cout
+				    << "Depth measured: " << _distance_to_obstacle_update_callback() << "| threshold: "
+				    << _mission_manager_config.simple_collision_avoid_distance_threshold << std::endl;
 
-                if (_distance_to_obstacle_update_callback() <= _mission_manager_config.simple_collision_avoid_distance_threshold
-                    && _telemetry->in_air()
-                    && _telemetry->position_velocity_ned().position.down_m >= -1.0 // for now this condition is required
-                    && !_action_triggered) {
+				if (_distance_to_obstacle_update_callback() <=
+					_mission_manager_config.simple_collision_avoid_distance_threshold &&
+				    _telemetry->in_air() &&
+				    _telemetry->position_velocity_ned().position.down_m >=
+					-1.0  // for now this condition is required
+				    && !_action_triggered) {
+					auto now = std::chrono::system_clock::now();
 
-                    auto now = std::chrono::system_clock::now();
+					if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
+					    "KEEP_STATE") {
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true == "HOLD") {
+						_action_triggered = true;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true == "RTL") {
+						_action->return_to_launch();
+						_action_triggered = true;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true ==
+						   "GO_TO_WAYPOINT") {
+						std::cout << "Currently not supported" << std::endl;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true ==
+						   "INCREASE_HOR_VEL") {
+						std::cout << "Currently not supported" << std::endl;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true ==
+						   "DECREASE_HOR_VEL") {
+						std::cout << "Currently not supported" << std::endl;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true == "CLIMB") {
+						std::cout << "Currently not supported" << std::endl;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true ==
+						   "DESCEND") {
+						std::cout << "Currently not supported" << std::endl;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true ==
+						   "TAKEOFF") {
+						_action->takeoff();
+						_action_triggered = true;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true == "LAND") {
+						_action->land();
+						_action_triggered = true;
+					} else if (_mission_manager_config
+						       .simple_collision_avoid_distance_on_condition_true == "CUSTOM") {
+						std::cout << "Currently not supported" << std::endl;
+					}
 
-                    if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "KEEP_STATE") {
-
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "HOLD") {
-                        _action_triggered = true;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "RTL") {
-                        _action->return_to_launch();
-                        _action_triggered = true;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "GO_TO_WAYPOINT") {
-                        std::cout << "Currently not supported" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "INCREASE_HOR_VEL") {
-                        std::cout << "Currently not supported" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "DECREASE_HOR_VEL") {
-                        std::cout << "Currently not supported" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CLIMB") {
-                        std::cout << "Currently not supported" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "DESCEND") {
-                        std::cout << "Currently not supported" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "TAKEOFF") {
-                        _action->takeoff();
-                        _action_triggered = true;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "LAND") {
-                        _action->land();
-                        _action_triggered = true;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CUSTOM") {
-                        std::cout << "Currently not supported" << std::endl;
-                    }
-
-                    // std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(new_action_time - now).count() << std::endl;
-                    //
-                    // if (new_action_time == start_time ||
-                    // std::chrono::duration_cast<std::chrono::milliseconds>(new_action_time - now).count() >=
-                    //     5000) {
-                    //     _action_triggered = false;
-                    //     new_action_time = now;
-                    // }
-                }
+					// std::cout <<
+					// std::chrono::duration_cast<std::chrono::milliseconds>(new_action_time -
+					// now).count() << std::endl;
+					//
+					// if (new_action_time == start_time ||
+					// std::chrono::duration_cast<std::chrono::milliseconds>(new_action_time -
+					// now).count() >=
+					//     5000) {
+					//     _action_triggered = false;
+					//     new_action_time = now;
+					// }
+				}
 			}
 		}
 
-        // std::cout << "_action_triggered: " << _action_triggered << std::endl;
+		// std::cout << "_action_triggered: " << _action_triggered << std::endl;
 
 		// Decision maker runs at 10hz
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -150,6 +170,11 @@ void MissionManager::decision_maker_run() {
 CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> system,
 					 const std::string &path_to_custom_action_file)
     : _mavsdk_system{system}, _path_to_custom_action_file{path_to_custom_action_file} {}
+
+CustomActionHandler::~CustomActionHandler() {
+	int_signal.store(true, std::memory_order_relaxed);
+	_new_actions_check_th.join();
+}
 
 bool CustomActionHandler::start() {
 	if (_mavsdk_system->is_connected() && _mavsdk_system->has_autopilot()) {
@@ -174,7 +199,7 @@ void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
 	_custom_action->subscribe_custom_action_cancellation(
 	    [this](bool canceled) { _action_stopped.store(canceled, std::memory_order_relaxed); });
 
-	auto new_actions_check_th = std::thread(&CustomActionHandler::new_action_check, this);
+	_new_actions_check_th = std::thread(&CustomActionHandler::new_action_check, this);
 
 	auto new_action_time = std::chrono::system_clock::now() + std::chrono::minutes(1);  // dummy init
 	auto start_time = new_action_time;
@@ -197,13 +222,6 @@ void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
 			    }
 		    }
 	    });
-
-	while (true) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
-
-	int_signal.store(true, std::memory_order_relaxed);
-	new_actions_check_th.join();
 }
 
 void CustomActionHandler::send_progress_status(mavsdk::CustomAction::ActionToExecute action) {

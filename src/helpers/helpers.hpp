@@ -31,11 +31,11 @@
  *
  ****************************************************************************/
 
- /**
-  * @brief Helper functions
-  * @file helpers.hpp
-  * @author Nuno Marques <nuno@auterion.com>
-  */
+/**
+ * @brief Helper functions
+ * @file helpers.hpp
+ * @author Nuno Marques <nuno@auterion.com>
+ */
 
 #pragma once
 
