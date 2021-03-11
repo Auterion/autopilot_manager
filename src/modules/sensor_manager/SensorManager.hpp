@@ -63,8 +63,8 @@ public:
 	void run() override;
 
 	struct ROISettings {
-		float width_fraction{0.5f};
-		float height_fraction{0.5f};
+		float width_fraction{0.2f};
+		float height_fraction{0.2f};
 		float width_center{0.5f};
 		float height_center{0.5f};
 	};

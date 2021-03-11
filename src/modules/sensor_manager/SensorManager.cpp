@@ -94,11 +94,10 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
 	if (cols_pixels > 0 && cols_pixels < img.cols() && rows_pixels > 0 && rows_pixels < img.rows() &&
 	    cols_offset >= 0 && cols_offset + cols_pixels < img.cols() && rows_offset >= 0 &&
 	    rows_offset + rows_pixels < img.rows()) {
-		depth = img.block(rows_offset, cols_offset, rows_pixels, cols_pixels).minCoeff();
+		depth = img.block(rows_offset, cols_offset, rows_pixels, cols_pixels).array().isNaN()
+			.select(std::numeric_limits<PIXEL>::max(), img.block(rows_offset, cols_offset, rows_pixels, cols_pixels)).minCoeff();
 	}
 
 	std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-	_depth = depth;
-
-	std::cout << "Depth measured: " << _depth << std::endl;
+	_depth = (depth == std::numeric_limits<PIXEL>::max()) ? NAN : depth;
 }

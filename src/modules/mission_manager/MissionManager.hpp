@@ -60,12 +60,11 @@ public:
 	const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
 
 	bool start();
-	void run();
+	void run(std::shared_ptr<mavsdk::Telemetry> telemetry);
 
 private:
 	std::shared_ptr<mavsdk::System> _mavsdk_system;
 	std::shared_ptr<mavsdk::CustomAction> _custom_action;
-	std::shared_ptr<mavsdk::Telemetry> _telemetry;
 
 	std::string _path_to_custom_action_file;
 
@@ -90,6 +89,7 @@ private:
 };
 
 class MissionManager : public ModuleBase {
+
 public:
 	MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
 	~MissionManager();
@@ -112,17 +112,26 @@ public:
 		_config_update_callback = callback;
 	}
 
-private:
+	void getDistanceToObstacleCallback(std::function<float()> callback) {
+		_distance_to_obstacle_update_callback = callback;
+	}
+
 	void decision_maker_run();
 
+private:
 	std::function<MissionManagerConfiguration()> _config_update_callback;
+	std::function<float()> _distance_to_obstacle_update_callback;
 
-	std::shared_ptr<mavsdk::System> _mavsdk_system;
-	std::shared_ptr<CustomActionHandler> _custom_action_handler;
+	std::thread _decision_maker_th;
 
 	std::string _path_to_custom_action_file;
 
 	MissionManagerConfiguration _mission_manager_config;
 
+	std::shared_ptr<mavsdk::System> _mavsdk_system;
+	std::shared_ptr<CustomActionHandler> _custom_action_handler;
 	std::shared_ptr<mavsdk::Action> _action;
+	std::shared_ptr<mavsdk::Telemetry> _telemetry;
+
+	bool _action_triggered = false;
 };

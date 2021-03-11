@@ -30,7 +30,6 @@ private:
 	void start();
 	void initialProvisioning();
 
-	void init_and_run_mission_manager();
 	void run_sensor_manager();
 
 	ResponseCode SetConfiguration(AutopilotManagerConfig& config);
@@ -43,13 +42,13 @@ private:
 	std::string _simple_collision_avoid_distance_on_condition_true = "";
 	std::string _simple_collision_avoid_distance_on_condition_false = "";
 
-	std::thread _mission_manager_th;
 	std::thread _sensor_manager_th;
 
 	std::shared_ptr<MissionManager> _mission_manager;
 	std::shared_ptr<SensorManager> _sensor_manager;
 
 	std::mutex _config_mutex;
+	std::mutex _distance_to_obstacle_mutex;
 
 	std::string _mavlink_port = "14590";
 	std::string _config_path = "/shared_container_dir/autopilot_manager.conf";

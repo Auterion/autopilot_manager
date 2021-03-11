@@ -68,7 +68,6 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
 }
 
 AutopilotManager::~AutopilotManager() {
-	_mission_manager_th.join();
 	_sensor_manager_th.join();
 	_mission_manager.reset();
 	_sensor_manager.reset();
@@ -182,13 +181,14 @@ void AutopilotManager::start() {
 					prom.set_value(sys);
 					// Unsubscribe again as we only want to find one system.
 					mavsdk_mission_computer.subscribe_on_new_system(nullptr);
+					break;
 				}
 			}
 		});
 
 		// We usually receive heartbeats at 1Hz, therefore we should find a
-		// system after around 3 seconds max
-		if (fut.wait_for(std::chrono::seconds(3)) == std::future_status::timeout) {
+		// system after around 10 seconds max
+		if (fut.wait_for(std::chrono::seconds(10)) == std::future_status::timeout) {
 			std::cerr << "[Autopilot Manager] No autopilot found, exiting...\n";
 			exit(1);
 		}
@@ -196,9 +196,13 @@ void AutopilotManager::start() {
 		// Get discovered system now
 		auto system = fut.get();
 
-		// Create Mission Manager
+		// Create and run the Sensor Manager
+		_sensor_manager = std::make_shared<SensorManager>();
+		_sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
+
+		// Create and init Mission Manager
 		_mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
-		_mission_manager_th = std::thread(&AutopilotManager::init_and_run_mission_manager, this);
+		_mission_manager->init();
 
 		// Init the callback for setting the Mission Manager parameters
 		_mission_manager->setConfigUpdateCallback([this]() {
@@ -213,19 +217,19 @@ void AutopilotManager::start() {
 				_simple_collision_avoid_distance_on_condition_false};
 		});
 
-		// Create Sensor Manager
-		_sensor_manager = std::make_shared<SensorManager>();
-		_sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
+		// Init the callback for getting the latest distance to obstacle
+		_mission_manager->getDistanceToObstacleCallback([this]() {
+			std::lock_guard<std::mutex> lock(_distance_to_obstacle_mutex);
+			return _sensor_manager->get_latest_depth();
+		});
+
+		// Run the Mission Manager
+		_mission_manager->run();
 
 	} else {
 		std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
 		exit(1);
 	}
-}
-
-void AutopilotManager::init_and_run_mission_manager() {
-	// Init the Mission Manager module
-	_mission_manager->init();
 }
 
 void AutopilotManager::run_sensor_manager() {
