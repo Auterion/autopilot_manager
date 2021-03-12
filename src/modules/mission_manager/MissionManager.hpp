@@ -135,4 +135,6 @@ private:
 	std::shared_ptr<mavsdk::Telemetry> _telemetry;
 
 	bool _action_triggered = false;
+
+	std::chrono::time_point<std::chrono::system_clock> _last_time{};
 };

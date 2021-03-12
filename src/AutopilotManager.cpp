@@ -202,7 +202,6 @@ void AutopilotManager::start() {
 
 		// Create and init Mission Manager
 		_mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
-		_mission_manager->init();
 
 		// Init the callback for setting the Mission Manager parameters
 		_mission_manager->setConfigUpdateCallback([this]() {
@@ -224,6 +223,7 @@ void AutopilotManager::start() {
 		});
 
 		// Run the Mission Manager
+		_mission_manager->init();
 		_mission_manager->run();
 
 	} else {
