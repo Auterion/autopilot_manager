@@ -68,7 +68,6 @@ void MissionManager::init() {
 }
 
 void MissionManager::deinit() {
-	_decision_maker_th.join();
 	_custom_action_handler.reset();
 }
 
@@ -79,14 +78,12 @@ void MissionManager::run() {
 	}
 
 	auto decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
+	decision_maker_th.detach();
 
 	// Start custom action handler
 	if (_custom_action_handler->start()) {
 		_custom_action_handler->run(_telemetry);
 	}
-
-    decision_maker_th.join();
-
 }
 
 void MissionManager::decision_maker_run() {
@@ -175,7 +172,6 @@ CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> system,
 
 CustomActionHandler::~CustomActionHandler() {
 	int_signal.store(true, std::memory_order_relaxed);
-	_new_actions_check_th.join();
 }
 
 bool CustomActionHandler::start() {
@@ -196,7 +192,8 @@ void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
 	_custom_action->subscribe_custom_action_cancellation(
 	    [this](bool canceled) { _action_stopped.store(canceled, std::memory_order_relaxed); });
 
-	_new_actions_check_th = std::thread(&CustomActionHandler::new_action_check, this);
+	auto new_actions_check_th = std::thread(&CustomActionHandler::new_action_check, this);
+	new_actions_check_th.detach();
 
 	auto new_action_time = std::chrono::system_clock::now() + std::chrono::minutes(1);  // dummy init
 	auto start_time = new_action_time;

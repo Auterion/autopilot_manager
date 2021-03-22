@@ -86,8 +86,6 @@ private:
 	std::vector<mavsdk::CustomAction::Result> _actions_result;
 	std::vector<mavsdk::CustomAction::ActionMetadata> _actions_metadata;
 	std::vector<std::thread> _progress_threads;
-
-	std::thread _new_actions_check_th;
 };
 
 class MissionManager : public ModuleBase {
@@ -122,8 +120,6 @@ public:
 private:
 	std::function<MissionManagerConfiguration()> _config_update_callback;
 	std::function<float()> _distance_to_obstacle_update_callback;
-
-	std::thread _decision_maker_th;
 
 	std::string _path_to_custom_action_file;
 
