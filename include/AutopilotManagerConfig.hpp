@@ -13,7 +13,7 @@ class AutopilotManagerConfig {
     ~AutopilotManagerConfig() = default;
 
     bool AppendToMessage(DBusMessage *reply) const;
-    bool InitFromMessage(DBusMessage *reply);
+    bool InitFromMessage(DBusMessage *request);
     bool WriteToFile(const std::string &config_path) const;
     bool InitFromFile(const std::string &config_path);
 

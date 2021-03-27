@@ -50,12 +50,14 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+static constexpr auto sensorManagerOut = "[Sensor Manager]";
+
 class SensorManager : public rclcpp::Node, ModuleBase {
    public:
     SensorManager();
-    ~SensorManager();
-    // SensorManager(const SensorManager&) = delete;
-    // const SensorManager& operator=(const SensorManager&) = delete;
+    ~SensorManager() = default;
+    SensorManager(const SensorManager&) = delete;
+    const SensorManager& operator=(const SensorManager&) = delete;
 
     void init() override;
     void deinit() override;
@@ -68,23 +70,23 @@ class SensorManager : public rclcpp::Node, ModuleBase {
         float height_center{0.5f};
     };
 
-    void set_roi(const ROISettings& settings) {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        _roi_settings = settings;
+    void RCPPUTILS_TSA_GUARDED_BY(sensor_manager_mutex_) set_roi(const ROISettings& settings) {
+        std::lock_guard<std::mutex> lock(sensor_manager_mutex_);
+        roi_settings_ = settings;
     }
 
-    float get_latest_depth() {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        return _depth;
+    float RCPPUTILS_TSA_GUARDED_BY(sensor_manager_mutex_) get_latest_depth() {
+        std::lock_guard<std::mutex> lock(sensor_manager_mutex_);
+        return depth_;
     }
 
    private:
     void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub{};
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_image_sub_{};
 
-    std::mutex _sensor_manager_mutex;
+    mutable std::mutex sensor_manager_mutex_;
 
-    ROISettings _roi_settings{};
-    float _depth{NAN};
+    ROISettings roi_settings_{};
+    float depth_{NAN};
 };

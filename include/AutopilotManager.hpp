@@ -28,7 +28,7 @@ class AutopilotManager {
 
     void run_sensor_manager();
 
-    ResponseCode SetConfiguration(AutopilotManagerConfig& config);
+    ResponseCode SetConfiguration(const AutopilotManagerConfig& config);
     ResponseCode GetConfiguration(AutopilotManagerConfig& config);
 
     uint8_t _autopilot_manager_enabled = false;

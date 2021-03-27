@@ -100,7 +100,7 @@ DBusHandlerResult DBusInterface::MessageHandler(DBusConnection *conn, DBusMessag
 
     // DBusHandlerResult result;
     DBusMessage *reply = nullptr;
-    DBusInterface *interface = (DBusInterface *)data;
+    DBusInterface *interface = static_cast<DBusInterface *>(data);
 
     if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Introspectable", "Introspect")) {
         if (!(reply = dbus_message_new_method_return(message))) {

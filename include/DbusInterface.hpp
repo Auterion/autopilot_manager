@@ -18,7 +18,7 @@ class DBusInterface {
 
     using HandlerFunction = std::function<DBusMessage *(DBusMessage *request)>;
 
-    DBusInterface(HandlerFunction function);
+    explicit DBusInterface(HandlerFunction handler);
     ~DBusInterface();
 
     static constexpr auto BUS_NAME = "com.auterion.autopilot_manager";

@@ -40,34 +40,25 @@
 
 #include <SensorManager.hpp>
 
-using namespace std::chrono;
-using namespace std::chrono_literals;
-using namespace std::placeholders;
-
 using PIXEL = float;
 
-SensorManager::SensorManager() : Node("sensor_manager") { init(); }
-
-SensorManager::~SensorManager() {
-    // deinit();
-}
+SensorManager::SensorManager() : Node("sensor_manager") {}
 
 void SensorManager::init() {
-    std::cout << "[Sensor Manager] Started!" << std::endl;
+    std::cout << sensorManagerOut << " Started!" << std::endl;
 
     rclcpp::SensorDataQoS qos;
     qos.keep_last(10);
     qos.best_effort();  // For Gazebo sensors output, the QoS setting need to be set to Best Effort
 
-    _depth_image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        "/camera/depth/image_raw", qos, std::bind(&SensorManager::handle_incoming_depth_image, this, _1));
+    depth_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+        "/camera/depth/image_raw", qos,
+        std::bind(&SensorManager::handle_incoming_depth_image, this, std::placeholders::_1));
 }
 
-void SensorManager::deinit() { _depth_image_sub.reset(); }
+void SensorManager::deinit() { depth_image_sub_.reset(); }
 
-void SensorManager::run() {
-    // Not used
-}
+void SensorManager::run() { rclcpp::spin(shared_from_this()); }
 
 void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg) {
     // make an Eigen wrapper around the memory
@@ -76,8 +67,8 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
     // make a local copy of the ROI settings
     ROISettings local_settings;
     {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        local_settings = _roi_settings;
+        std::lock_guard<std::mutex> lock(sensor_manager_mutex_);
+        local_settings = roi_settings_;
     }
 
     int64_t cols_pixels = static_cast<int64_t>(local_settings.width_fraction * img.cols());
@@ -87,7 +78,7 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
     int64_t rows_offset =
         static_cast<int64_t>((local_settings.height_center - 0.5f * local_settings.height_fraction) * img.rows());
 
-    float depth = NAN;
+    PIXEL depth = std::numeric_limits<PIXEL>::max();
 
     // check that settings are OK
     if (cols_pixels > 0 && cols_pixels < img.cols() && rows_pixels > 0 && rows_pixels < img.rows() &&
@@ -101,6 +92,6 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
                     .minCoeff();
     }
 
-    std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-    _depth = (depth == std::numeric_limits<PIXEL>::max()) ? NAN : depth;
+    std::lock_guard<std::mutex> lock(sensor_manager_mutex_);
+    depth_ = (static_cast<float>(depth) == std::numeric_limits<PIXEL>::max()) ? NAN : depth;
 }

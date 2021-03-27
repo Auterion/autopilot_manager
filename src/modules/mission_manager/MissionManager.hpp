@@ -51,6 +51,8 @@
 #include <mavsdk/plugins/custom_action/custom_action.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
+static constexpr auto missionManagerOut = "[Mission Manager]";
+
 class CustomActionHandler {
    public:
     CustomActionHandler(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
@@ -59,7 +61,7 @@ class CustomActionHandler {
     const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
 
     bool start();
-    void run(std::shared_ptr<mavsdk::Telemetry> telemetry);
+    void run();
 
    private:
     void new_action_check();
@@ -90,7 +92,7 @@ class CustomActionHandler {
 class MissionManager : public ModuleBase {
    public:
     MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
-    ~MissionManager();
+    ~MissionManager() = default;
     MissionManager(const MissionManager&) = delete;
     const MissionManager& operator=(const MissionManager&) = delete;
 

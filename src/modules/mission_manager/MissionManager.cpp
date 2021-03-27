@@ -49,14 +49,12 @@ static std::atomic<bool> int_signal{false};
 
 MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
     : _config_update_callback([]() { return MissionManagerConfiguration{}; }),
-      _mavsdk_system{system},
       _path_to_custom_action_file{path_to_custom_action_file},
-      _mission_manager_config{} {}
-
-MissionManager::~MissionManager() { deinit(); }
+      _mission_manager_config{},
+      _mavsdk_system{system} {}
 
 void MissionManager::init() {
-    std::cout << "[Mission Manager] Started!" << std::endl;
+    std::cout << missionManagerOut << " Started!" << std::endl;
     _custom_action_handler = std::make_shared<CustomActionHandler>(_mavsdk_system, _path_to_custom_action_file);
 
     // Actions are processed and executed in the Mission Manager decion maker
@@ -73,7 +71,7 @@ void MissionManager::deinit() {
 
 void MissionManager::run() {
     while (!_telemetry->health_all_ok()) {
-        std::cout << "[Mission Manager] Waiting for system to be ready" << std::endl;
+        std::cout << missionManagerOut << " Waiting for system to be ready" << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
@@ -81,7 +79,7 @@ void MissionManager::run() {
 
     // Start custom action handler
     if (_custom_action_handler->start()) {
-        _custom_action_handler->run(_telemetry);
+        _custom_action_handler->run();
     }
 }
 
@@ -168,8 +166,8 @@ bool CustomActionHandler::start() {
     }
 }
 
-void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
-    std::cout << "[Mission Manager] System ready! Waiting for custom actions to process..." << std::endl;
+void CustomActionHandler::run() {
+    std::cout << missionManagerOut << " System ready! Waiting for custom actions to process..." << std::endl;
 
     // Subscribe to the cancelation message
     _custom_action->subscribe_custom_action_cancellation(
@@ -184,7 +182,7 @@ void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
     // Get the custom action to process
     _custom_action->subscribe_custom_action(
         [this, &start_time, &new_action_time](mavsdk::CustomAction::ActionToExecute action_to_exec) {
-            if (_actions.empty() || (!_actions.empty() && _actions.back().id != action_to_exec.id)) {
+            if (_actions.empty() || _actions.back().id != action_to_exec.id) {
                 auto now = std::chrono::system_clock::now();
                 // This is a safeguard and a workaround in case the FMU sends consecutive MAV_CMDs because
                 // he didn't get an ACK
@@ -192,7 +190,7 @@ void CustomActionHandler::run(std::shared_ptr<mavsdk::Telemetry> telemetry) {
                     std::chrono::duration_cast<std::chrono::milliseconds>(now - new_action_time).count() >= 1500) {
                     _actions.push_back(action_to_exec);
                     _new_action.store(true, std::memory_order_relaxed);
-                    std::cout << "[Mission Manager] New action received with ID " << action_to_exec.id << std::endl;
+                    std::cout << missionManagerOut << " New action received with ID " << action_to_exec.id << std::endl;
                     new_action_time = now;
                 }
             }
@@ -210,13 +208,8 @@ void CustomActionHandler::send_progress_status(mavsdk::CustomAction::ActionToExe
         std::future<void> fut = prom.get_future();
 
         // Send response with the result and the progress
-        _custom_action->respond_custom_action_async(action_exec, action_result,
-                                                    [&prom](mavsdk::CustomAction::Result result) {
-                                                        // if (result != CustomAction::Result::Success) {
-                                                        //
-                                                        // }
-                                                        prom.set_value();
-                                                    });
+        _custom_action->respond_custom_action_async(
+            action_exec, action_result, [&prom](mavsdk::CustomAction::Result /*result*/) { prom.set_value(); });
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     };
@@ -233,18 +226,15 @@ void CustomActionHandler::new_action_check() {
 }
 
 void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToExecute action) {
-    std::cout << "[Mission Manager] Custom action #" << action.id << " being processed" << std::endl;
+    std::cout << missionManagerOut << " Custom action #" << action.id << " being processed" << std::endl;
 
     // Get the custom action metadata
     std::promise<mavsdk::CustomAction::ActionMetadata> prom;
     std::future<mavsdk::CustomAction::ActionMetadata> fut = prom.get_future();
     _custom_action->custom_action_metadata_async(
         action, _path_to_custom_action_file,
-        [&prom](mavsdk::CustomAction::Result result, mavsdk::CustomAction::ActionMetadata action_metadata) {
+        [&prom](mavsdk::CustomAction::Result /*result*/, mavsdk::CustomAction::ActionMetadata action_metadata) {
             prom.set_value(action_metadata);
-            // if (result != mavsdk::CustomAction::Result::Success) {
-            //
-            // }
         });
 
     _actions_metadata.push_back(fut.get());
@@ -252,7 +242,7 @@ void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToEx
     // Start
     _actions_result.push_back(mavsdk::CustomAction::Result::InProgress);
     _actions_progress.push_back(0.0);
-    std::cout << "[Mission Manager] Custom action #" << _actions_metadata.back().id
+    std::cout << missionManagerOut << " Custom action #" << _actions_metadata.back().id
               << " current progress: " << _actions_progress.back() << "%" << std::endl;
 
     // Start the progress status report thread
@@ -277,9 +267,7 @@ void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMeta
             if (!_action_stopped.load()) {
                 mavsdk::CustomAction::Result stage_res =
                     _custom_action->execute_custom_action_stage(action_metadata.stages[i]);
-                // if (stage_res != mavsdk::CustomAction::Result::Success) {
-                //
-                // }
+                (void)stage_res;
             }
 
             auto wait_time = action_metadata.stages[i].timestamp_stop * 1s;
@@ -291,7 +279,7 @@ void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMeta
 
                 if (_actions_progress.back() != 100.0) {
                     _actions_result.back() = mavsdk::CustomAction::Result::InProgress;
-                    std::cout << "[Mission Manager] Custom action #" << _actions_metadata.back().id
+                    std::cout << missionManagerOut << " Custom action #" << _actions_metadata.back().id
                               << " current progress: " << _actions_progress.back() << "%" << std::endl;
                 } else {
                     _actions_result.back() = mavsdk::CustomAction::Result::Success;
@@ -307,21 +295,15 @@ void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMeta
                 action_metadata.global_script,
                 [&prom](mavsdk::CustomAction::Result script_result) { prom.set_value(script_result); });
 
-            mavsdk::CustomAction::Result result = mavsdk::CustomAction::Result::Unknown;
             if (!std::isnan(action_metadata.global_timeout)) {
                 std::chrono::seconds timeout(static_cast<long int>(action_metadata.global_timeout));
                 while (fut.wait_for(timeout) != std::future_status::ready) {
                 };
             }
 
-            result = fut.get();
-            // if (result != mavsdk::CustomAction::Result::Success) {
-            //
-            // }
+            _actions_result.back() = fut.get();
 
-            _actions_result.back() = result;
-
-            if (result == mavsdk::CustomAction::Result::Success) {
+            if (_actions_result.back() == mavsdk::CustomAction::Result::Success) {
                 _actions_progress.back() = 100.0;
             }
         }
@@ -334,10 +316,12 @@ void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMeta
     cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
 
     if (_action_stopped.load()) {
-        std::cout << "[Mission Manager] Custom action #" << _actions_metadata.back().id << " canceled!" << std::endl;
+        std::cout << missionManagerOut << " Custom action #" << _actions_metadata.back().id << " canceled!"
+                  << std::endl;
         _action_stopped.store(false, std::memory_order_relaxed);
     } else if (!_action_stopped.load() && _actions_progress.back() == 100) {
-        std::cout << "[Mission Manager] Custom action #" << _actions_metadata.back().id << " executed!" << std::endl;
+        std::cout << missionManagerOut << " Custom action #" << _actions_metadata.back().id << " executed!"
+                  << std::endl;
     }
 
     // clear actions after they are processed
