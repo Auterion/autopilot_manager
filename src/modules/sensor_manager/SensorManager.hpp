@@ -55,13 +55,13 @@ static constexpr auto sensorManagerOut = "[Sensor Manager]";
 class SensorManager : public rclcpp::Node, ModuleBase {
    public:
     SensorManager();
-    ~SensorManager() = default;
+    ~SensorManager() override = default;
     SensorManager(const SensorManager&) = delete;
     const SensorManager& operator=(const SensorManager&) = delete;
 
-    void init() override;
-    void deinit() override;
-    void run() override;
+    auto init() -> void override;
+    auto deinit() -> void override;
+    auto run() -> void override;
 
     struct ROISettings {
         float width_fraction{0.2f};

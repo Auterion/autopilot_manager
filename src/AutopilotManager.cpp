@@ -38,8 +38,6 @@
  */
 
 #include <AutopilotManager.hpp>
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/utilities.hpp>
 
 namespace {
 const auto METHOD_GET_CONFIG = "get_config";
@@ -53,7 +51,7 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
       _custom_action_config_path(customActionConfigPath.empty() ? _custom_action_config_path : customActionConfigPath) {
     initialProvisioning();
 
-    if (_autopilot_manager_enabled) {
+    if (static_cast<bool>(_autopilot_manager_enabled)) {
         std::cout << "[Autopilot Manager] Status: Enabled!" << std::endl;
 
         start();
@@ -66,7 +64,7 @@ AutopilotManager::~AutopilotManager() {
     _sensor_manager.reset();
 }
 
-DBusMessage* AutopilotManager::HandleRequest(DBusMessage* request) {
+auto AutopilotManager::HandleRequest(DBusMessage* request) -> DBusMessage* {
     DBusMessage* reply = nullptr;
     if (dbus_message_is_method_call(request, DBusInterface::INTERFACE_NAME, METHOD_GET_CONFIG)) {
         std::cout << "[Autopilot Manager] Received message: " << METHOD_GET_CONFIG << std::endl;
@@ -109,7 +107,7 @@ void AutopilotManager::initialProvisioning() {
     }
 }
 
-AutopilotManager::ResponseCode AutopilotManager::SetConfiguration(const AutopilotManagerConfig& config) {
+auto AutopilotManager::SetConfiguration(AutopilotManagerConfig config) -> AutopilotManager::ResponseCode {
     std::lock_guard<std::mutex> lock(_config_mutex);
     _autopilot_manager_enabled = config.autopilot_manager_enabled;
     _decision_maker_input_type = config.decision_maker_input_type;
@@ -118,7 +116,7 @@ AutopilotManager::ResponseCode AutopilotManager::SetConfiguration(const Autopilo
     _simple_collision_avoid_distance_on_condition_true = config.simple_collision_avoid_distance_on_condition_true;
     _simple_collision_avoid_distance_on_condition_false = config.simple_collision_avoid_distance_on_condition_false;
 
-    if (!_simple_collision_avoid_enabled) {
+    if (!static_cast<bool>(_simple_collision_avoid_enabled)) {
         return ResponseCode::SUCCEED_WITH_COLL_AVOID_OFF;
     } else {
         return ResponseCode::SUCCEED_WITH_COLL_AVOID_ON;
@@ -127,7 +125,7 @@ AutopilotManager::ResponseCode AutopilotManager::SetConfiguration(const Autopilo
     return ResponseCode::UNKNOWN;
 }
 
-AutopilotManager::ResponseCode AutopilotManager::GetConfiguration(AutopilotManagerConfig& config) {
+auto AutopilotManager::GetConfiguration(AutopilotManagerConfig config) -> AutopilotManager::ResponseCode {
     std::lock_guard<std::mutex> lock(_config_mutex);
     config.autopilot_manager_enabled = _autopilot_manager_enabled;
     config.decision_maker_input_type = _decision_maker_input_type;

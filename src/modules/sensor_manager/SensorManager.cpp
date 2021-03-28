@@ -53,16 +53,17 @@ void SensorManager::init() {
 
     depth_image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
         "/camera/depth/image_raw", qos,
-        std::bind(&SensorManager::handle_incoming_depth_image, this, std::placeholders::_1));
+        [this](const sensor_msgs::msg::Image::SharedPtr msg) { handle_incoming_depth_image(msg); });
 }
 
-void SensorManager::deinit() { depth_image_sub_.reset(); }
+auto SensorManager::deinit() -> void { depth_image_sub_.reset(); }
 
-void SensorManager::run() { rclcpp::spin(shared_from_this()); }
+auto SensorManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
 void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg) {
     // make an Eigen wrapper around the memory
-    auto img = Eigen::Map<const Eigen::Matrix<PIXEL, -1, -1>>((const PIXEL*)(&msg->data[0]), msg->height, msg->width);
+    auto img = Eigen::Map<const Eigen::Matrix<PIXEL, -1, -1>>(reinterpret_cast<const PIXEL*>(&msg->data[0]),
+                                                              msg->height, msg->width);
 
     // make a local copy of the ROI settings
     ROISettings local_settings;
@@ -71,11 +72,11 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
         local_settings = roi_settings_;
     }
 
-    int64_t cols_pixels = static_cast<int64_t>(local_settings.width_fraction * img.cols());
-    int64_t rows_pixels = static_cast<int64_t>(local_settings.height_fraction * img.rows());
-    int64_t cols_offset =
+    const int64_t cols_pixels = static_cast<int64_t>(local_settings.width_fraction * img.cols());
+    const int64_t rows_pixels = static_cast<int64_t>(local_settings.height_fraction * img.rows());
+    const int64_t cols_offset =
         static_cast<int64_t>((local_settings.width_center - 0.5f * local_settings.width_fraction) * img.cols());
-    int64_t rows_offset =
+    const int64_t rows_offset =
         static_cast<int64_t>((local_settings.height_center - 0.5f * local_settings.height_fraction) * img.rows());
 
     PIXEL depth = std::numeric_limits<PIXEL>::max();

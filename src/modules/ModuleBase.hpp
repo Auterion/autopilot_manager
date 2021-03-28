@@ -59,7 +59,7 @@ class ModuleBase {
     /**
      * @brief Assign operator (object is not copyable).
      */
-    const ModuleBase& operator=(const ModuleBase&) = delete;
+    auto operator=(const ModuleBase&) -> const ModuleBase& = delete;
 
     /**
      * @brief Module init

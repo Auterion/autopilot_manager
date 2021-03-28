@@ -40,10 +40,10 @@
 #pragma once
 
 #include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 void help_argv_description(const char* pgm);

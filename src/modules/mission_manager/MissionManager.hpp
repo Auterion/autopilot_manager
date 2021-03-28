@@ -55,19 +55,19 @@ static constexpr auto missionManagerOut = "[Mission Manager]";
 
 class CustomActionHandler {
    public:
-    CustomActionHandler(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
+    CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
     ~CustomActionHandler();
     CustomActionHandler(const CustomActionHandler&) = delete;
     const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
 
-    bool start();
-    void run();
+    auto start() -> bool;
+    auto run() -> void;
 
    private:
     void new_action_check();
     void send_progress_status(mavsdk::CustomAction::ActionToExecute action);
     void process_custom_action(mavsdk::CustomAction::ActionToExecute action);
-    void execute_custom_action(mavsdk::CustomAction::ActionMetadata action_metadata);
+    void execute_custom_action(const mavsdk::CustomAction::ActionMetadata& action_metadata);
 
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<mavsdk::CustomAction> _custom_action;
@@ -91,8 +91,8 @@ class CustomActionHandler {
 
 class MissionManager : public ModuleBase {
    public:
-    MissionManager(std::shared_ptr<mavsdk::System> system, const std::string& path_to_custom_action_file);
-    ~MissionManager() = default;
+    MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
+    ~MissionManager() override = default;
     MissionManager(const MissionManager&) = delete;
     const MissionManager& operator=(const MissionManager&) = delete;
 
@@ -102,7 +102,7 @@ class MissionManager : public ModuleBase {
 
     struct MissionManagerConfiguration {
         std::string decision_maker_input_type = "";
-        uint8_t simple_collision_avoid_enabled = false;
+        uint8_t simple_collision_avoid_enabled = 0U;
         double simple_collision_avoid_distance_threshold = 0.0;
         std::string simple_collision_avoid_distance_on_condition_true = "";
         std::string simple_collision_avoid_distance_on_condition_false = "";

@@ -37,21 +37,24 @@
  * @author Nuno Marques <nuno@auterion.com>
  */
 
-#include <MissionManager.hpp>
+#include "MissionManager.hpp"
+
 #include <atomic>
 #include <future>
 #include <iostream>
 #include <string>
+#include <utility>
 
 using namespace std::chrono_literals;
 
 static std::atomic<bool> int_signal{false};
 
-MissionManager::MissionManager(std::shared_ptr<mavsdk::System> system, const std::string &path_to_custom_action_file)
+MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
+                               const std::string& path_to_custom_action_file)
     : _config_update_callback([]() { return MissionManagerConfiguration{}; }),
-      _path_to_custom_action_file{path_to_custom_action_file},
+      _path_to_custom_action_file{std::move(path_to_custom_action_file)},
       _mission_manager_config{},
-      _mavsdk_system{system} {}
+      _mavsdk_system{std::move(mavsdk_system)} {}
 
 void MissionManager::init() {
     std::cout << missionManagerOut << " Started!" << std::endl;
@@ -93,11 +96,11 @@ void MissionManager::decision_maker_run() {
         auto now = std::chrono::system_clock::now();
 
         if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
-            if (_mission_manager_config.simple_collision_avoid_enabled) {
-                // std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
-                //           << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold
-                //           << " | altitude to home: " << _telemetry->position_velocity_ned().position.down_m
-                //           << " | is action triggered? " << std::boolalpha << _action_triggered << std::endl;
+            if (_mission_manager_config.simple_collision_avoid_enabled != 0U) {
+                std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
+                          << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold
+                          << " | altitude to home: " << _telemetry->position_velocity_ned().position.down_m
+                          << " | is action triggered? " << std::boolalpha << _action_triggered << std::endl;
 
                 if (_distance_to_obstacle_update_callback() <=
                         _mission_manager_config.simple_collision_avoid_distance_threshold &&
@@ -149,24 +152,23 @@ void MissionManager::decision_maker_run() {
     }
 }
 
-CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> system,
-                                         const std::string &path_to_custom_action_file)
-    : _mavsdk_system{system}, _path_to_custom_action_file{path_to_custom_action_file} {}
+CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system,
+                                         const std::string& path_to_custom_action_file)
+    : _mavsdk_system{std::move(mavsdk_system)}, _path_to_custom_action_file{std::move(path_to_custom_action_file)} {}
 
 CustomActionHandler::~CustomActionHandler() { int_signal.store(true, std::memory_order_relaxed); }
 
-bool CustomActionHandler::start() {
+auto CustomActionHandler::start() -> bool {
     if (_mavsdk_system->has_autopilot()) {
         // Custom actions are processed and executed in the Mission Manager
         _custom_action = std::make_shared<mavsdk::CustomAction>(_mavsdk_system);
 
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
-void CustomActionHandler::run() {
+auto CustomActionHandler::run() -> void {
     std::cout << missionManagerOut << " System ready! Waiting for custom actions to process..." << std::endl;
 
     // Subscribe to the cancelation message
@@ -233,7 +235,7 @@ void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToEx
     std::future<mavsdk::CustomAction::ActionMetadata> fut = prom.get_future();
     _custom_action->custom_action_metadata_async(
         action, _path_to_custom_action_file,
-        [&prom](mavsdk::CustomAction::Result /*result*/, mavsdk::CustomAction::ActionMetadata action_metadata) {
+        [&prom](mavsdk::CustomAction::Result /*result*/, const mavsdk::CustomAction::ActionMetadata& action_metadata) {
             prom.set_value(action_metadata);
         });
 
@@ -261,7 +263,7 @@ void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToEx
     _progress_threads.back().join();
 }
 
-void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMetadata action_metadata) {
+void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::ActionMetadata& action_metadata) {
     if (!action_metadata.stages.empty()) {
         for (unsigned i = 0; i < action_metadata.stages.size(); i++) {
             if (!_action_stopped.load()) {
@@ -287,7 +289,7 @@ void CustomActionHandler::execute_custom_action(mavsdk::CustomAction::ActionMeta
             }
         }
 
-    } else if (action_metadata.global_script != "") {
+    } else if (!action_metadata.global_script.empty()) {
         if (!_action_stopped.load()) {
             std::promise<mavsdk::CustomAction::Result> prom;
             std::future<mavsdk::CustomAction::Result> fut = prom.get_future();

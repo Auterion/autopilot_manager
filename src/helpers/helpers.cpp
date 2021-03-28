@@ -59,7 +59,7 @@ void parse_argv(int argc, char* const argv[], uint32_t& mavlink_port, std::strin
                                             {"mavlink-port", required_argument, nullptr, 'm'},
                                             {"help", no_argument, nullptr, 'h'}};
 
-    int c;
+    int c = 0;
     bool invalid_argument = false;
 
     while ((c = getopt_long(argc, argv, "a:c:hm:", options, nullptr)) >= 0) {
@@ -74,7 +74,7 @@ void parse_argv(int argc, char* const argv[], uint32_t& mavlink_port, std::strin
                 path_to_apm_config_file = std::string(optarg);
                 break;
             case 'm':
-                if (!atoi(optarg)) {
+                if (atoi(optarg) == 0) {
                     invalid_argument = true;
                 } else {
                     mavlink_port = atoi(optarg);

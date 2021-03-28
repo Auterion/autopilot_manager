@@ -8,6 +8,8 @@
 #include <fstream>
 #include <iostream>
 #include <mission_manager/MissionManager.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/utilities.hpp>
 #include <sensor_manager/SensorManager.hpp>
 #include <string>
 
@@ -16,7 +18,7 @@ class AutopilotManager {
     AutopilotManager(const std::string& mavlinkPort, const std::string& configPath,
                      const std::string& customActionConfigPath);
     ~AutopilotManager();
-    DBusMessage* HandleRequest(DBusMessage* request);
+    auto HandleRequest(DBusMessage* request) -> DBusMessage*;
 
     mavsdk::Mavsdk _mavsdk_mission_computer;
 
@@ -28,8 +30,8 @@ class AutopilotManager {
 
     void run_sensor_manager();
 
-    ResponseCode SetConfiguration(const AutopilotManagerConfig& config);
-    ResponseCode GetConfiguration(AutopilotManagerConfig& config);
+    auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
+    auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
 
     uint8_t _autopilot_manager_enabled = false;
     std::string _decision_maker_input_type = "";

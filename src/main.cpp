@@ -42,8 +42,10 @@
 #include <helpers.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-int main(int argc, char* argv[]) {
-    uint32_t mavlink_port{14590};
+constexpr uint32_t sitl_mavlink_port = 14590;
+
+auto main(int argc, char* argv[]) -> int {
+    uint32_t mavlink_port{sitl_mavlink_port};
     std::string path_to_apm_config_file{"/shared_container_dir/autopilot_manager.conf"};
     std::string path_to_custom_action_file{
         "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json"};
@@ -53,13 +55,13 @@ int main(int argc, char* argv[]) {
     parse_argv(argc, argv, mavlink_port, path_to_apm_config_file, path_to_custom_action_file);
 
     // Initialize communications via the rmw implementation and set up a global signal handler.
-    rclcpp::init(argc, argv);
+    rclcpp::init(argc, argv, rclcpp::InitOptions());
 
     // Uninstall the global signal handler for rclcpp
     rclcpp::uninstall_signal_handlers();
 
     // Init main event loop for GLib/DBUS
-    GMainLoop* mainloop = g_main_loop_new(NULL, false);
+    GMainLoop* mainloop = g_main_loop_new(nullptr, static_cast<gboolean>(false));
 
     auto autopilot_manager = std::make_shared<AutopilotManager>(std::to_string(mavlink_port), path_to_apm_config_file,
                                                                 path_to_custom_action_file);
