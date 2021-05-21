@@ -52,4 +52,7 @@ class AutopilotManager {
     std::string _config_path = "/shared_container_dir/autopilot_manager.conf";
     std::string _custom_action_config_path =
         "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
+
+    static constexpr uint8_t kDefaultSystemId = 1;
+    static constexpr uint8_t kMavCompIDOnBoardComputer3 = 193;
 };

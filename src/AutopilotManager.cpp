@@ -146,8 +146,9 @@ auto AutopilotManager::GetConfiguration(AutopilotManagerConfig config) -> Autopi
 void AutopilotManager::start() {
     // Configure MAVSDK Mission Manager instance
     // Change configuration so the instance is treated as a mission computer
-    _mavsdk_mission_computer.set_configuration(
-        mavsdk::Mavsdk::Configuration(mavsdk::Mavsdk::Configuration::UsageType::CompanionComputer));
+    mavsdk::Mavsdk::Configuration configuration(kDefaultSystemId, kMavCompIDOnBoardComputer3, true);
+    configuration.set_component_description("Autopilot Manager");
+    _mavsdk_mission_computer.set_configuration(configuration);
 
     mavsdk::ConnectionResult ret_comp = _mavsdk_mission_computer.add_any_connection("udp://:" + _mavlink_port);
     if (ret_comp == mavsdk::ConnectionResult::Success) {
