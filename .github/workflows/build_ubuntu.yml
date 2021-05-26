@@ -43,7 +43,7 @@ jobs:
         source /opt/ros/foxy/setup.bash
         # Install MAVSDK from source
         sudo apt install -y colordiff git
-        git clone --recursive https://github.com/Auterion/MAVSDK.git -b develop
+        git clone --recursive https://github.com/Auterion/MAVSDK.git -b main
         cd MAVSDK
         cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON -Bbuild/default -H.
         sudo cmake --build build/default --target install -j`nproc --all`
