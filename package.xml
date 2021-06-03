@@ -15,7 +15,6 @@
 
   <build_depend>eigen</build_depend>
 
-  <depend>builtin_interfaces</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
 

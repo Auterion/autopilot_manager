@@ -11,13 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(builtin_interfaces REQUIRED)
-find_package(fastcdr REQUIRED)
-find_package(fastrtps REQUIRED)
 find_package(rclcpp REQUIRED)
-get_default_rmw_implementation(rmw_implementation)
-find_package("${rmw_implementation}" REQUIRED)
-
 find_package(sensor_msgs REQUIRED)
 
 find_package(PythonInterp 3 REQUIRED)
@@ -50,7 +44,7 @@ target_link_libraries(sensor-manager
 ############
 
 # Export information to downstream packages
-ament_export_dependencies(ament_cmake rclcpp rosidl_default_runtime eigen3_cmake_module Eigen3 sensor_msgs)
+ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 sensor_msgs)
 ament_export_targets(export_sensor-manager HAS_LIBRARY_TARGET)
 
 ament_export_include_directories(include)
