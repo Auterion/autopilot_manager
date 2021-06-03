@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        ros2_distro: [foxy]
+        ros2_distro: [foxy, galactic]
         arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v2
@@ -86,7 +86,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: /tmp/colcon_ws/install_${{ matrix.arch }}/autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
-          release_name: Autopilot Manager - v${{ steps.refs.outputs.tag_version }}-${{ matrix.ros2_distro }}
+          release_name: v${{ steps.refs.outputs.tag_version }}
           asset_name: autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
-          tag: v${{ steps.refs.outputs.tag_version }}-${{ matrix.ros2_distro }}
+          tag: v${{ steps.refs.outputs.tag_version }}
           overwrite: true
