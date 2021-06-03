@@ -1,4 +1,4 @@
-name: Build in Ubuntu
+name: Build in Ubuntu 20.04
 
 on:
   push:
@@ -12,8 +12,11 @@ on:
 
 jobs:
   build:
-    name: Ubuntu 20.04 with ROS 2 Foxy build
+    name: ROS 2 ${{ matrix.ros2_distro }}
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        ros2_distro: [foxy, galactic]
     steps:
     - uses: actions/checkout@v2
     - name: Disable the keychain credential helper
@@ -36,11 +39,15 @@ jobs:
         sudo apt install -y curl gnupg2 lsb-release
         curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add
         sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
-        # Install ROS 2 Foxy packages
+        # Install ROS 2 ${{ matrix.ros2_distro }} packages
         sudo apt update
-        sudo apt install -y python3-colcon-common-extensions ros-foxy-ros-base ros-foxy-sensor-msgs ros-foxy-image-pipeline
+        sudo apt install -y \
+          python3-colcon-common-extensions \
+          ros-${{ matrix.ros2_distro }}-ros-base \
+          ros-${{ matrix.ros2_distro }}-sensor-msgs \
+          ros-${{ matrix.ros2_distro }}-image-pipeline
         # Setup environment
-        source /opt/ros/foxy/setup.bash
+        source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
         # Install MAVSDK from source
         sudo apt install -y colordiff git
         git clone --recursive https://github.com/Auterion/MAVSDK.git -b main
@@ -59,5 +66,5 @@ jobs:
         mkdir -p colcon_ws/src
         cd colcon_ws
         ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
-        source /opt/ros/foxy/setup.bash
+        source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
         colcon build
