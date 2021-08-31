@@ -49,7 +49,7 @@ sudo apt install -y libdbus-glib-1-dev
 # Setup
 
 ```bash
-mkdir -p colcon_ws/rc
+mkdir -p colcon_ws/src
 cd colcon_ws/src
 git clone git@github.com:Auterion/autopilot_manager.git
 cd ..
