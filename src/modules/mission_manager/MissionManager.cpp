@@ -110,7 +110,9 @@ void MissionManager::decision_maker_run() {
 
         auto now = std::chrono::system_clock::now();
 
-        if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
+        if (_mission_manager_config.decision_maker_input_type == "SAFE_LANDING") {
+            // TODO
+        } else if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
             if (_mission_manager_config.simple_collision_avoid_enabled != 0U) {
                 // std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
                 //           << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold

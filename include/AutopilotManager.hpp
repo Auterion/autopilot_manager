@@ -7,6 +7,7 @@
 #include <DbusInterface.hpp>
 #include <fstream>
 #include <iostream>
+#include <landing_manager/LandingManager.hpp>
 #include <mission_manager/MissionManager.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/utilities.hpp>
@@ -29,6 +30,7 @@ class AutopilotManager {
     void initialProvisioning();
 
     void run_sensor_manager();
+    void run_landing_manager();
 
     auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
     auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
@@ -41,12 +43,15 @@ class AutopilotManager {
     std::string _simple_collision_avoid_distance_on_condition_false = "";
 
     std::thread _sensor_manager_th;
+    std::thread _landing_manager_th;
 
     std::shared_ptr<MissionManager> _mission_manager;
     std::shared_ptr<SensorManager> _sensor_manager;
+    std::shared_ptr<LandingManager> _landing_manager;
 
     std::mutex _config_mutex;
     std::mutex _distance_to_obstacle_mutex;
+    std::mutex _landing_condition_state_mutex;
 
     std::string _mavlink_port = "14590";
     std::string _config_path = "/shared_container_dir/autopilot_manager.conf";

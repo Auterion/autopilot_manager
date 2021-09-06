@@ -60,8 +60,10 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
 
 AutopilotManager::~AutopilotManager() {
     _sensor_manager_th.join();
+    _landing_manager_th.join();
     _mission_manager.reset();
     _sensor_manager.reset();
+    _landing_manager.reset();
 }
 
 auto AutopilotManager::HandleRequest(DBusMessage* request) -> DBusMessage* {
@@ -184,6 +186,11 @@ void AutopilotManager::start() {
         _sensor_manager->init();
         _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
 
+        // Create and init the Landing Manager
+        _landing_manager = std::make_shared<LandingManager>();
+        _landing_manager->init();
+        _landing_manager_th = std::thread(&AutopilotManager::run_landing_manager, this);
+
         // Create and init Mission Manager
         _mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
         _mission_manager->init();
@@ -206,8 +213,15 @@ void AutopilotManager::start() {
             return _sensor_manager->get_latest_depth();
         });
 
+        // Init the callback for getting the latest landing condition state
+        _mission_manager->getCanLandStateCallback([this]() {
+            std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
+            return _landing_manager->get_latest_landing_condition_state();
+        });
+
         // Run the Mission Manager
         _mission_manager->run();
+
     } else {
         std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
         exit(1);
@@ -217,4 +231,9 @@ void AutopilotManager::start() {
 void AutopilotManager::run_sensor_manager() {
     // Run the Sensor Manager node
     _sensor_manager->run();
+}
+
+void AutopilotManager::run_landing_manager() {
+    // Run the Landing Manager node
+    _landing_manager->run();
 }

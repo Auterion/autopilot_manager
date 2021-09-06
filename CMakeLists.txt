@@ -28,12 +28,14 @@ endif()
 include_directories(
   include
   src/modules
+  src/modules/landing_manager
   src/modules/mission_manager
   src/modules/sensor_manager
   src/helpers
 )
 
 add_subdirectory(src/helpers)
+add_subdirectory(src/modules/landing_manager)
 add_subdirectory(src/modules/mission_manager)
 add_subdirectory(src/modules/sensor_manager)
 
@@ -47,6 +49,7 @@ add_executable(
 
 target_link_libraries(
     autopilot-manager
+    landing-manager
     mission-manager
     sensor-manager
     helpers
