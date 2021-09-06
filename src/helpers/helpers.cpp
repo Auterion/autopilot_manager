@@ -48,7 +48,7 @@ void help_argv_description(const char* pgm) {
                  "autopilot manager service.\n"
                  "\t\t\t\t\tDefault: /shared_container_dir/autopilot-manager/data/config/autopilot_manager.conf\n"
                  "  -m --mavlink-port			MAVLink port to connect the Autopilot "
-                 "Manager MAVSDK instance\n\t\t\t\t\tthrough UDP. Default: 14570\n"
+                 "Manager MAVSDK instance\n\t\t\t\t\tthrough UDP. Default: 14590\n"
                  "  -h --help				Print this message\n";
 }
 
