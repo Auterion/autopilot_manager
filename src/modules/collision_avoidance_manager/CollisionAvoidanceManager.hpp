@@ -86,14 +86,14 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
     }
 
    private:
-     void compute_distance_to_obstacle();
-     std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
+    void compute_distance_to_obstacle();
+    std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
 
-     rclcpp::TimerBase::SharedPtr _timer{};
-     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _obstacle_distance_pub{};
+    rclcpp::TimerBase::SharedPtr _timer{};
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _obstacle_distance_pub{};
 
-     mutable std::mutex _collision_avoidance_manager_mutex;
+    mutable std::mutex _collision_avoidance_manager_mutex;
 
-     ROISettings _roi_settings{};
-     float _depth{NAN};
+    ROISettings _roi_settings{};
+    float _depth{NAN};
 };

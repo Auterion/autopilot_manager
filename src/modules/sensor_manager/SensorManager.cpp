@@ -62,8 +62,7 @@ void SensorManager::init() {
     }
 
     _depth_image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        depth_topic, qos,
-        [this](const sensor_msgs::msg::Image::SharedPtr msg) { handle_incoming_depth_image(msg); });
+        depth_topic, qos, [this](const sensor_msgs::msg::Image::SharedPtr msg) { handle_incoming_depth_image(msg); });
 }
 
 auto SensorManager::deinit() -> void { _depth_image_sub.reset(); }
@@ -82,7 +81,8 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::S
     if (msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
         // Set data, encoding and step after converting the metric.
         downsampled_depth->encoding = sensor_msgs::image_encodings::TYPE_32FC1;
-        downsampled_depth->step = msg->width * (sensor_msgs::image_encodings::bitDepth(downsampled_depth->encoding) / 8);
+        downsampled_depth->step =
+            msg->width * (sensor_msgs::image_encodings::bitDepth(downsampled_depth->encoding) / 8);
         downsampled_depth->data.resize(downsampled_depth->height * downsampled_depth->step);
         // Fill in the depth image data, converting mm to m
         const float bad_point = std::numeric_limits<float>::quiet_NaN();

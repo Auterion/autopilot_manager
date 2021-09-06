@@ -62,7 +62,8 @@ class SensorManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    std::shared_ptr<sensor_msgs::msg::Image> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex) get_lastest_downsampled_depth() {
+    std::shared_ptr<sensor_msgs::msg::Image> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex)
+        get_lastest_downsampled_depth() {
         std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
         return _downsampled_depth;
     }

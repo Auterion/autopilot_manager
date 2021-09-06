@@ -5,7 +5,6 @@
 
 #include <AutopilotManagerConfig.hpp>
 #include <DbusInterface.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <string>

@@ -47,11 +47,10 @@ LandingManager::LandingManager() : Node("landing_manager") {}
 LandingManager::~LandingManager() { deinit(); }
 
 void LandingManager::init() {
-  std::cout << landingManagerOut << " Started!" << std::endl;
+    std::cout << landingManagerOut << " Started!" << std::endl;
 
-  // Mapper runs at 10hz
-  _timer = this->create_wall_timer(
-      100ms, std::bind(&LandingManager::mapper, this));
+    // Mapper runs at 10hz
+    _timer = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this));
 }
 
 auto LandingManager::deinit() -> void {}
@@ -63,7 +62,7 @@ void LandingManager::mapper() {
     auto depth_msg = _downsampled_depth_update_callback();
 
     if (depth_msg != nullptr) {
-      //TODO: Add mapper code and set `can_land()` <- Bastian
+        // TODO: Add mapper code and set `can_land()` <- Bastian
     }
 }
 
