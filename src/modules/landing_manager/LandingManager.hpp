@@ -48,6 +48,7 @@
 // ROS dependencies
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 
 static constexpr auto landingManagerOut = "[Landing Manager]";
 
@@ -62,14 +63,22 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    float RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_landing_condition_state() {
+    bool RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_landing_condition_state() {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         return _can_land;
+    }
+
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<sensor_msgs::msg::Image>()> callback) {
+        _downsampled_depth_update_callback = callback;
     }
 
    private:
     void mapper();
     void can_land();
+
+    rclcpp::TimerBase::SharedPtr _timer{};
+
+    std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
 
     mutable std::mutex _landing_manager_mutex;
 

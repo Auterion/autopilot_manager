@@ -60,9 +60,11 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
 
 AutopilotManager::~AutopilotManager() {
     _sensor_manager_th.join();
+    _collision_avoidance_manager_th.join();
     _landing_manager_th.join();
     _mission_manager.reset();
     _sensor_manager.reset();
+    _collision_avoidance_manager.reset();
     _landing_manager.reset();
 }
 
@@ -186,6 +188,11 @@ void AutopilotManager::start() {
         _sensor_manager->init();
         _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
 
+        // Create and init the Collision Avoidance Manager
+        _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
+        _collision_avoidance_manager->init();
+        _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
+
         // Create and init the Landing Manager
         _landing_manager = std::make_shared<LandingManager>();
         _landing_manager->init();
@@ -207,10 +214,20 @@ void AutopilotManager::start() {
                     _simple_collision_avoid_distance_on_condition_false};
         });
 
+        // Init the callbacks for getting the latest downsampled depth data
+        _collision_avoidance_manager->getDownsampledDepthDataCallback([this]() {
+            std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
+            return _sensor_manager->get_lastest_downsampled_depth();
+        });
+        _landing_manager->getDownsampledDepthDataCallback([this]() {
+            std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
+            return _sensor_manager->get_lastest_downsampled_depth();
+        });
+
         // Init the callback for getting the latest distance to obstacle
         _mission_manager->getDistanceToObstacleCallback([this]() {
             std::lock_guard<std::mutex> lock(_distance_to_obstacle_mutex);
-            return _sensor_manager->get_latest_depth();
+            return _collision_avoidance_manager->get_latest_distance();
         });
 
         // Init the callback for getting the latest landing condition state
@@ -231,6 +248,11 @@ void AutopilotManager::start() {
 void AutopilotManager::run_sensor_manager() {
     // Run the Sensor Manager node
     _sensor_manager->run();
+}
+
+void AutopilotManager::run_collision_avoidance_manager() {
+    // Run the Collision Avoidance Manager node
+    _collision_avoidance_manager->run();
 }
 
 void AutopilotManager::run_landing_manager() {

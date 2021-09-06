@@ -40,18 +40,31 @@
 
 #include <LandingManager.hpp>
 
+using namespace std::chrono_literals;
+
 LandingManager::LandingManager() : Node("landing_manager") {}
 
 LandingManager::~LandingManager() { deinit(); }
 
-void LandingManager::init() { std::cout << landingManagerOut << " Started!" << std::endl; }
+void LandingManager::init() {
+  std::cout << landingManagerOut << " Started!" << std::endl;
+
+  // Mapper runs at 10hz
+  _timer = this->create_wall_timer(
+      100ms, std::bind(&LandingManager::mapper, this));
+}
 
 auto LandingManager::deinit() -> void {}
 
 auto LandingManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
 void LandingManager::mapper() {
-    // Here we should capture the downsampled depth data computed in the SensorManager
+    // Here we capture the downsampled depth data computed in the SensorManager
+    auto depth_msg = _downsampled_depth_update_callback();
+
+    if (depth_msg != nullptr) {
+      //TODO: Add mapper code and set `can_land()` <- Bastian
+    }
 }
 
 void LandingManager::can_land() {

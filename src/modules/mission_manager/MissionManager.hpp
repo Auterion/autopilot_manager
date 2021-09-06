@@ -125,7 +125,7 @@ class MissionManager : public ModuleBase {
    private:
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
-    std::function<float()> _landing_condition_state_update_callback;
+    std::function<bool()> _landing_condition_state_update_callback;
 
     std::string _path_to_custom_action_file;
 

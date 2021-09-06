@@ -32,8 +32,8 @@
  ****************************************************************************/
 
 /**
- * @brief Sensor Manager
- * @file SensorManager.hpp
+ * @brief Collision Avoidance Manager
+ * @file CollisionAvoidance.hpp
  * @author Nuno Marques <nuno@auterion.com>
  * @author Julian Kent <julian@auterion.com>
  */
@@ -42,38 +42,58 @@
 
 #include <ModuleBase.hpp>
 #include <chrono>
+#include <eigen3/Eigen/Core>
 #include <iostream>
 
 // ROS dependencies
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/float32.hpp>
 
-static constexpr auto sensorManagerOut = "[Sensor  Manager]";
+static constexpr auto collisionAvoidanceManagerOut = "[Collision Avoidance Manager]";
 
-class SensorManager : public rclcpp::Node, ModuleBase {
+class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
    public:
-    SensorManager();
-    ~SensorManager();
-    SensorManager(const SensorManager&) = delete;
-    auto operator=(const SensorManager&) -> const SensorManager& = delete;
+    CollisionAvoidanceManager();
+    ~CollisionAvoidanceManager();
+    CollisionAvoidanceManager(const CollisionAvoidanceManager&) = delete;
+    auto operator=(const CollisionAvoidanceManager&) -> const CollisionAvoidanceManager& = delete;
 
     auto init() -> void override;
     auto deinit() -> void override;
     auto run() -> void override;
 
-    std::shared_ptr<sensor_msgs::msg::Image> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex) get_lastest_downsampled_depth() {
-        std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-        return _downsampled_depth;
+    struct ROISettings {
+        float width_fraction{0.2f};
+        float height_fraction{0.2f};
+        float width_center{0.5f};
+        float height_center{0.5f};
+    };
+
+    void RCPPUTILS_TSA_GUARDED_BY(_collision_avoidance_manager_mutex) set_roi(const ROISettings& settings) {
+        std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+        _roi_settings = settings;
+    }
+
+    float RCPPUTILS_TSA_GUARDED_BY(_collision_avoidance_manager_mutex) get_latest_distance() {
+        std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+        return _depth;
+    }
+
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<sensor_msgs::msg::Image>()> callback) {
+        _downsampled_depth_update_callback = callback;
     }
 
    private:
-    void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
+     void compute_distance_to_obstacle();
+     std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
 
-    mutable std::mutex _sensor_manager_mutex;
+     rclcpp::TimerBase::SharedPtr _timer{};
+     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _obstacle_distance_pub{};
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub{};
+     mutable std::mutex _collision_avoidance_manager_mutex;
 
-   protected:
-    std::shared_ptr<sensor_msgs::msg::Image> _downsampled_depth;
+     ROISettings _roi_settings{};
+     float _depth{NAN};
 };
