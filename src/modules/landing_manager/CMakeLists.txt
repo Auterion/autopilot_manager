@@ -16,16 +16,23 @@ find_package(rclcpp REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(tf2_ros REQUIRED)
 
 
 #################
 # Setup targets #
 #################
 
-add_library(landing-manager SHARED LandingManager.cpp)
+add_library(landing-manager SHARED
+  LandingManager.cpp
+  MapVisualizer.cpp)
 ament_target_dependencies(landing-manager
   Eigen3
+  landing_mapper
   image_downsampler
+  px4_msgs
+  tf2_ros
+  visualization_msgs
 )
 target_include_directories(landing-manager PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}>
@@ -36,7 +43,9 @@ target_include_directories(landing-manager PUBLIC
 target_link_libraries(landing-manager
   Eigen3::Eigen
   ${rclcpp_LIBRARIES}
+  ${landing_mapper_LIBRARIES}
   ${image_downsampler_LIBRARIES}
+  ${px4_msgs_LIBRARIES}
 )
 
 ############

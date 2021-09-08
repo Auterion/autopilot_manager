@@ -46,10 +46,26 @@
 #include <iostream>
 
 // ROS dependencies
+#include <common.h>
 #include <image_downsampler/DataTypes.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/create_timer_ros.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+
+#include <MapVisualizer.hpp>
+#include <landing_mapper/mapper/LandingMapper.hpp>
+#include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+
+struct VehicleState {
+    bool valid{false};
+    Eigen::Vector3f position{NAN, NAN, NAN}, velocity{NAN, NAN, NAN}, acceleration{NAN, NAN, NAN};
+    Eigen::Quaternionf orientation{NAN, NAN, NAN, NAN};
+    Eigen::Vector3f angular_velocity{NAN, NAN, NAN};
+};
 
 static constexpr auto landingManagerOut = "[Landing Manager]";
 
@@ -73,15 +89,52 @@ class LandingManager : public rclcpp::Node, ModuleBase {
         _downsampled_depth_update_callback = callback;
     }
 
-   private:
-    void mapper();
-    void can_land();
+    bool setSearchAltitude_m(float altitude_m);
+    bool setSearchWindow_m(float window_size_m);
 
-    rclcpp::TimerBase::SharedPtr _timer{};
+   private:
+    void initParameter();
+
+    void mapper();
+
+    void handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
+
+    void visualizeResult(bool is_plain, bool can_land, const Eigen::Vector3f& position, const rclcpp::Time& timestamp);
+    void visualizeMap();
+
+    bool plainHysteresis(bool is_plain);
+
+   private:
+    std::unique_ptr<landing_mapper::LandingMapper<float>> _mapper;
+    landing_mapper::LandingMapperParameter _mapper_parameter;
+    bool _visualize;
+
+    std::shared_ptr<viz::MapVisualizer> _visualizer;
+
+    rclcpp::TimerBase::SharedPtr _timer_mapper;
+    rclcpp::TimerBase::SharedPtr _timer_map_visualizer;
+
+    rclcpp::CallbackGroup::SharedPtr _callback_group_mapper;
+    rclcpp::CallbackGroup::SharedPtr _callback_group_image;
+    rclcpp::CallbackGroup::SharedPtr _callback_group_telemetry;
+
+    rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
+
+    tf2_ros::TransformBroadcaster _tf_broadcaster;
+    tf2_ros::Buffer _tf_buffer;
+    tf2_ros::TransformListener _tf_listener;
+
+    std::mutex _vehicle_state_mutex;
+    std::unique_ptr<VehicleState> _vehicle_state;
 
     std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
 
     mutable std::mutex _landing_manager_mutex;
+    mutable std::mutex _map_mutex;
 
-    bool _can_land{false};
+    std::vector<Eigen::Vector3f> _pointcloud_for_mapper;
+
+    bool _can_land;
+    std::deque<bool> _is_plain;
+
 };

@@ -18,7 +18,11 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>image_downsampler</depend>
+  <depend>landing_mapper</depend>
   <depend>tbb</depend>
+  <depend>px4_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
 
   <exec_depend>rosidl_default_runtime</exec_depend>
 

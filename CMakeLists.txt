@@ -18,6 +18,10 @@ pkg_search_module(DBUS REQUIRED dbus-1)
 pkg_search_module(LIBDBUS REQUIRED dbus-glib-1)
 
 find_package(image_downsampler REQUIRED)
+find_package(landing_mapper REQUIRED)
+find_package(px4_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
 if(NOT MSVC)
     add_definitions("-Wall -Wextra ")
     # This warning is triggered by the MAVLink includes.
@@ -108,5 +112,11 @@ install(DIRECTORY data/config/
 # This should be copied/moved manually to /usr/share/dbus-1/system.d/
 install(FILES com.auterion.autopilot_manager.conf
   DESTINATION ${DBUS_CONFIG_DIR})
+
+# Install launch files
+install(DIRECTORY
+       launch
+       DESTINATION share/${PROJECT_NAME}
+)
 
 ament_package()
