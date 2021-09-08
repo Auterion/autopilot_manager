@@ -45,8 +45,12 @@
 #include <iostream>
 
 // ROS dependencies
+#include <image_downsampler/ImageDownsampler.h>
+
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
 static constexpr auto sensorManagerOut = "[Sensor  Manager]";
@@ -62,19 +66,30 @@ class SensorManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    std::shared_ptr<sensor_msgs::msg::Image> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex)
-        get_lastest_downsampled_depth() {
+    std::shared_ptr<DownsampledImageF> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex) get_lastest_downsampled_depth() {
         std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
         return _downsampled_depth;
     }
 
    private:
-    void handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg);
+    void handle_incoming_depth_image(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
+    void handle_incoming_camera_info(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg);
+
+    bool set_downsampler(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
     mutable std::mutex _sensor_manager_mutex;
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub{};
+    rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr _depth_img_camera_info_sub;
+
+    std::shared_ptr<ImageDownsamplerInterface> _imageDownsampler;
+
+    RectifiedIntrinsicsF _intrinsics;
+    Eigen::Vector2f _inverse_focal_length;
+    Eigen::Vector2f _principal_point;
+
+    int16_t _downsampline_block_size;
 
    protected:
-    std::shared_ptr<sensor_msgs::msg::Image> _downsampled_depth;
+    std::shared_ptr<DownsampledImageF> _downsampled_depth;
 };

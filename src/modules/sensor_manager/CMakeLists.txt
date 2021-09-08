@@ -24,7 +24,11 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 #################
 
 add_library(sensor-manager SHARED SensorManager.cpp)
-ament_target_dependencies(sensor-manager Eigen3 sensor_msgs)
+ament_target_dependencies(sensor-manager
+  Eigen3
+  sensor_msgs
+  image_downsampler
+)
 target_include_directories(sensor-manager PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}>
   $<INSTALL_INTERFACE:include/autopilot-manager/${PROJECT_NAME}>
@@ -35,6 +39,7 @@ target_link_libraries(sensor-manager
   Eigen3::Eigen
   ${rclcpp_LIBRARIES}
   ${sensor_msgs_LIBRARIES}
+  ${image_downsampler_LIBRARIES}
 )
 
 ############

@@ -23,7 +23,10 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 #################
 
 add_library(collision-avoidance-manager SHARED CollisionAvoidanceManager.cpp)
-ament_target_dependencies(collision-avoidance-manager Eigen3)
+ament_target_dependencies(collision-avoidance-manager
+  Eigen3
+  image_downsampler
+)
 target_include_directories(collision-avoidance-manager PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}>
   $<INSTALL_INTERFACE:include/autopilot-manager/${PROJECT_NAME}>
@@ -33,6 +36,7 @@ target_include_directories(collision-avoidance-manager PUBLIC
 target_link_libraries(collision-avoidance-manager
   Eigen3::Eigen
   ${rclcpp_LIBRARIES}
+  ${image_downsampler_LIBRARIES}
 )
 
 ############

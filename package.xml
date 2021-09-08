@@ -17,6 +17,8 @@
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>image_downsampler</depend>
+  <depend>tbb</depend>
 
   <exec_depend>rosidl_default_runtime</exec_depend>
 

@@ -40,7 +40,7 @@
 #include <SensorManager.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 
-SensorManager::SensorManager() : Node("sensor_manager") {}
+SensorManager::SensorManager() : Node("sensor_manager"), _downsampline_block_size(8) {}
 
 SensorManager::~SensorManager() { deinit(); }
 
@@ -57,48 +57,75 @@ void SensorManager::init() {
 
     // Camera topic name changes for sim
     std::string depth_topic{"/camera/depth/image_rect_raw"};
+    std::string depth_camera_info_topic{"/camera/depth/camera_info"};
     if (sim) {
         depth_topic = "/camera/depth/image_raw";
     }
 
     _depth_image_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        depth_topic, qos, [this](const sensor_msgs::msg::Image::SharedPtr msg) { handle_incoming_depth_image(msg); });
+        depth_topic, qos,
+        [this](const sensor_msgs::msg::Image::ConstSharedPtr msg) { handle_incoming_depth_image(msg); });
+    _depth_img_camera_info_sub = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        depth_camera_info_topic, qos,
+        [this](const sensor_msgs::msg::CameraInfo::ConstSharedPtr msg) { handle_incoming_camera_info(msg); });
 }
 
 auto SensorManager::deinit() -> void { _depth_image_sub.reset(); }
 
 auto SensorManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
-void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::SharedPtr msg) {
-    // Allocate new Image message
-    auto downsampled_depth = std::make_shared<sensor_msgs::msg::Image>();
-    downsampled_depth->header = msg->header;
-    downsampled_depth->height = msg->height;
-    downsampled_depth->width = msg->width;
+void SensorManager::handle_incoming_camera_info(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg) {
+    const RectifiedIntrinsicsF raw_intrinsics(msg->k[0], msg->k[4], msg->k[2], msg->k[5], msg->width, msg->height);
 
-    // If the pixels are encoded in uint16_t, we encode it in floats and convert
-    // from millimeters to meters
-    if (msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
-        // Set data, encoding and step after converting the metric.
-        downsampled_depth->encoding = sensor_msgs::image_encodings::TYPE_32FC1;
-        downsampled_depth->step =
-            msg->width * (sensor_msgs::image_encodings::bitDepth(downsampled_depth->encoding) / 8);
-        downsampled_depth->data.resize(downsampled_depth->height * downsampled_depth->step);
-        // Fill in the depth image data, converting mm to m
-        const float bad_point = std::numeric_limits<float>::quiet_NaN();
-        const uint16_t* raw_data = reinterpret_cast<const uint16_t*>(&msg->data[0]);
-        float* depth_data = reinterpret_cast<float*>(&downsampled_depth->data[0]);
-        for (unsigned index = 0; index < downsampled_depth->height * downsampled_depth->width; ++index) {
-            uint16_t raw = raw_data[index];
-            depth_data[index] = (raw == 0) ? bad_point : static_cast<float>(raw) * 0.001f;
-        }
-    } else {
-        downsampled_depth->data = msg->data;
+    if (_imageDownsampler == nullptr) {
+        return;
     }
 
-    // TODO: add downsampling -> Bastian
+    _imageDownsampler->adaptIntrinsics(raw_intrinsics, _intrinsics);
+
+    _inverse_focal_length = _intrinsics.inverse_focal_length();
+    _principal_point = _intrinsics.principal_point();
+}
+
+bool SensorManager::set_downsampler(const sensor_msgs::msg::Image::ConstSharedPtr& msg) {
+    bool ret = true;
+    if (_imageDownsampler == nullptr) {
+        if (msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1) {
+            _imageDownsampler = ImageDownsamplerInterface::getInstance<uint16_t>(
+                msg->width, msg->height, _downsampline_block_size, _downsampline_block_size, 0.2);
+
+        } else if (msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1) {
+            _imageDownsampler = ImageDownsamplerInterface::getInstance<float>(
+                msg->width, msg->height, _downsampline_block_size, _downsampline_block_size, 0.2);
+        } else {
+            RCLCPP_ERROR(get_logger(), "Unhandled image encoding %s", msg->encoding.c_str());
+            ret = false;
+        }
+    }
+
+    return ret;
+}
+
+void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::ConstSharedPtr& msg) {
+    set_downsampler(msg);
+
+    if (_imageDownsampler == nullptr) {
+        RCLCPP_ERROR(get_logger(), "_imageDownsampler not set");
+        return;
+    }
+
+    const bool intrinsicPlausible = (_intrinsics.rh != 0) && (_intrinsics.rw != 0);
+    if (!intrinsicPlausible) {
+        RCLCPP_ERROR(get_logger(), "Intrinsics not plausible");
+        return;
+    }
+
+    std::shared_ptr<DownsampledImageF> downsampled_depth_image = std::make_shared<DownsampledImageF>();
+
+    downsampled_depth_image->depth_pixel_array = _imageDownsampler->downsample(msg->data.data());
+    downsampled_depth_image->intrinsics = _intrinsics;
 
     // Make the downsampled depth data available for other modules
     std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
-    _downsampled_depth = downsampled_depth;
+    _downsampled_depth = downsampled_depth_image;
 }

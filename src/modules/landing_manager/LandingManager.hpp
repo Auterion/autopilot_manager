@@ -46,6 +46,7 @@
 #include <iostream>
 
 // ROS dependencies
+#include <image_downsampler/DataTypes.h>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -68,7 +69,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
         return _can_land;
     }
 
-    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<sensor_msgs::msg::Image>()> callback) {
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<DownsampledImageF>()> callback) {
         _downsampled_depth_update_callback = callback;
     }
 
@@ -78,7 +79,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     rclcpp::TimerBase::SharedPtr _timer{};
 
-    std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
+    std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
 
     mutable std::mutex _landing_manager_mutex;
 

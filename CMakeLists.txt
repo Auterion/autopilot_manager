@@ -17,6 +17,7 @@ pkg_search_module(GLIB REQUIRED glib-2.0)
 pkg_search_module(DBUS REQUIRED dbus-1)
 pkg_search_module(LIBDBUS REQUIRED dbus-glib-1)
 
+find_package(image_downsampler REQUIRED)
 if(NOT MSVC)
     add_definitions("-Wall -Wextra ")
     # This warning is triggered by the MAVLink includes.
@@ -60,6 +61,7 @@ target_link_libraries(
     ${GLIB_LDFLAGS}
     ${DBUS_LIBRARIES}
     ${LIBDBUS_LDFLAGS}
+    tbb
 )
 
 target_include_directories(autopilot-manager

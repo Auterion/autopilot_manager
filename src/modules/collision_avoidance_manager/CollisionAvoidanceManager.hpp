@@ -46,6 +46,8 @@
 #include <iostream>
 
 // ROS dependencies
+#include <image_downsampler/DataTypes.h>
+
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -81,13 +83,13 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
         return _depth;
     }
 
-    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<sensor_msgs::msg::Image>()> callback) {
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<DownsampledImageF>()> callback) {
         _downsampled_depth_update_callback = callback;
     }
 
    private:
     void compute_distance_to_obstacle();
-    std::function<std::shared_ptr<sensor_msgs::msg::Image>()> _downsampled_depth_update_callback;
+    std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
 
     rclcpp::TimerBase::SharedPtr _timer{};
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _obstacle_distance_pub{};

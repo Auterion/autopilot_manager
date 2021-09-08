@@ -3,3 +3,5 @@ build*/
 debian/changelog
 /.project
 /.vscode
+.cproject
+.settings/
