@@ -128,6 +128,10 @@ source /opt/ros/foxy/setup.bash
 mkdir -p colcon_ws/src
 cd colcon_ws/src
 git clone git@github.com:Auterion/autopilot_manager.git
+git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9
+git clone git@github.com:Auterion/image_downsampler.git
+git clone git@github.com:Auterion/landing_mapper.git -b develop
+git clone git@github.com:Auterion/px4_msgs.git -b develop
 cd ..
 colcon build
 ```
@@ -278,8 +282,19 @@ or rather be passed as an argument on `ros2 run`.
 
 _Note: Before running the autopilot-manager, make sure that the PX4 SITL daemon and the `configuration-manager` are running._
 
+Terminal 1
+
 ```sh
 cd colcon_ws
+source install/setup.bash
+ros2 launch autopilot-manager static_tf.launch
+```
+
+Terminal 2
+
+```sh
+cd colcon_ws
+source install/setup.bash
 ros2 run autopilot-manager autopilot-manager \
   -a install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_sitl.json \
   -c install/autopilot-manager/share/autopilot-manager/data/config/autopilot_manager.conf \
