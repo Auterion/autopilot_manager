@@ -265,7 +265,7 @@ bool LandingManager::plainHysteresis(bool is_plain) {
 void LandingManager::visualizeResult(bool is_plain, bool can_land, const Eigen::Vector3f& position,
                                      const rclcpp::Time& timestamp) {
     Eigen::Vector3f vis_position(position[0], position[1], position[2] - 0.5);
-    if (_can_land) {
+    if (can_land) {
         _visualizer->publishSafeLand(vis_position, timestamp, _visualize);
     } else if (is_plain) {
         _visualizer->publishPlainFound(vis_position, timestamp, _visualize);
@@ -274,4 +274,6 @@ void LandingManager::visualizeResult(bool is_plain, bool can_land, const Eigen::
     }
 }
 
-void LandingManager::visualizeMap() { _visualizer->visualizeEsdf(_mapper->getEsdf(), now(), _visualize); }
+void LandingManager::visualizeMap() {
+    _visualizer->visualizeEsdf(_mapper->getEsdf(), now(), _visualize);
+}
