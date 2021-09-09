@@ -45,7 +45,8 @@ jobs:
           python3-colcon-common-extensions \
           ros-${{ matrix.ros2_distro }}-ros-base \
           ros-${{ matrix.ros2_distro }}-sensor-msgs \
-          ros-${{ matrix.ros2_distro }}-image-pipeline
+          ros-${{ matrix.ros2_distro }}-image-pipeline \
+          ros-${{ matrix.ros2_distro }}-visualization-msgs
         # Setup environment
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
         # Install MAVSDK from source
@@ -59,11 +60,18 @@ jobs:
         sudo apt install -y libdbus-glib-1-dev
         # Install Clang formatter
         sudo apt install -y clang-format-10
+    - name: Create colcon workspace
+      run: mkdir -p colcon_ws/src
+    - name: Fetch source dependencies
+      run: |
+        git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 colcon_ws/src/eigen
+        git clone git@github.com:Auterion/image_downsampler.git colcon_ws/src/image_downsampler
+        git clone git@github.com:Auterion/landing_mapper.git -b develop colcon_ws/src/landing_mapper
+        git clone git@github.com:Auterion/px4_msgs.git -b develop colcon_ws/src/px4_msgs
     - name: Check code formatting
       run: tools/check_code_format.sh
     - name: Build
       run: |
-        mkdir -p colcon_ws/src
         cd colcon_ws
         ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
