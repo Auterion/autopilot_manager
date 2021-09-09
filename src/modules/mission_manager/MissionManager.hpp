@@ -123,6 +123,9 @@ class MissionManager : public ModuleBase {
     void decision_maker_run();
 
    private:
+    void handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now);
+    void handle_simple_collision_avoidance(std::chrono::time_point<std::chrono::system_clock> now);
+
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
     std::function<bool()> _landing_condition_state_update_callback;
@@ -136,8 +139,10 @@ class MissionManager : public ModuleBase {
     std::shared_ptr<mavsdk::Action> _action;
     std::shared_ptr<mavsdk::Telemetry> _telemetry;
 
-    bool _action_triggered;
-    bool _in_air;
+    std::atomic<bool> _action_triggered;
+    std::atomic<bool> _in_air;
+    std::atomic<bool> _landing;
+    std::atomic<bool> _on_ground;
 
     std::chrono::time_point<std::chrono::system_clock> _last_time{};
 

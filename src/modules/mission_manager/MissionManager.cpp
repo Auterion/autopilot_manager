@@ -55,7 +55,8 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _mission_manager_config{},
       _mavsdk_system{std::move(mavsdk_system)},
       _action_triggered{false},
-      _in_air{false} {}
+      _in_air{false},
+      _landing{false} {}
 
 MissionManager::~MissionManager() { deinit(); }
 
@@ -85,6 +86,64 @@ void MissionManager::run() {
     }
 }
 
+void MissionManager::handle_simple_collision_avoidance(std::chrono::time_point<std::chrono::system_clock> now) {
+    if (_mission_manager_config.simple_collision_avoid_enabled != 0U) {
+        // std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
+        //           << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold
+        //           << " | in air: " << _in_air << " | is action triggered? " << std::boolalpha
+        //           << _action_triggered << std::endl;
+
+        if (std::isfinite(_distance_to_obstacle_update_callback()) &&
+            _distance_to_obstacle_update_callback() <=
+                _mission_manager_config.simple_collision_avoid_distance_threshold &&
+            _in_air && !_action_triggered) {  // only trigger the condition when the vehicle is in-air
+            if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "KEEP_STATE") {
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "HOLD") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "RTL") {
+                _action->return_to_launch();
+                _action_triggered = true;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "GO_TO_WAYPOINT") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
+                       "INCREASE_HOR_VEL") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
+                       "DECREASE_HOR_VEL") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CLIMB") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "DESCEND") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "TAKEOFF") {
+                _action->takeoff();
+                _action_triggered = true;
+                std::cout << "Take-off triggered" << _action_triggered << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "LAND") {
+                _action->land();
+                _action_triggered = true;
+                std::cout << "Land triggered" << _action_triggered << std::endl;
+            } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CUSTOM") {
+                std::cout << "Currently not supported in MAVSDK" << std::endl;
+            }
+
+            _last_time = now;
+        }
+    }
+}
+
+void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now) {
+    if (_landing && !_on_ground) {
+        if (_landing_condition_state_update_callback()) {
+            std::cout << "Able to land" << std::endl;
+        } else {
+            std::cout << "Not able land" << std::endl;
+        }
+
+        _last_time = now;
+    }
+}
+
 void MissionManager::decision_maker_run() {
     // Init action trigger timer
     _last_time = std::chrono::system_clock::now();
@@ -94,13 +153,25 @@ void MissionManager::decision_maker_run() {
         switch (landed_state) {
             case mavsdk::Telemetry::LandedState::InAir:
                 _in_air = true;
+                _landing = false;
+                _on_ground = false;
+                break;
+            case mavsdk::Telemetry::LandedState::Landing:
+                _in_air = false;
+                _landing = true;
+                _on_ground = false;
                 break;
             case mavsdk::Telemetry::LandedState::Unknown:
             case mavsdk::Telemetry::LandedState::OnGround:
+                _in_air = false;
+                _landing = false;
+                _on_ground = true;
+                break;
             case mavsdk::Telemetry::LandedState::TakingOff:
-            case mavsdk::Telemetry::LandedState::Landing:
             default:
                 _in_air = false;
+                _landing = false;
+                _on_ground = false;
         }
     });
 
@@ -111,52 +182,9 @@ void MissionManager::decision_maker_run() {
         auto now = std::chrono::system_clock::now();
 
         if (_mission_manager_config.decision_maker_input_type == "SAFE_LANDING") {
-            // TODO
+            handle_safe_landing(now);
         } else if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
-            if (_mission_manager_config.simple_collision_avoid_enabled != 0U) {
-                // std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
-                //           << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold
-                //           << " | in air: " << _in_air << " | is action triggered? " << std::boolalpha
-                //           << _action_triggered << std::endl;
-
-                if (std::isfinite(_distance_to_obstacle_update_callback()) &&
-                    _distance_to_obstacle_update_callback() <=
-                        _mission_manager_config.simple_collision_avoid_distance_threshold &&
-                    _in_air && !_action_triggered) {  // only trigger the condition when the vehicle is in-air
-                    if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "KEEP_STATE") {
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "HOLD") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "RTL") {
-                        _action->return_to_launch();
-                        _action_triggered = true;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
-                               "GO_TO_WAYPOINT") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
-                               "INCREASE_HOR_VEL") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true ==
-                               "DECREASE_HOR_VEL") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CLIMB") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "DESCEND") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "TAKEOFF") {
-                        _action->takeoff();
-                        _action_triggered = true;
-                        std::cout << "Take-off triggered" << _action_triggered << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "LAND") {
-                        _action->land();
-                        _action_triggered = true;
-                        std::cout << "Land triggered" << _action_triggered << std::endl;
-                    } else if (_mission_manager_config.simple_collision_avoid_distance_on_condition_true == "CUSTOM") {
-                        std::cout << "Currently not supported in MAVSDK" << std::endl;
-                    }
-
-                    _last_time = now;
-                }
-            }
+            handle_simple_collision_avoidance(now);
         }
 
         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - _last_time).count() >= 5000) {
