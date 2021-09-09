@@ -110,13 +110,13 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::C
     set_downsampler(msg);
 
     if (_imageDownsampler == nullptr) {
-        RCLCPP_ERROR(get_logger(), "_imageDownsampler not set");
+        RCLCPP_ERROR_SKIPFIRST(get_logger(), "_imageDownsampler not set");
         return;
     }
 
     const bool intrinsicPlausible = (_intrinsics.rh != 0) && (_intrinsics.rw != 0);
     if (!intrinsicPlausible) {
-        RCLCPP_ERROR(get_logger(), "Intrinsics not plausible");
+        RCLCPP_ERROR_SKIPFIRST(get_logger(), "Intrinsics not plausible");
         return;
     }
 
