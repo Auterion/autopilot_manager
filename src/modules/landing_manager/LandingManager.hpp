@@ -136,5 +136,4 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     bool _can_land;
     std::deque<bool> _is_plain;
-
 };

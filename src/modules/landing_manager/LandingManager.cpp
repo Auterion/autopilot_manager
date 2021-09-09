@@ -53,8 +53,7 @@ LandingManager::LandingManager()
       _tf_buffer(this->get_clock()),
       _tf_listener(_tf_buffer),
       _vehicle_state(new VehicleState()),
-      _can_land(false)
-{}
+      _can_land(false) {}
 
 LandingManager::~LandingManager() { deinit(); }
 
@@ -91,8 +90,7 @@ void LandingManager::init() {
     // Mapper runs at 10hz
     _timer_mapper = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
 
-    _timer_map_visualizer =
-        this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
+    _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
 
     // Setup odometry subscriber
     _vehicle_odometry_sub = create_subscription<px4_msgs::msg::VehicleOdometry>(
