@@ -73,11 +73,11 @@ class MapVisualizer {
                        const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
 
     template <class Derived>
-    void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size, bool enabled) const;
     template <class Derived>
-    void publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size, bool enabled) const;
     template <class Derived>
-    void publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,bool enabled) const;
 
     template <typename T>
     void visualizeEsdf(const esdf::EuclideanSignedDistanceFields<T>& esdf, const rclcpp::Time& timestamp,
@@ -120,57 +120,57 @@ void MapVisualizer::publishSphere(const Eigen::MatrixBase<Derived>& point, std_m
 }
 
 template <class Derived>
-void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp,
+void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                                     bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
 
     std_msgs::msg::ColorRGBA color;
-    color.a = 1.0;
+    color.a = 0.75;
     color.r = 0.0;
     color.g = 1.0;
     color.b = 0.0;
 
     geometry_msgs::msg::Vector3 scale;
-    scale.x = 1.0;
-    scale.y = 1.0;
+    scale.x = size;
+    scale.y = size;
     scale.z = 0.1;
 
     publishSphere(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
-void MapVisualizer::publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp,
+void MapVisualizer::publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                                       bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
 
     std_msgs::msg::ColorRGBA color;
-    color.a = 1.0;
+    color.a = 0.75;
     color.r = 1.0;
     color.g = 1.0;
     color.b = 0.0;
 
     geometry_msgs::msg::Vector3 scale;
-    scale.x = 1.0;
-    scale.y = 1.0;
+    scale.x = size;
+    scale.y = size;
     scale.z = 0.1;
 
     publishSphere(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
-void MapVisualizer::publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp,
+void MapVisualizer::publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                                   bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
 
     std_msgs::msg::ColorRGBA color;
-    color.a = 1.0;
+    color.a = 0.75;
     color.r = 1.0;
     color.g = 0.0;
     color.b = 0.0;
 
     geometry_msgs::msg::Vector3 scale;
-    scale.x = 1.0;
-    scale.y = 1.0;
+    scale.x = size;
+    scale.y = size;
     scale.z = 0.1;
 
     publishSphere(toPoint(point), color, scale, timestamp, enabled);

@@ -270,11 +270,11 @@ void LandingManager::visualizeResult(bool is_plain, bool can_land, const Eigen::
                                      const rclcpp::Time& timestamp) {
     Eigen::Vector3f vis_position(position[0], position[1], position[2] - 0.5);
     if (can_land) {
-        _visualizer->publishSafeLand(vis_position, timestamp, _visualize);
+        _visualizer->publishSafeLand(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     } else if (is_plain) {
-        _visualizer->publishPlainFound(vis_position, timestamp, _visualize);
+        _visualizer->publishPlainFound(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     } else {
-        _visualizer->publishGround(vis_position, timestamp, _visualize);
+        _visualizer->publishGround(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     }
 }
 

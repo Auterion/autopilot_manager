@@ -96,7 +96,7 @@ void MapVisualizer::publishSphere(const geometry_msgs::msg::Point& point, std_ms
     m.header.frame_id = NED_FRAME;
     m.header.stamp = timestamp;
     m.ns = "goal_position";
-    m.type = visualization_msgs::msg::Marker::SPHERE;
+    m.type = visualization_msgs::msg::Marker::CUBE;
     m.action = visualization_msgs::msg::Marker::ADD;
     m.scale = scale;
     m.color = color;
