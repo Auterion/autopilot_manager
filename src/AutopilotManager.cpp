@@ -188,10 +188,10 @@ void AutopilotManager::start() {
     _sensor_manager->init();
     _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
 
-    //        // Create and init the Collision Avoidance Manager
-    //        _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
-    //        _collision_avoidance_manager->init();
-    //        _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
+    // Create and init the Collision Avoidance Manager
+    _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
+    _collision_avoidance_manager->init();
+    _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
 
     // Create and init the Landing Manager
     _landing_manager = std::make_shared<LandingManager>();
@@ -215,11 +215,11 @@ void AutopilotManager::start() {
     //                 _simple_collision_avoid_distance_on_condition_false};
     //     });
 
-    //         // Init the callbacks for getting the latest downsampled depth data
-    //         _collision_avoidance_manager->getDownsampledDepthDataCallback([this]() {
-    //             std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
-    //             return _sensor_manager->get_lastest_downsampled_depth();
-    //         });
+     // Init the callbacks for getting the latest downsampled depth data
+     _collision_avoidance_manager->getDownsampledDepthDataCallback([this]() {
+         std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
+         return _sensor_manager->get_lastest_downsampled_depth();
+     });
     _landing_manager->getDownsampledDepthDataCallback([this]() {
         std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
         return _sensor_manager->get_lastest_downsampled_depth();

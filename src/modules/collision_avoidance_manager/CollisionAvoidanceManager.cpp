@@ -60,53 +60,70 @@ auto CollisionAvoidanceManager::deinit() -> void { _obstacle_distance_pub.reset(
 
 auto CollisionAvoidanceManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
+
+bool CollisionAvoidanceManager::is_pixel_valid(const DepthPixelF& pixel, uint32_t col_min, uint32_t col_max, uint32_t row_min, uint32_t row_max) const {
+    if ( pixel.x < col_min || pixel.x > col_max ) {
+        return false;
+    }
+    if ( pixel.y < row_min || pixel.y > row_max ) {
+        return false;
+    }
+
+    return true;
+}
+
+void CollisionAvoidanceManager::filter_pixels_to_roi(DepthPixelArrayF& depth_pixel_array, const RectifiedIntrinsicsF& intrinsics) {
+    ROISettings roi;
+    {
+        std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+        roi = _roi_settings;
+    }
+
+    const uint32_t col_min =
+        static_cast<uint32_t>((roi.width_center - 0.5f * roi.width_fraction) * intrinsics.rw);
+    const uint32_t col_max =
+        static_cast<uint32_t>((roi.width_center + 0.5f * roi.width_fraction) * intrinsics.rw);
+    const uint32_t row_min =
+        static_cast<uint32_t>((roi.height_center - 0.5f * roi.height_fraction) * intrinsics.rh);
+    const uint32_t row_max =
+        static_cast<uint32_t>((roi.height_center + 0.5f * roi.height_fraction) * intrinsics.rh);
+
+    for (auto pixel = depth_pixel_array.begin(); pixel != depth_pixel_array.end(); )
+    {
+      if ( !is_pixel_valid(*pixel, col_min, col_max, row_min, row_max) ) {
+          pixel = depth_pixel_array.erase(pixel);
+      }
+      else{
+          ++pixel;
+      }
+    }
+}
+
 void CollisionAvoidanceManager::compute_distance_to_obstacle() {
     auto depth_msg = _downsampled_depth_update_callback();
 
-    if (depth_msg != nullptr) {
-        std::cout << collisionAvoidanceManagerOut << " IMAGE!" << std::endl;
-        //        // Make an Eigen wrapper around the memory
-        //        const auto img = Eigen::Map<const Eigen::Matrix<float, -1,
-        //        -1>>(reinterpret_cast<float*>(&depth_msg->data[0]),
-        //                                                                        depth_msg->height, depth_msg->width);
-        //
-        //        // Make a local copy of the ROI settings
-        //        ROISettings local_settings;
-        //        {
-        //            std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
-        //            local_settings = _roi_settings;
-        //        }
-        //
-        //        const int64_t cols_pixels = static_cast<int64_t>(local_settings.width_fraction * img.cols());
-        //        const int64_t rows_pixels = static_cast<int64_t>(local_settings.height_fraction * img.rows());
-        //        const int64_t cols_offset =
-        //            static_cast<int64_t>((local_settings.width_center - 0.5f * local_settings.width_fraction) *
-        //            img.cols());
-        //        const int64_t rows_offset =
-        //            static_cast<int64_t>((local_settings.height_center - 0.5f * local_settings.height_fraction) *
-        //            img.rows());
-        //
-        //        float depth = std::numeric_limits<float>::infinity();
-        //
-        //        // Check that settings are OK
-        //        if (cols_pixels > 0 && cols_pixels < img.cols() && rows_pixels > 0 && rows_pixels < img.rows() &&
-        //            cols_offset >= 0 && cols_offset + cols_pixels < img.cols() && rows_offset >= 0 &&
-        //            rows_offset + rows_pixels < img.rows()) {
-        //            depth = img.block(rows_offset, cols_offset, rows_pixels, cols_pixels)
-        //                        .array()
-        //                        .isNaN()
-        //                        .select(std::numeric_limits<float>::infinity(),
-        //                                img.block(rows_offset, cols_offset, rows_pixels, cols_pixels))
-        //                        .minCoeff();
-        //        }
-        //
-        //        // Make the obstacle distance available for the Mission Manager to access
-        //        std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
-        //        _depth = depth;
-        //
-        //        // Publish obstacle distance back to ROS
-        //        auto obstacle_dist = std_msgs::msg::Float32();
-        //        obstacle_dist.data = _depth;
-        //        _obstacle_distance_pub->publish(obstacle_dist);
+    if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {
+        // Get min depth in ROI
+        DepthPixelArrayF depth_pixel_array = depth_msg->depth_pixel_array;
+        filter_pixels_to_roi(depth_pixel_array, depth_msg->intrinsics);
+        auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs){ return lhs.depth < rhs.depth; };
+        const auto min_depth_pixel = std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);
+
+        // Make the obstacle distance available for the Mission Manager to access
+        {
+            std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+            _depth = min_depth_pixel->depth;
+        }
+
+        // Publish obstacle distance back to ROS
+        auto obstacle_dist = std_msgs::msg::Float32();
+        obstacle_dist.data = min_depth_pixel->depth;
+        _obstacle_distance_pub->publish(obstacle_dist);
+    }
+    else {
+        {
+            std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+            _depth = std::numeric_limits<float>::infinity();
+        }
     }
 }

@@ -89,6 +89,10 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
 
    private:
     void compute_distance_to_obstacle();
+    bool is_pixel_valid(const DepthPixelF& pixel, uint32_t col_min, uint32_t col_max, uint32_t row_min, uint32_t row_max) const;
+    void filter_pixels_to_roi(DepthPixelArrayF& pixel, const RectifiedIntrinsicsF& intrinsics);
+
+   private:
     std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
 
     rclcpp::TimerBase::SharedPtr _timer{};
