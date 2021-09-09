@@ -13,9 +13,15 @@ _Note: The host system is considered to run Ubuntu 20.04 Focal. Other OS's might
 1.  ROS 2 Foxy
 2.  MAVSDK
 3.  `mavlink-router`
-4.  `configuration-manager`
+4.  Auterion's `configuration-manager`
 5.  DBUS and Glib
 6.  `pymavlink` (optional, to run the available examples)
+
+## ROS packages and workspace library dependencies
+
+1.  Auterion's `landing_mapper` and `image_downsampler` library packages
+2.  microRTPS bridge, composed by the `px4_msgs` and `px4_ros_com` packages
+3.  Eigen v3.3.9
 
 ## ROS 2 Foxy
 
@@ -40,6 +46,7 @@ sudo apt update
 sudo apt install -y python3-colcon-common-extensions \
         ros-foxy-ros-base \
         ros-foxy-sensor-msgs \
+        ros-foxy-visualization-msgs\
         ros-foxy-image-pipeline
 ```
 
@@ -343,4 +350,14 @@ like the Skynode. To use it, just source the `setup.bash` file inside the `insta
 
 ```bash
 echo "source <prefix_path>/install_aarch64/setup.bash" >> ~/.bashrc
+```
+
+# Contributing
+
+## Code format
+
+One requires clang-format-10 to format the code. Use the following command to format it:
+
+```sh
+sh tools/fix_style.sh .
 ```
