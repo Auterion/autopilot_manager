@@ -76,7 +76,8 @@ class MapVisualizer {
     void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                          bool enabled) const;
     template <class Derived>
-    void publishCloseGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size, bool enabled) const;
+    void publishCloseGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
+                            bool enabled) const;
     template <class Derived>
     void publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                        bool enabled) const;
@@ -141,8 +142,8 @@ void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, con
 }
 
 template <class Derived>
-void MapVisualizer::publishCloseGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
-                                      bool enabled) const {
+void MapVisualizer::publishCloseGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp,
+                                       float size, bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
 
     std_msgs::msg::ColorRGBA color;

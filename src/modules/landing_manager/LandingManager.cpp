@@ -164,18 +164,18 @@ void LandingManager::handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleO
 }
 
 std::string string_state(landing_mapper::eLandingMapperState state) {
-    switch(state) {
-    case landing_mapper::eLandingMapperState::CAN_LAND:
-        return "CAN_LAND";
-        break;
-    case landing_mapper::eLandingMapperState::CAN_NOT_LAND:
-        return "CAN_NOT_LAND";
-        break;
-    case landing_mapper::eLandingMapperState::CLOSE_TO_GROUND:
-        return "CLOSE_TO_GROUND";
-        break;
-    default:
-        return "UNKNOWN";
+    switch (state) {
+        case landing_mapper::eLandingMapperState::CAN_LAND:
+            return "CAN_LAND";
+            break;
+        case landing_mapper::eLandingMapperState::CAN_NOT_LAND:
+            return "CAN_NOT_LAND";
+            break;
+        case landing_mapper::eLandingMapperState::CLOSE_TO_GROUND:
+            return "CLOSE_TO_GROUND";
+            break;
+        default:
+            return "UNKNOWN";
     }
 }
 
@@ -249,18 +249,17 @@ void LandingManager::mapper() {
 
         // Show result
         visualizeResult(state, ground_position, timenow);
-        //std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state " << string_state(state) << std::endl;
-    }
-    else {
+        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state "
+        // << string_state(state) << std::endl;
+    } else {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        if ( _state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND ) {
+        if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
             _state = landing_mapper::eLandingMapperState::UNKNOWN;
         }
 
         // Show result
-        //std::cout << landingManagerOut << " state " << string_state(_state) << std::endl;
+        // std::cout << landingManagerOut << " state " << string_state(_state) << std::endl;
     }
-
 }
 
 landing_mapper::eLandingMapperState LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
@@ -278,21 +277,20 @@ landing_mapper::eLandingMapperState LandingManager::stateDebounce(landing_mapper
     while (_states.size() > hysteresis_window_size) {
         _states.pop_front();
     }
-    float avg = static_cast<float>(std::count(_states.cbegin(), _states.cend(), landing_mapper::eLandingMapperState::CAN_LAND)) / _states.size();
+    float avg = static_cast<float>(
+                    std::count(_states.cbegin(), _states.cend(), landing_mapper::eLandingMapperState::CAN_LAND)) /
+                _states.size();
 
-    if (state == landing_mapper::eLandingMapperState::CAN_LAND ) {
+    if (state == landing_mapper::eLandingMapperState::CAN_LAND) {
         if (avg < hysteresis_high_thresh) {
             state = old_state;
-        }
-        else {
+        } else {
             state = landing_mapper::eLandingMapperState::CAN_LAND;
         }
-    }
-    else {
+    } else {
         if (avg > hysteresis_low_thresh) {
             state = landing_mapper::eLandingMapperState::CAN_LAND;
-        }
-        else {
+        } else {
             state = state;
         }
     }

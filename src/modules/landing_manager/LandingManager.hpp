@@ -80,7 +80,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    landing_mapper::eLandingMapperState RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_landing_condition_state() {
+    landing_mapper::eLandingMapperState RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex)
+        get_latest_landing_condition_state() {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         return _state;
     }
@@ -99,7 +100,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     void handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 
-    void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position, const rclcpp::Time& timestamp);
+    void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
+                         const rclcpp::Time& timestamp);
     void visualizeMap();
 
     landing_mapper::eLandingMapperState stateDebounce(landing_mapper::eLandingMapperState state);
