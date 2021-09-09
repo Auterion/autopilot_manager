@@ -42,7 +42,7 @@ namespace viz {
 
 MapVisualizer::MapVisualizer(rclcpp::Node* node)
     : _node(node),
-      marker_pub_(_node->create_publisher<visualization_msgs::msg::MarkerArray>("planner_marker", 1)),
+      marker_pub_(_node->create_publisher<visualization_msgs::msg::MarkerArray>("landing_marker", 1)),
       marker_map_pub_(_node->create_publisher<visualization_msgs::msg::MarkerArray>("map_marker", 1)),
       point_cloud_pub_(_node->create_publisher<sensor_msgs::msg::PointCloud2>("point_cloud", 1)) {}
 
