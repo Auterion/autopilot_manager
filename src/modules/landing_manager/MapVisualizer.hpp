@@ -67,17 +67,20 @@ class MapVisualizer {
     MapVisualizer(rclcpp::Node* node);
 
     template <class Derived>
-    void publishSphere(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
-                       const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
-    void publishSphere(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
-                       const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishCube(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
+                     const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishCube(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
+                     const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
 
     template <class Derived>
-    void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size, bool enabled) const;
+    void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
+                         bool enabled) const;
     template <class Derived>
-    void publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size, bool enabled) const;
+    void publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
+                           bool enabled) const;
     template <class Derived>
-    void publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,bool enabled) const;
+    void publishGround(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
+                       bool enabled) const;
 
     template <typename T>
     void visualizeEsdf(const esdf::EuclideanSignedDistanceFields<T>& esdf, const rclcpp::Time& timestamp,
@@ -112,11 +115,11 @@ class MapVisualizer {
 };
 
 template <class Derived>
-void MapVisualizer::publishSphere(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
-                                  const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
-                                  bool enabled) const {
+void MapVisualizer::publishCube(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
+                                const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
+                                bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
-    publishSphere(toPoint(point), color, scale, timestamp, enabled);
+    publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
@@ -133,14 +136,14 @@ void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, con
     geometry_msgs::msg::Vector3 scale;
     scale.x = size;
     scale.y = size;
-    scale.z = 0.1;
+    scale.z = 0.01;
 
-    publishSphere(toPoint(point), color, scale, timestamp, enabled);
+    publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
-void MapVisualizer::publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
-                                      bool enabled) const {
+void MapVisualizer::publishPlainFound(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp,
+                                      float size, bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
 
     std_msgs::msg::ColorRGBA color;
@@ -154,7 +157,7 @@ void MapVisualizer::publishPlainFound(const Eigen::MatrixBase<Derived>& point, c
     scale.y = size;
     scale.z = 0.1;
 
-    publishSphere(toPoint(point), color, scale, timestamp, enabled);
+    publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
@@ -173,7 +176,7 @@ void MapVisualizer::publishGround(const Eigen::MatrixBase<Derived>& point, const
     scale.y = size;
     scale.z = 0.1;
 
-    publishSphere(toPoint(point), color, scale, timestamp, enabled);
+    publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <typename T>

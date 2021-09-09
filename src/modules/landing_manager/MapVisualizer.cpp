@@ -83,9 +83,9 @@ void MapVisualizer::visualizePointCloud(bool enabled) {
     point_cloud_pub_->publish(*_cloud_ros2_msg);
 }
 
-void MapVisualizer::publishSphere(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
-                                  const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
-                                  bool enabled) const {
+void MapVisualizer::publishCube(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
+                                const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
+                                bool enabled) const {
     if (!enabled) {
         return;
     }

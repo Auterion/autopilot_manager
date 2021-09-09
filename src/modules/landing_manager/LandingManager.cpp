@@ -58,10 +58,10 @@ LandingManager::LandingManager()
 LandingManager::~LandingManager() { deinit(); }
 
 void LandingManager::initParameter() {
-    _mapper_parameter.max_search_altitude_m = 22;
-    _mapper_parameter.search_altitude_m = 10.0f;  // TODO ensure this is smaller max_search_altitude_m
-    _mapper_parameter.max_window_size_m = 5;
-    _mapper_parameter.window_size_m = 3.0f;  // TODO ensure this is smaller max_window_size_m
+    _mapper_parameter.max_search_altitude_m = 22.f;
+    _mapper_parameter.search_altitude_m = 10.f;  // TODO ensure this is smaller max_search_altitude_m
+    _mapper_parameter.max_window_size_m = 5.f;
+    _mapper_parameter.window_size_m = 2.f;  // TODO ensure this is smaller max_window_size_m
 
     _mapper_parameter.distance_threshold_m = 0.1f;
     _mapper_parameter.mean_tresh = 0.1f;
@@ -90,6 +90,7 @@ void LandingManager::init() {
     // Mapper runs at 10hz
     _timer_mapper = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
 
+    // Vizualizaion runs at 1hz
     _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
 
     // Setup odometry subscriber
@@ -222,14 +223,12 @@ void LandingManager::mapper() {
 
         Eigen::Vector3f ground_position;
         const bool is_plain = _mapper->findPlain(ground_position);
-
         const bool can_land = plainHysteresis(is_plain);
 
         // Show results
         visualizeResult(is_plain, _can_land, ground_position, timenow);
-        std::cout << landingManagerOut << " is_plain " << is_plain << " can_land " << can_land << std::endl;
-    }
-    else {
+        // std::cout << landingManagerOut << " is_plain " << is_plain << " can_land " << can_land << std::endl;
+    } else {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         _can_land = false;
     }
