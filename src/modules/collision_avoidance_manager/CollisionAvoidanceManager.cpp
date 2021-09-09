@@ -60,42 +60,37 @@ auto CollisionAvoidanceManager::deinit() -> void { _obstacle_distance_pub.reset(
 
 auto CollisionAvoidanceManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
-
-bool CollisionAvoidanceManager::is_pixel_valid(const DepthPixelF& pixel, uint32_t col_min, uint32_t col_max, uint32_t row_min, uint32_t row_max) const {
-    if ( pixel.x < col_min || pixel.x > col_max ) {
+bool CollisionAvoidanceManager::is_pixel_valid(const DepthPixelF& pixel, uint32_t col_min, uint32_t col_max,
+                                               uint32_t row_min, uint32_t row_max) const {
+    if (pixel.x < col_min || pixel.x > col_max) {
         return false;
     }
-    if ( pixel.y < row_min || pixel.y > row_max ) {
+    if (pixel.y < row_min || pixel.y > row_max) {
         return false;
     }
 
     return true;
 }
 
-void CollisionAvoidanceManager::filter_pixels_to_roi(DepthPixelArrayF& depth_pixel_array, const RectifiedIntrinsicsF& intrinsics) {
+void CollisionAvoidanceManager::filter_pixels_to_roi(DepthPixelArrayF& depth_pixel_array,
+                                                     const RectifiedIntrinsicsF& intrinsics) {
     ROISettings roi;
     {
         std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
         roi = _roi_settings;
     }
 
-    const uint32_t col_min =
-        static_cast<uint32_t>((roi.width_center - 0.5f * roi.width_fraction) * intrinsics.rw);
-    const uint32_t col_max =
-        static_cast<uint32_t>((roi.width_center + 0.5f * roi.width_fraction) * intrinsics.rw);
-    const uint32_t row_min =
-        static_cast<uint32_t>((roi.height_center - 0.5f * roi.height_fraction) * intrinsics.rh);
-    const uint32_t row_max =
-        static_cast<uint32_t>((roi.height_center + 0.5f * roi.height_fraction) * intrinsics.rh);
+    const uint32_t col_min = static_cast<uint32_t>((roi.width_center - 0.5f * roi.width_fraction) * intrinsics.rw);
+    const uint32_t col_max = static_cast<uint32_t>((roi.width_center + 0.5f * roi.width_fraction) * intrinsics.rw);
+    const uint32_t row_min = static_cast<uint32_t>((roi.height_center - 0.5f * roi.height_fraction) * intrinsics.rh);
+    const uint32_t row_max = static_cast<uint32_t>((roi.height_center + 0.5f * roi.height_fraction) * intrinsics.rh);
 
-    for (auto pixel = depth_pixel_array.begin(); pixel != depth_pixel_array.end(); )
-    {
-      if ( !is_pixel_valid(*pixel, col_min, col_max, row_min, row_max) ) {
-          pixel = depth_pixel_array.erase(pixel);
-      }
-      else{
-          ++pixel;
-      }
+    for (auto pixel = depth_pixel_array.begin(); pixel != depth_pixel_array.end();) {
+        if (!is_pixel_valid(*pixel, col_min, col_max, row_min, row_max)) {
+            pixel = depth_pixel_array.erase(pixel);
+        } else {
+            ++pixel;
+        }
     }
 }
 
@@ -106,8 +101,9 @@ void CollisionAvoidanceManager::compute_distance_to_obstacle() {
         // Get min depth in ROI
         DepthPixelArrayF depth_pixel_array = depth_msg->depth_pixel_array;
         filter_pixels_to_roi(depth_pixel_array, depth_msg->intrinsics);
-        auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs){ return lhs.depth < rhs.depth; };
-        const auto min_depth_pixel = std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);
+        auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs) { return lhs.depth < rhs.depth; };
+        const auto min_depth_pixel =
+            std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);
 
         // Make the obstacle distance available for the Mission Manager to access
         {
@@ -119,8 +115,7 @@ void CollisionAvoidanceManager::compute_distance_to_obstacle() {
         auto obstacle_dist = std_msgs::msg::Float32();
         obstacle_dist.data = min_depth_pixel->depth;
         _obstacle_distance_pub->publish(obstacle_dist);
-    }
-    else {
+    } else {
         {
             std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
             _depth = std::numeric_limits<float>::infinity();

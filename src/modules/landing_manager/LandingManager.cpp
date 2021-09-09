@@ -274,6 +274,4 @@ void LandingManager::visualizeResult(bool is_plain, bool can_land, const Eigen::
     }
 }
 
-void LandingManager::visualizeMap() {
-    _visualizer->visualizeEsdf(_mapper->getEsdf(), now(), _visualize);
-}
+void LandingManager::visualizeMap() { _visualizer->visualizeEsdf(_mapper->getEsdf(), now(), _visualize); }
