@@ -166,7 +166,7 @@ void LandingManager::mapper() {
     // Here we capture the downsampled depth data computed in the SensorManager
     std::shared_ptr<DownsampledImageF> depth_msg = _downsampled_depth_update_callback();
 
-    if (depth_msg != nullptr) {
+    if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {
         const rclcpp::Time timenow = now();
 
         // Input new image data
@@ -228,6 +228,10 @@ void LandingManager::mapper() {
         // Show results
         visualizeResult(is_plain, _can_land, ground_position, timenow);
         std::cout << landingManagerOut << " is_plain " << is_plain << " can_land " << can_land << std::endl;
+    }
+    else {
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        _can_land = false;
     }
 }
 
