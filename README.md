@@ -132,15 +132,18 @@ pip3 install --user --upgrade pymavlink
 
 ```bash
 source /opt/ros/foxy/setup.bash
+# Create colcon workspace
 mkdir -p colcon_ws/src
-cd colcon_ws/src
-git clone git@github.com:Auterion/autopilot_manager.git
-git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9
-git clone git@github.com:Auterion/image_downsampler.git
-git clone git@github.com:Auterion/landing_mapper.git -b develop
-git clone git@github.com:Auterion/px4_msgs.git -b develop
-cd ..
-colcon build
+cd colcon_ws
+# Clone the autopilot-manager package
+git clone git@github.com:Auterion/autopilot_manager.git src/autopilot_manager
+# Clone the required dependencies
+git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 src/eigen
+git clone git@github.com:Auterion/image_downsampler.git src/image_downsampler
+git clone git@github.com:Auterion/landing_mapper.git -b develop src/landing_mapper
+git clone git@github.com:Auterion/px4_msgs.git -b develop src/px4_msgs
+# Build with Release optimizations
+colcon build --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 ## mavlink-router config
@@ -248,7 +251,9 @@ the file you just copied. Example bellow:
 
 ## Install the autopilot-manager
 
-    echo "source colcon_ws/install/setup.bash" >> ~/.bashrc
+```bash
+echo "source colcon_ws/install/setup.bash" >> ~/.bashrc
+```
 
 And then `source ~/.bashrc` or open a new terminal window.
 
@@ -287,21 +292,20 @@ cd configuration-manager/build/src
 A ROS bool parameter named `sim` can be set when one is using a simulation environment. For that, a ROS param file can be used
 or rather be passed as an argument on `ros2 run`.
 
-_Note: Before running the autopilot-manager, make sure that the PX4 SITL daemon and the `configuration-manager` are running._
+**Note: Before running the autopilot-manager, make sure that the PX4 SITL daemon, `mavlink-router` and the `configuration-manager` are running.**
 
-Terminal 1
+#### Terminal 1
 
-```sh
-cd colcon_ws
-source install/setup.bash
+```bash
+source colcon_ws/install/setup.bash
 ros2 launch autopilot-manager static_tf.launch
 ```
 
-Terminal 2
+#### Terminal 2
 
-```sh
+```bash
+source colcon_ws/install/setup.bash
 cd colcon_ws
-source install/setup.bash
 ros2 run autopilot-manager autopilot-manager \
   -a install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_sitl.json \
   -c install/autopilot-manager/share/autopilot-manager/data/config/autopilot_manager.conf \
