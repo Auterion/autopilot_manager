@@ -53,7 +53,7 @@ LandingManager::LandingManager()
       _tf_buffer(this->get_clock()),
       _tf_listener(_tf_buffer),
       _vehicle_state(new VehicleState()),
-      _can_land(false) {}
+      _state(landing_mapper::eLandingMapperState::UNKNOWN) {}
 
 LandingManager::~LandingManager() { deinit(); }
 
@@ -163,6 +163,22 @@ void LandingManager::handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleO
     _tf_broadcaster.sendTransform(tMsg);
 }
 
+std::string string_state(landing_mapper::eLandingMapperState state) {
+    switch(state) {
+    case landing_mapper::eLandingMapperState::CAN_LAND:
+        return "CAN_LAND";
+        break;
+    case landing_mapper::eLandingMapperState::CAN_NOT_LAND:
+        return "CAN_NOT_LAND";
+        break;
+    case landing_mapper::eLandingMapperState::CLOSE_TO_GROUND:
+        return "CLOSE_TO_GROUND";
+        break;
+    default:
+        return "UNKNOWN";
+    }
+}
+
 void LandingManager::mapper() {
     // Here we capture the downsampled depth data computed in the SensorManager
     std::shared_ptr<DownsampledImageF> depth_msg = _downsampled_depth_update_callback();
@@ -222,56 +238,80 @@ void LandingManager::mapper() {
         _mapper->updateVehicleOrientation(local_state.orientation, local_state.angular_velocity.z(), 0);
 
         Eigen::Vector3f ground_position;
-        const bool is_plain = _mapper->findPlain(ground_position);
-        const bool can_land = plainHysteresis(is_plain);
 
-        // Show results
-        visualizeResult(is_plain, _can_land, ground_position, timenow);
-        // std::cout << landingManagerOut << " is_plain " << is_plain << " can_land " << can_land << std::endl;
-    } else {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        _can_land = false;
+        landing_mapper::eLandingMapperState state = _mapper->findPlain(ground_position);
+        state = stateDebounce(state);
+
+        {
+            std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+            _state = state;
+        }
+
+        // Show result
+        visualizeResult(state, ground_position, timenow);
+        //std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state " << string_state(state) << std::endl;
     }
+    else {
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        if ( _state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND ) {
+            _state = landing_mapper::eLandingMapperState::UNKNOWN;
+        }
+
+        // Show result
+        //std::cout << landingManagerOut << " state " << string_state(_state) << std::endl;
+    }
+
 }
 
-bool LandingManager::plainHysteresis(bool is_plain) {
-    constexpr float hysteresis_low_thresh = 0.4;
-    constexpr float hysteresis_high_thresh = 0.9;
+landing_mapper::eLandingMapperState LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
+    landing_mapper::eLandingMapperState old_state;
+    {
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        old_state = _state;
+    }
+
+    constexpr float hysteresis_low_thresh = 0.7;
+    constexpr float hysteresis_high_thresh = 0.8;
     constexpr size_t hysteresis_window_size = 10;
 
-    _is_plain.push_back(is_plain);
-    while (_is_plain.size() > hysteresis_window_size) {
-        _is_plain.pop_front();
+    _states.push_back(state);
+    while (_states.size() > hysteresis_window_size) {
+        _states.pop_front();
     }
-    float avg = static_cast<float>(std::accumulate(_is_plain.cbegin(), _is_plain.cend(), 0.f)) / _is_plain.size();
+    float avg = static_cast<float>(std::count(_states.cbegin(), _states.cend(), landing_mapper::eLandingMapperState::CAN_LAND)) / _states.size();
 
-    bool can_land;
+    if (state == landing_mapper::eLandingMapperState::CAN_LAND ) {
+        if (avg < hysteresis_high_thresh) {
+            state = old_state;
+        }
+        else {
+            state = landing_mapper::eLandingMapperState::CAN_LAND;
+        }
+    }
+    else {
+        if (avg > hysteresis_low_thresh) {
+            state = landing_mapper::eLandingMapperState::CAN_LAND;
+        }
+        else {
+            state = state;
+        }
+    }
+
     {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        can_land = _can_land;
+        _state = state;
     }
 
-    if (can_land && avg < hysteresis_low_thresh) {
-        can_land = false;
-    } else if (!can_land && avg > hysteresis_high_thresh) {
-        can_land = true;
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        _can_land = can_land;
-    }
-
-    return can_land;
+    return state;
 }
 
-void LandingManager::visualizeResult(bool is_plain, bool can_land, const Eigen::Vector3f& position,
+void LandingManager::visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                                      const rclcpp::Time& timestamp) {
     Eigen::Vector3f vis_position(position[0], position[1], position[2] - 0.5);
-    if (can_land) {
+    if (state == landing_mapper::eLandingMapperState::CAN_LAND) {
         _visualizer->publishSafeLand(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
-    } else if (is_plain) {
-        _visualizer->publishPlainFound(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
+    } else if (state == landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
+        _visualizer->publishCloseGround(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     } else {
         _visualizer->publishGround(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     }

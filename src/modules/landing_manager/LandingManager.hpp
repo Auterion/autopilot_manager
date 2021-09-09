@@ -80,9 +80,9 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    bool RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_landing_condition_state() {
+    landing_mapper::eLandingMapperState RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_landing_condition_state() {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        return _can_land;
+        return _state;
     }
 
     void getDownsampledDepthDataCallback(std::function<std::shared_ptr<DownsampledImageF>()> callback) {
@@ -99,10 +99,10 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     void handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 
-    void visualizeResult(bool is_plain, bool can_land, const Eigen::Vector3f& position, const rclcpp::Time& timestamp);
+    void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position, const rclcpp::Time& timestamp);
     void visualizeMap();
 
-    bool plainHysteresis(bool is_plain);
+    landing_mapper::eLandingMapperState stateDebounce(landing_mapper::eLandingMapperState state);
 
    private:
     std::unique_ptr<landing_mapper::LandingMapper<float>> _mapper;
@@ -134,6 +134,6 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     std::vector<Eigen::Vector3f> _pointcloud_for_mapper;
 
-    bool _can_land;
-    std::deque<bool> _is_plain;
+    landing_mapper::eLandingMapperState _state;
+    std::deque<landing_mapper::eLandingMapperState> _states;
 };
