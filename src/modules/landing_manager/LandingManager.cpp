@@ -80,9 +80,6 @@ void LandingManager::init() {
     _callback_group_mapper = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     auto mapper_opt = rclcpp::SubscriptionOptions();
     mapper_opt.callback_group = _callback_group_mapper;
-    _callback_group_image = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    auto image_opt = rclcpp::SubscriptionOptions();
-    image_opt.callback_group = _callback_group_image;
     _callback_group_telemetry = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     auto telemetry_opt = rclcpp::SubscriptionOptions();
     telemetry_opt.callback_group = _callback_group_telemetry;

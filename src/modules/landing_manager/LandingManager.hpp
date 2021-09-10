@@ -117,7 +117,6 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     rclcpp::TimerBase::SharedPtr _timer_map_visualizer;
 
     rclcpp::CallbackGroup::SharedPtr _callback_group_mapper;
-    rclcpp::CallbackGroup::SharedPtr _callback_group_image;
     rclcpp::CallbackGroup::SharedPtr _callback_group_telemetry;
 
     rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
