@@ -42,7 +42,9 @@
 
 using namespace std::chrono_literals;
 
-CollisionAvoidanceManager::CollisionAvoidanceManager() : Node("collision_avoidance_manager") {}
+CollisionAvoidanceManager::CollisionAvoidanceManager()
+    : Node("collision_avoidance_manager"),
+      _config_update_callback([]() { return CollisionAvoidanceManagerConfiguration{}; }) {}
 
 CollisionAvoidanceManager::~CollisionAvoidanceManager() { deinit(); }
 
@@ -95,6 +97,11 @@ void CollisionAvoidanceManager::filter_pixels_to_roi(DepthPixelArrayF& depth_pix
 }
 
 void CollisionAvoidanceManager::compute_distance_to_obstacle() {
+    // update parameters
+    // TODO: make this call dependent on a dbus param update on the Autopilot Manager
+    // instead of running at every loop update
+    _collision_avoidance_manager_config = _config_update_callback();
+
     auto depth_msg = _downsampled_depth_update_callback();
 
     if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {

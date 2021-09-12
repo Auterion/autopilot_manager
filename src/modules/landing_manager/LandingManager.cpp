@@ -45,6 +45,7 @@ using namespace std::placeholders;
 
 LandingManager::LandingManager()
     : Node("landing_manager"),
+      _config_update_callback([]() { return LandingManagerConfiguration{}; }),
       _visualize(true),
       _visualizer(std::make_shared<viz::MapVisualizer>(this)),
       _timer_mapper({}),
@@ -57,22 +58,38 @@ LandingManager::LandingManager()
 
 LandingManager::~LandingManager() { deinit(); }
 
-void LandingManager::initParameter() {
+void LandingManager::initParameters() {
+    _landing_manager_config = _config_update_callback();
+
     _mapper_parameter.max_search_altitude_m = 22.f;
-    _mapper_parameter.search_altitude_m = 10.f;  // TODO ensure this is smaller max_search_altitude_m
     _mapper_parameter.max_window_size_m = 5.f;
-    _mapper_parameter.window_size_m = 2.f;  // TODO ensure this is smaller max_window_size_m
 
     _mapper_parameter.distance_threshold_m = 0.1f;
     _mapper_parameter.mean_tresh = 0.1f;
     _mapper_parameter.percentage_of_valid_samples_in_window = 0.8f;
     _mapper_parameter.std_dev_tresh = 0.05f;
     _mapper_parameter.voxel_size_m = 0.1f;
+
+    // These are the only parameters configurable through AMC
+    setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground);
+    setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size);
 }
+
+void LandingManager::updateParameters() {
+    _landing_manager_config = _config_update_callback();
+
+    // These are the only parameters configurable through AMC
+    setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground);
+    setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size);
+
+    // std::cout << landingManagerOut << "Square size: " << _landing_manager_config.safe_landing_area_square_size
+    //           << " | Distance to ground: " << _landing_manager_config.safe_landing_distance_to_ground << std::endl;
+}
+
 void LandingManager::init() {
     std::cout << landingManagerOut << " Started!" << std::endl;
 
-    initParameter();
+    initParameters();
 
     _mapper = std::make_unique<landing_mapper::LandingMapper<float>>(_mapper_parameter);
 
@@ -100,7 +117,7 @@ auto LandingManager::deinit() -> void {}
 
 auto LandingManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
-bool LandingManager::setSearchAltitude_m(float altitude) {
+bool LandingManager::setSearchAltitude_m(const double altitude) {
     if (altitude < 0.0) {
         return false;
     } else if (altitude > _mapper_parameter.max_search_altitude_m) {
@@ -112,7 +129,7 @@ bool LandingManager::setSearchAltitude_m(float altitude) {
     return true;
 }
 
-bool LandingManager::setSearchWindow_m(float window_size_m) {
+bool LandingManager::setSearchWindow_m(const double window_size_m) {
     if (window_size_m < 0.0) {
         return false;
     } else if (window_size_m > _mapper_parameter.window_size_m) {
@@ -179,6 +196,13 @@ std::string string_state(landing_mapper::eLandingMapperState state) {
 void LandingManager::mapper() {
     // Here we capture the downsampled depth data computed in the SensorManager
     std::shared_ptr<DownsampledImageF> depth_msg = _downsampled_depth_update_callback();
+
+    // check for parameter updates
+    // TODO: make this call dependent on a dbus param update on the Autopilot Manager
+    // instead of running at every loop update
+    updateParameters();
+
+    // TODO: reinstantiate _mapper a after parameter update
 
     if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {
         const rclcpp::Time timenow = now();

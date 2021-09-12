@@ -29,7 +29,14 @@ class AutopilotManager {
     mavsdk::Mavsdk _mavsdk_mission_computer;
 
    private:
-    enum ResponseCode { SUCCEED_WITH_COLL_AVOID_OFF = 0, SUCCEED_WITH_COLL_AVOID_ON = 1, FAILED = 2, UNKNOWN = 999 };
+    enum ResponseCode {
+        SUCCEED_WITH_SAFE_LANDING_OFF = 0,
+        SUCCEED_WITH_SAFE_LANDING_ON = 1,
+        SUCCEED_WITH_COLL_AVOID_OFF = 2,
+        SUCCEED_WITH_COLL_AVOID_ON = 3,
+        FAILED = 4,
+        UNKNOWN = 999
+    };
 
     void start();
     void initialProvisioning();
@@ -43,10 +50,34 @@ class AutopilotManager {
 
     uint8_t _autopilot_manager_enabled = false;
     std::string _decision_maker_input_type = "";
+
+    // General configurations dependent on selected actions
+    std::string _script_to_call = "";
+    std::string _api_call = "";
+    double _local_position_offset_x = 0.0;
+    double _local_position_offset_y = 0.0;
+    double _local_position_offset_z = 0.0;
+    double _local_position_waypoint_x = 0.0;
+    double _local_position_waypoint_y = 0.0;
+    double _local_position_waypoint_z = 0.0;
+    double _global_position_offset_lat = 0.0;
+    double _global_position_offset_lon = 0.0;
+    double _global_position_offset_alt_amsl = 0.0;
+    double _global_position_waypoint_lat = 0.0;
+    double _global_position_waypoint_lon = 0.0;
+    double _global_position_waypoint_alt_amsl = 0.0;
+
+    // Safe landing configurations
+    uint8_t _safe_landing_enabled = false;
+    double _safe_landing_area_square_size = 0.0;
+    double _safe_landing_distance_to_ground = 0.0;
+    std::string _safe_landing_on_no_safe_land = "";
+    uint8_t _safe_landing_try_landing_after_action = false;
+
+    // Simple collision avoidance configurations
     uint8_t _simple_collision_avoid_enabled = false;
     double _simple_collision_avoid_distance_threshold = 0.0;
-    std::string _simple_collision_avoid_distance_on_condition_true = "";
-    std::string _simple_collision_avoid_distance_on_condition_false = "";
+    std::string _simple_collision_avoid_action_on_condition_true = "";
 
     std::thread _sensor_manager_th;
     std::thread _landing_manager_th;

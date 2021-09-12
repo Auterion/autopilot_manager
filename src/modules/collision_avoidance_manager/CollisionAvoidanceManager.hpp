@@ -73,6 +73,11 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
         float height_center{0.5f};
     };
 
+    struct CollisionAvoidanceManagerConfiguration {
+        uint8_t autopilot_manager_enabled = 0U;
+        uint8_t simple_collision_avoid_enabled = 0U;
+    };
+
     void RCPPUTILS_TSA_GUARDED_BY(_collision_avoidance_manager_mutex) set_roi(const ROISettings& settings) {
         std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
         _roi_settings = settings;
@@ -87,14 +92,20 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
         _downsampled_depth_update_callback = callback;
     }
 
+    void setConfigUpdateCallback(std::function<CollisionAvoidanceManagerConfiguration()> callback) {
+        _config_update_callback = callback;
+    }
+
    private:
     void compute_distance_to_obstacle();
     bool is_pixel_valid(const DepthPixelF& pixel, uint32_t col_min, uint32_t col_max, uint32_t row_min,
                         uint32_t row_max) const;
     void filter_pixels_to_roi(DepthPixelArrayF& pixel, const RectifiedIntrinsicsF& intrinsics);
 
-   private:
     std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
+    std::function<CollisionAvoidanceManagerConfiguration()> _config_update_callback;
+
+    CollisionAvoidanceManagerConfiguration _collision_avoidance_manager_config;
 
     rclcpp::TimerBase::SharedPtr _timer{};
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _obstacle_distance_pub{};

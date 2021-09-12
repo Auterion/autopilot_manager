@@ -136,7 +136,7 @@ void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, con
     geometry_msgs::msg::Vector3 scale;
     scale.x = size;
     scale.y = size;
-    scale.z = 0.01;
+    scale.z = 0.05;
 
     publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
@@ -155,7 +155,7 @@ void MapVisualizer::publishCloseGround(const Eigen::MatrixBase<Derived>& point, 
     geometry_msgs::msg::Vector3 scale;
     scale.x = size;
     scale.y = size;
-    scale.z = 0.1;
+    scale.z = 0.05;
 
     publishCube(toPoint(point), color, scale, timestamp, enabled);
 }

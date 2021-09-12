@@ -101,11 +101,31 @@ class MissionManager : public ModuleBase {
     void run() override;
 
     struct MissionManagerConfiguration {
+        uint8_t autopilot_manager_enabled = 0U;
         std::string decision_maker_input_type = "";
+
+        std::string script_to_call = "";
+        std::string api_call = "";
+        double local_position_offset_x = 0.0;
+        double local_position_offset_y = 0.0;
+        double local_position_offset_z = 0.0;
+        double local_position_waypoint_x = 0.0;
+        double local_position_waypoint_y = 0.0;
+        double local_position_waypoint_z = 0.0;
+        double global_position_offset_lat = 0.0;
+        double global_position_offset_lon = 0.0;
+        double global_position_offset_alt_amsl = 0.0;
+        double global_position_waypoint_lat = 0.0;
+        double global_position_waypoint_lon = 0.0;
+        double global_position_waypoint_alt_amsl = 0.0;
+
+        uint8_t safe_landing_enabled = 0U;
+        std::string safe_landing_on_no_safe_land = "";
+        uint8_t safe_landing_try_landing_after_action = 0U;
+
         uint8_t simple_collision_avoid_enabled = 0U;
         double simple_collision_avoid_distance_threshold = 0.0;
-        std::string simple_collision_avoid_distance_on_condition_true = "";
-        std::string simple_collision_avoid_distance_on_condition_false = "";
+        std::string simple_collision_avoid_action_on_condition_true = "";
     };
 
     void setConfigUpdateCallback(std::function<MissionManagerConfiguration()> callback) {

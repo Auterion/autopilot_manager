@@ -80,6 +80,13 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
+    struct LandingManagerConfiguration {
+        uint8_t autopilot_manager_enabled = 0U;
+        uint8_t safe_landing_enabled = 0U;
+        double safe_landing_area_square_size = 0.0;
+        double safe_landing_distance_to_ground = 0.0;
+    };
+
     landing_mapper::eLandingMapperState RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex)
         get_latest_landing_condition_state() {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -90,14 +97,17 @@ class LandingManager : public rclcpp::Node, ModuleBase {
         _downsampled_depth_update_callback = callback;
     }
 
-    bool setSearchAltitude_m(float altitude_m);
-    bool setSearchWindow_m(float window_size_m);
+    void setConfigUpdateCallback(std::function<LandingManagerConfiguration()> callback) {
+        _config_update_callback = callback;
+    }
+
+    bool setSearchAltitude_m(double altitude_m);
+    bool setSearchWindow_m(double window_size_m);
 
    private:
-    void initParameter();
-
+    void initParameters();
+    void updateParameters();
     void mapper();
-
     void handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 
     void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
@@ -106,10 +116,13 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     landing_mapper::eLandingMapperState stateDebounce(landing_mapper::eLandingMapperState state);
 
-   private:
+    std::function<LandingManagerConfiguration()> _config_update_callback;
+
     std::unique_ptr<landing_mapper::LandingMapper<float>> _mapper;
     landing_mapper::LandingMapperParameter _mapper_parameter;
     bool _visualize;
+
+    LandingManagerConfiguration _landing_manager_config;
 
     std::shared_ptr<viz::MapVisualizer> _visualizer;
 
