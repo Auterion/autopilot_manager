@@ -260,7 +260,7 @@ void LandingManager::mapper() {
 
         Eigen::Vector3f ground_position;
 
-        landing_mapper::eLandingMapperState state = _mapper->findPlain(ground_position);
+        landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
         state = stateDebounce(state);
 
         {
