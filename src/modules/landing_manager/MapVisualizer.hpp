@@ -40,7 +40,7 @@
 
 #include <common.h>
 
-#include <eigen3/Eigen/Core>
+#include <Eigen/Core>
 #include <landing_mapper/voxelcube/EuclideanSignedDistanceFields.hpp>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/rclcpp.hpp>

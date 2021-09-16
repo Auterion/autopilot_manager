@@ -40,9 +40,9 @@
 
 #pragma once
 
+#include <Eigen/Core>
 #include <ModuleBase.hpp>
 #include <chrono>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 
 // ROS dependencies
