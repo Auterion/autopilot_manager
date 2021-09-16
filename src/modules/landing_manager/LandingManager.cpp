@@ -59,6 +59,7 @@ LandingManager::LandingManager()
 LandingManager::~LandingManager() { deinit(); }
 
 void LandingManager::initParameters() {
+    std::unique_lock<std::mutex> lock(landing_manager_config_mtx);
     _landing_manager_config = _config_update_callback();
 
     _mapper_parameter.max_search_altitude_m = 22.f;
@@ -67,22 +68,34 @@ void LandingManager::initParameters() {
     _mapper_parameter.distance_threshold_m = 0.1f;
     _mapper_parameter.mean_tresh = 0.1f;
     _mapper_parameter.percentage_of_valid_samples_in_window = 0.8f;
-    _mapper_parameter.std_dev_tresh = 0.05f;
+    _mapper_parameter.std_dev_tresh = 0.08f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
     // These are the only parameters configurable through AMC
-    setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground);
-    setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size);
+    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
+        _mapper_parameter.search_altitude_m = 10.f;
+    }
+    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
+        _mapper_parameter.window_size_m = 2.f;
+    }
+
+    // std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
+    //           << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
 }
 
 void LandingManager::updateParameters() {
+    std::unique_lock<std::mutex> lock(landing_manager_config_mtx);
     _landing_manager_config = _config_update_callback();
 
     // These are the only parameters configurable through AMC
-    setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground);
-    setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size);
+    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
+        _mapper_parameter.search_altitude_m = 10.f;
+    }
+    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
+        _mapper_parameter.window_size_m = 2.f;
+    }
 
-    // std::cout << landingManagerOut << "Square size: " << _landing_manager_config.safe_landing_area_square_size
+    // std::cout << landingManagerOut << "Square size: " << __mapper_parameter.window_size_m
     //           << " | Distance to ground: " << _landing_manager_config.safe_landing_distance_to_ground << std::endl;
 }
 
@@ -123,19 +136,19 @@ bool LandingManager::setSearchAltitude_m(const double altitude) {
     } else if (altitude > _mapper_parameter.max_search_altitude_m) {
         return false;
     } else {
-        _mapper_parameter.max_search_altitude_m = altitude;
+        _mapper_parameter.search_altitude_m = altitude;
     }
 
     return true;
 }
 
-bool LandingManager::setSearchWindow_m(const double window_size_m) {
-    if (window_size_m < 0.0) {
+bool LandingManager::setSearchWindow_m(const double window_size) {
+    if (window_size < 0.0) {
         return false;
-    } else if (window_size_m > _mapper_parameter.window_size_m) {
+    } else if (window_size > _mapper_parameter.max_window_size_m) {
         return false;
     } else {
-        _mapper_parameter.window_size_m = window_size_m;
+        _mapper_parameter.window_size_m = window_size;
     }
 
     return true;
@@ -261,7 +274,7 @@ void LandingManager::mapper() {
         Eigen::Vector3f ground_position;
 
         landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
-        state = stateDebounce(state);
+        stateDebounce(state);
 
         {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -269,9 +282,10 @@ void LandingManager::mapper() {
         }
 
         // Show result
-        visualizeResult(state, ground_position, timenow);
-        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state "
-        // << string_state(state) << std::endl;
+        visualizeResult(_state, ground_position, timenow);
+        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state
+        // string: "
+        // << string_state(state) << " state value: " << state << std::endl;
     } else {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
@@ -283,7 +297,7 @@ void LandingManager::mapper() {
     }
 }
 
-landing_mapper::eLandingMapperState LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
+void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
     landing_mapper::eLandingMapperState old_state;
     {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -315,13 +329,6 @@ landing_mapper::eLandingMapperState LandingManager::stateDebounce(landing_mapper
             state = state;
         }
     }
-
-    {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        _state = state;
-    }
-
-    return state;
 }
 
 void LandingManager::visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,

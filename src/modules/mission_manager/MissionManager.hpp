@@ -39,6 +39,8 @@
 
 #pragma once
 
+#include <Eigen/Eigen>
+#include <Eigen/Geometry>
 #include <ModuleBase.hpp>
 #include <atomic>
 #include <future>
@@ -49,6 +51,7 @@
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
+#include <mavsdk/plugins/server_utility/server_utility.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
 static constexpr auto missionManagerOut = "[Mission Manager]";
@@ -136,7 +139,7 @@ class MissionManager : public ModuleBase {
         _distance_to_obstacle_update_callback = callback;
     }
 
-    void getCanLandStateCallback(std::function<bool()> callback) {
+    void getCanLandStateCallback(std::function<uint8_t()> callback) {
         _landing_condition_state_update_callback = callback;
     }
 
@@ -146,23 +149,45 @@ class MissionManager : public ModuleBase {
     void handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now);
     void handle_simple_collision_avoidance(std::chrono::time_point<std::chrono::system_clock> now);
 
+    void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
+    bool arrived_to_new_waypoint();
+
+    void get_global_position_from_local_offset(const double& offset_x, const double& offset_y, const double& offset_z);
+
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
-    std::function<bool()> _landing_condition_state_update_callback;
+    std::function<uint8_t()> _landing_condition_state_update_callback;
 
     std::string _path_to_custom_action_file;
 
     MissionManagerConfiguration _mission_manager_config;
 
+    std::mutex mission_manager_config_mtx;
+
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<CustomActionHandler> _custom_action_handler;
     std::shared_ptr<mavsdk::Action> _action;
     std::shared_ptr<mavsdk::Telemetry> _telemetry;
+    std::shared_ptr<mavsdk::ServerUtility> _server_utility;
 
     std::atomic<bool> _action_triggered;
     std::atomic<bool> _in_air;
     std::atomic<bool> _landing;
     std::atomic<bool> _on_ground;
+
+    std::atomic<double> _current_latitude;
+    std::atomic<double> _current_longitude;
+    std::atomic<double> _current_altitude_amsl;
+    std::atomic<double> _current_pos_x;
+    std::atomic<double> _current_pos_y;
+    std::atomic<double> _current_pos_z;
+    std::atomic<double> _current_yaw;
+    std::atomic<double> _new_latitude;
+    std::atomic<double> _new_longitude;
+    std::atomic<double> _new_altitude_amsl;
+    std::atomic<double> _previously_set_waypoint_latitude;
+    std::atomic<double> _previously_set_waypoint_longitude;
+    std::atomic<double> _previously_set_waypoint_altitude_amsl;
 
     std::chrono::time_point<std::chrono::system_clock> _last_time{};
 

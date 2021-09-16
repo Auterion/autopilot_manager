@@ -114,7 +114,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
                          const rclcpp::Time& timestamp);
     void visualizeMap();
 
-    landing_mapper::eLandingMapperState stateDebounce(landing_mapper::eLandingMapperState state);
+    void stateDebounce(landing_mapper::eLandingMapperState state);
 
     std::function<LandingManagerConfiguration()> _config_update_callback;
 
@@ -123,6 +123,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     bool _visualize;
 
     LandingManagerConfiguration _landing_manager_config;
+
+    std::mutex landing_manager_config_mtx;
 
     std::shared_ptr<viz::MapVisualizer> _visualizer;
 

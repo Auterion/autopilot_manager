@@ -12,6 +12,8 @@ endif()
 
 find_package(MAVSDK REQUIRED)
 find_package(Threads REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 
 add_library(
     mission-manager
@@ -22,15 +24,18 @@ target_link_libraries(
     mission-manager
     PUBLIC
     MAVSDK::mavsdk_action
-    MAVSDK::mavsdk_telemetry
     MAVSDK::mavsdk_custom_action
+    MAVSDK::mavsdk_server_utility
+    MAVSDK::mavsdk_telemetry
     MAVSDK::mavsdk
     PRIVATE Threads::Threads
+    Eigen3::Eigen
 )
 
 target_include_directories(mission-manager PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/autopilot_manager/mission_manager>
+    ${Eigen3_INCLUDE_DIRS}
     )
 
 install(TARGETS mission-manager

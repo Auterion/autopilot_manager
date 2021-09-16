@@ -51,9 +51,7 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
       _custom_action_config_path(customActionConfigPath.empty() ? _custom_action_config_path : customActionConfigPath) {
     initialProvisioning();
 
-    if (static_cast<bool>(_autopilot_manager_enabled)) {
-        start();
-    }
+    start();
 }
 
 AutopilotManager::~AutopilotManager() {
@@ -249,24 +247,17 @@ void AutopilotManager::start() {
         // Get discovered system now
         const auto system = fut.get();
 
-        // Create and init the Sensor Manager
+        // Create the Sensor Manager
         _sensor_manager = std::make_shared<SensorManager>();
-        _sensor_manager->init();
-        _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
 
-        // Create and init the Collision Avoidance Manager
+        // Create the Collision Avoidance Manager
         _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
-        _collision_avoidance_manager->init();
-        _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
 
-        // Create and init the Landing Manager
+        // Create the Landing Manager
         _landing_manager = std::make_shared<LandingManager>();
-        _landing_manager->init();
-        _landing_manager_th = std::thread(&AutopilotManager::run_landing_manager, this);
 
-        // Create and init Mission Manager
+        // Create Mission Manager
         _mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
-        _mission_manager->init();
 
         // Init the callback for setting the Mission Manager parameters
         _mission_manager->setConfigUpdateCallback([this]() {
@@ -342,7 +333,20 @@ void AutopilotManager::start() {
             return _landing_manager->get_latest_landing_condition_state();
         });
 
-        // Run the Mission Manager
+        // Init and run the Sensor Manager
+        _sensor_manager->init();
+        _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
+
+        // Init and run the Collision Avoidance Manager
+        _collision_avoidance_manager->init();
+        _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
+
+        // Init and run the Landing Manager
+        _landing_manager->init();
+        _landing_manager_th = std::thread(&AutopilotManager::run_landing_manager, this);
+
+        // Init and run the Mission Manager
+        _mission_manager->init();
         _mission_manager->run();
 
     } else {
