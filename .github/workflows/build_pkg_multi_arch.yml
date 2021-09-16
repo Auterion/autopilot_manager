@@ -81,7 +81,8 @@ jobs:
             --rosdistro ${{ matrix.ros2_distro }} \
             --custom-setup-script scripts/cross_compile_dependencies.sh \
             --custom-data-dir /tmp/MAVSDK \
-            --skip-rosdep-keys Eigen3 image_downsampler landing_mapper px4_msgs px4_ros_com
+            --skip-rosdep-keys Eigen3 image_downsampler landing_mapper px4_msgs px4_ros_com \
+            --colcon-defaults /tmp/colcon_ws/src/autopilot_manager/scripts/packaging/defaults.yaml
       - name: Create zip
         run: |
           cd /tmp/colcon_ws/install_${{ matrix.arch }}
