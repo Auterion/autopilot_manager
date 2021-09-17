@@ -336,16 +336,18 @@ void MissionManager::decision_maker_run() {
     _last_time = std::chrono::system_clock::now();
 
     // Get global origin to set the reference global position
-    _telemetry->get_gps_global_origin_async([this](mavsdk::Telemetry::Result result,
-                                                   mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
-        if (result == mavsdk::Telemetry::Result::Success) {
-            _ref_latitude = gps_global_origin.latitude_deg;
-            _ref_longitude = gps_global_origin.longitude_deg;
-            _ref_altitude = gps_global_origin.altitude_m;
-        }
+    _telemetry->get_gps_global_origin_async(
+        [this](mavsdk::Telemetry::Result result, mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
+            if (result == mavsdk::Telemetry::Result::Success) {
+                _ref_latitude = gps_global_origin.latitude_deg;
+                _ref_longitude = gps_global_origin.longitude_deg;
+                _ref_altitude = gps_global_origin.altitude_m;
+            }
 
-        std::cout << missionManagerOut << _ref_latitude << " " << _ref_longitude << " " << _ref_altitude << std::endl;
-    });
+            std::cout << missionManagerOut << " Global position reference initialiazed: Latitude: " << _ref_latitude
+                      << " deg, Longitude " << _ref_longitude " deg, Altitude (AMSL): " << _ref_altitude << " meters"
+                      << std::endl;
+        });
 
     // Get global position
     _telemetry->subscribe_position([this](mavsdk::Telemetry::Position position) {
