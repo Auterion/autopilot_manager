@@ -124,6 +124,10 @@ void LandingManager::init() {
     _vehicle_odometry_sub = create_subscription<px4_msgs::msg::VehicleOdometry>(
         "fmu/vehicle_odometry/out", 10, std::bind(&LandingManager::handleIncomingVehicleOdometry, this, _1),
         telemetry_opt);
+
+    // Setup landing state publisher
+    _landing_state_pub =
+        this->create_publisher<std_msgs::msg::Bool>("autopilot_manager/landing_manager/good_to_land", 10);
 }
 
 auto LandingManager::deinit() -> void {}
@@ -280,6 +284,11 @@ void LandingManager::mapper() {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
             _state = state;
         }
+
+        // Publish landing state to the ROS side
+        auto good_to_land = std_msgs::msg::Bool();
+        good_to_land.data = (state != landing_mapper::eLandingMapperState::CAN_NOT_LAND);
+        _landing_state_pub->publish(good_to_land);
 
         // Show result
         visualizeResult(_state, ground_position, timenow);

@@ -17,7 +17,9 @@ find_package(PythonInterp 3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(tf2_ros REQUIRED)
-
+find_package(px4_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 #################
 # Setup targets #
@@ -25,13 +27,15 @@ find_package(tf2_ros REQUIRED)
 
 add_library(landing-manager SHARED
   LandingManager.cpp
-  MapVisualizer.cpp)
+  MapVisualizer.cpp
+)
 ament_target_dependencies(landing-manager
   Eigen3
   landing_mapper
   image_downsampler
   px4_msgs
   tf2_ros
+  std_msgs
   visualization_msgs
 )
 target_include_directories(landing-manager PUBLIC
@@ -46,6 +50,8 @@ target_link_libraries(landing-manager
   ${landing_mapper_LIBRARIES}
   ${image_downsampler_LIBRARIES}
   ${px4_msgs_LIBRARIES}
+  ${std_msgs_LIBRARIES}
+  ${visualization_msgs_LIBRARIES}
 )
 
 ############

@@ -59,6 +59,7 @@
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 struct VehicleState {
     bool valid{false};
@@ -135,6 +136,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     rclcpp::CallbackGroup::SharedPtr _callback_group_telemetry;
 
     rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr _landing_state_pub;
 
     tf2_ros::TransformBroadcaster _tf_broadcaster;
     tf2_ros::Buffer _tf_buffer;
