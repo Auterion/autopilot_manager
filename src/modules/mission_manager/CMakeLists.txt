@@ -16,8 +16,9 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
 add_library(
-    mission-manager
+    mission-manager SHARED
     MissionManager.cpp
+    CustomActionHandler.cpp
 )
 
 target_link_libraries(

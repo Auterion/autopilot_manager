@@ -47,6 +47,8 @@
 #include <iostream>
 #include <string>
 
+#include <CustomActionHandler.hpp>
+
 // MAVSDK dependencies
 #include <mavsdk/geometry.h>
 #include <mavsdk/mavsdk.h>
@@ -56,42 +58,6 @@
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
 static constexpr auto missionManagerOut = "[Mission Manager]";
-
-class CustomActionHandler {
-   public:
-    CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
-    ~CustomActionHandler();
-    CustomActionHandler(const CustomActionHandler&) = delete;
-    const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
-
-    auto start() -> bool;
-    auto run() -> void;
-
-   private:
-    void new_action_check();
-    void send_progress_status(mavsdk::CustomAction::ActionToExecute action);
-    void process_custom_action(mavsdk::CustomAction::ActionToExecute action);
-    void execute_custom_action(const mavsdk::CustomAction::ActionMetadata& action_metadata);
-
-    std::shared_ptr<mavsdk::System> _mavsdk_system;
-    std::shared_ptr<mavsdk::CustomAction> _custom_action;
-
-    std::string _path_to_custom_action_file;
-
-    std::atomic<bool> _received_custom_action{false};
-    std::atomic<bool> _mission_finished{false};
-    std::atomic<bool> _action_stopped{false};
-    std::atomic<bool> _new_action{false};
-
-    std::mutex cancel_mtx;
-    std::condition_variable cancel_signal;
-
-    std::vector<mavsdk::CustomAction::ActionToExecute> _actions;
-    std::vector<double> _actions_progress;
-    std::vector<mavsdk::CustomAction::Result> _actions_result;
-    std::vector<mavsdk::CustomAction::ActionMetadata> _actions_metadata;
-    std::vector<std::thread> _progress_threads;
-};
 
 class MissionManager : public ModuleBase {
    public:
