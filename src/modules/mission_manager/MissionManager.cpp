@@ -90,6 +90,11 @@ void MissionManager::deinit() {
 }
 
 void MissionManager::run() {
+    while (!_telemetry->health_all_ok()) {
+        std::cout << missionManagerOut << " Waiting for system to be ready...";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
     // Start the desicion maker thread
     _decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
 
@@ -146,8 +151,16 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
     if (safe_landing_enabled) {
         if (_landing && !_on_ground) {
-            if (safe_landing_state == 3 /*eLandingMapperState::CAN_NOT_LAND*/ && !_action_triggered) {
+            if (safe_landing_state == 0 /*eLandingMapperState::UNKNOWN*/ && !_action_triggered) {
+                _action->hold();
+                std::cout << missionManagerOut << "Unknown landing state. Holding..." << std::endl;
+
+                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning,
+                                                  "Unknown landing state. Holding...");
+
+            } else if (safe_landing_state == 3 /*eLandingMapperState::CAN_NOT_LAND*/ && !_action_triggered) {
                 std::cout << missionManagerOut << "Not able to land" << std::endl;
+
                 if (safe_landing_on_no_safe_land == "HOLD") {
                     _action->hold();
                     _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info,
