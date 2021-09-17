@@ -99,16 +99,15 @@ void MissionManager::run() {
     }
 }
 
-void MissionManager::get_global_position_from_local_offset(const double& offset_x, const double& offset_y,
-                                                           const double& offset_z) {
+mavsdk::geometry::CoordinateTransformation::GlobalCoordinate MissionManager::get_global_position_from_local_offset(
+    const double& offset_x, const double& offset_y) const {
     const double local_position_x =
-        std::cos(_current_yaw) * (_current_pos_x + offset_x) - std::sin(_current_yaw) * (_current_pos_y + offset_y);
+        (std::cos(_current_yaw) * offset_x - std::sin(_current_yaw) * offset_y) + _current_pos_x;
     const double local_position_y =
-        std::sin(_current_yaw) * (_current_pos_x + offset_x) - std::cos(_current_yaw) * (_current_pos_y + offset_y);
+        (std::sin(_current_yaw) * offset_x + std::cos(_current_yaw) * offset_y) + _current_pos_y;
 
-    (void)local_position_x;
-    (void)local_position_y;
-    (void)offset_z;
+    const mavsdk::geometry::CoordinateTransformation ct({_ref_latitude, _ref_longitude});
+    return ct.global_from_local({local_position_x, local_position_y});
 }
 
 void MissionManager::set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl) {
@@ -135,6 +134,9 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     const double global_position_waypoint_lat = _mission_manager_config.global_position_waypoint_lat;
     const double global_position_waypoint_lon = _mission_manager_config.global_position_waypoint_lon;
     const double global_position_waypoint_alt_amsl = _mission_manager_config.global_position_waypoint_alt_amsl;
+    const double local_position_offset_x = _mission_manager_config.local_position_offset_x;
+    const double local_position_offset_y = _mission_manager_config.local_position_offset_y;
+    const double local_position_offset_z = _mission_manager_config.local_position_offset_z;
     lock.unlock();
 
     const uint8_t safe_landing_state = _landing_condition_state_update_callback();
@@ -157,15 +159,23 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     std::cout << missionManagerOut << " RTL triggered" << std::endl;
 
                 } else if (safe_landing_on_no_safe_land == "MOVE_XYZ_WRT_CURRENT") {
-                    _action->hold();
+                    std::string status{};
 
-                    _server_utility->send_status_text(
-                        mavsdk::ServerUtility::StatusTextType::Info,
-                        "MOVE_XYZ_WRT_CURRENT action currently not supported for Safe Landing. Holding position...");
-                    std::cout
-                        << missionManagerOut
-                        << " MOVE_XYZ_WRT_CURRENT action currently not supported for Safe Landing. Holding position..."
-                        << std::endl;
+                    const auto waypoint =
+                        get_global_position_from_local_offset(local_position_offset_x, local_position_offset_y);
+                    const double waypoint_altitude = _current_altitude_amsl + local_position_offset_z;
+
+                    _action->goto_location(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude, NAN);
+
+                    set_new_waypoint(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude);
+
+                    status = "Moving XYZ WRT to current vehicle position triggered. Heading to determined Latitude " +
+                             std::to_string(waypoint.latitude_deg) + " deg, Longitude " +
+                             std::to_string(waypoint.longitude_deg) + " deg, Altitude (AMSL) " +
+                             std::to_string(waypoint_altitude) + " meters";
+
+                    _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+                    std::cout << missionManagerOut << " " << status << std::endl;
 
                 } else if (safe_landing_on_no_safe_land == "GO_TO_WAYPOINT_XYZ") {
                     _action->hold();
@@ -198,6 +208,8 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                             "global position of the vehicle."
                             "RTL triggered instead...";
 
+                        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
+
                     } else {
                         // then send the DO_REPOSITION
                         _action->goto_location(global_position_waypoint_lat, global_position_waypoint_lon,
@@ -210,9 +222,10 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                                  std::to_string(global_position_waypoint_lat) + " deg, Longitude " +
                                  std::to_string(global_position_waypoint_lon) + " deg, Altitude (AMSL) " +
                                  std::to_string(global_position_waypoint_alt_amsl) + " meters";
+
+                        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
                     }
 
-                    _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
                     std::cout << missionManagerOut << " " << status << std::endl;
 
                 } else if (safe_landing_on_no_safe_land == "SCRIPT_CALL") {
@@ -263,10 +276,10 @@ void MissionManager::handle_simple_collision_avoidance(std::chrono::time_point<s
             _in_air && !_action_triggered) {  // only trigger the condition when the vehicle is in-air
             if (_mission_manager_config.simple_collision_avoid_action_on_condition_true == "HOLD") {
                 _action->hold();
-                std::cout << missionManagerOut << "Position hold triggered" << _action_triggered << std::endl;
+                std::cout << missionManagerOut << "Position hold triggered" << std::endl;
             } else if (_mission_manager_config.simple_collision_avoid_action_on_condition_true == "RTL") {
                 _action->return_to_launch();
-                std::cout << missionManagerOut << "RTL triggered" << _action_triggered << std::endl;
+                std::cout << missionManagerOut << "RTL triggered" << std::endl;
             } else if (_mission_manager_config.simple_collision_avoid_action_on_condition_true ==
                        "MOVE_XYZ_WRT_CURRENT") {
                 _action->hold();
@@ -288,7 +301,7 @@ void MissionManager::handle_simple_collision_avoidance(std::chrono::time_point<s
                           << std::endl;
             } else if (_mission_manager_config.simple_collision_avoid_action_on_condition_true == "LAND") {
                 _action->land();
-                std::cout << missionManagerOut << "Land triggered" << _action_triggered << std::endl;
+                std::cout << missionManagerOut << "Land triggered" << std::endl;
             } else if (_mission_manager_config.simple_collision_avoid_action_on_condition_true == "SCRIPT_CALL") {
                 _action->hold();
                 std::cout << missionManagerOut << "SCRIPT_CALL action currently not supported. Holding position..."
@@ -309,6 +322,18 @@ void MissionManager::decision_maker_run() {
     // Init action trigger timer
     _last_time = std::chrono::system_clock::now();
 
+    // Get global origin to set the reference global position
+    _telemetry->get_gps_global_origin_async([this](mavsdk::Telemetry::Result result,
+                                                   mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
+        if (result == mavsdk::Telemetry::Result::Success) {
+            _ref_latitude = gps_global_origin.latitude_deg;
+            _ref_longitude = gps_global_origin.longitude_deg;
+            _ref_altitude = gps_global_origin.altitude_m;
+        }
+
+        std::cout << missionManagerOut << _ref_latitude << " " << _ref_longitude << " " << _ref_altitude << std::endl;
+    });
+
     // Get global position
     _telemetry->subscribe_position([this](mavsdk::Telemetry::Position position) {
         _current_latitude = position.latitude_deg;
@@ -325,7 +350,7 @@ void MissionManager::decision_maker_run() {
 
     // Get yaw
     _telemetry->subscribe_attitude_euler(
-        [this](mavsdk::Telemetry::EulerAngle euler_angle) { _current_yaw = euler_angle.yaw_deg; });
+        [this](mavsdk::Telemetry::EulerAngle euler_angle) { _current_yaw = euler_angle.yaw_deg * M_PI / 180.0; });
 
     // Get the landing state so we know when the vehicle is in-air, landing or in-ground
     _telemetry->subscribe_landed_state([this](mavsdk::Telemetry::LandedState landed_state) {

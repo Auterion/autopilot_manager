@@ -48,6 +48,7 @@
 #include <string>
 
 // MAVSDK dependencies
+#include <mavsdk/geometry.h>
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
@@ -152,7 +153,8 @@ class MissionManager : public ModuleBase {
     void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
     bool arrived_to_new_waypoint();
 
-    void get_global_position_from_local_offset(const double& offset_x, const double& offset_y, const double& offset_z);
+    mavsdk::geometry::CoordinateTransformation::GlobalCoordinate get_global_position_from_local_offset(
+        const double& offset_x, const double& offset_y) const;
 
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
@@ -178,6 +180,9 @@ class MissionManager : public ModuleBase {
     std::atomic<double> _current_latitude;
     std::atomic<double> _current_longitude;
     std::atomic<double> _current_altitude_amsl;
+    std::atomic<double> _ref_latitude;
+    std::atomic<double> _ref_longitude;
+    std::atomic<double> _ref_altitude;
     std::atomic<double> _current_pos_x;
     std::atomic<double> _current_pos_y;
     std::atomic<double> _current_pos_z;
