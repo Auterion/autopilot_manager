@@ -126,8 +126,7 @@ void LandingManager::init() {
         telemetry_opt);
 
     // Setup landing state publisher
-    _landing_state_pub =
-        this->create_publisher<std_msgs::msg::Bool>("autopilot_manager/landing_manager/good_to_land", 10);
+    _landing_state_pub = this->create_publisher<std_msgs::msg::String>("landing_manager/landing_state", 10);
 }
 
 auto LandingManager::deinit() -> void {}
@@ -286,9 +285,9 @@ void LandingManager::mapper() {
         }
 
         // Publish landing state to the ROS side
-        auto good_to_land = std_msgs::msg::Bool();
-        good_to_land.data = (state != landing_mapper::eLandingMapperState::CAN_NOT_LAND);
-        _landing_state_pub->publish(good_to_land);
+        auto landing_state = std_msgs::msg::String();
+        landing_state.data = string_state(state);
+        _landing_state_pub->publish(landing_state);
 
         // Show result
         visualizeResult(_state, ground_position, timenow);
