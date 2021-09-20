@@ -4,25 +4,17 @@
                 "description": "Example action of a delivery procedure",
                 "global_script": "",
                 "global_timeout": null,
+                "action_complete_condition": "ON_LAST_STAGE_COMPLETE",
                 "stages": [{
-                                "cmd": {
-                                        "type": "INT",
-                                        "target_system": 0,
-                                        "target_component": 0,
-                                        "frame": 0,
-                                        "command": 192,
-                                        "param1": null,
-                                        "param2": 1.0,
-                                        "param3": null,
-                                        "param4": null,
-                                        "param5": 47.355981,
-                                        "param6": 8.518742,
-                                        "param7": null,
-                                        "is_local": false
-                                },
+                                "cmd": {},
                                 "script": "",
-                                "timestamp_start": null,
-                                "timestamp_stop": 10
+                                "parameter_set": {
+                                    "parameter_name": "COM_DISARM_LAND",
+                                    "parameter_value": "0.0",
+                                    "parameter_type": "FLOAT"
+                                },
+                                "state_transition_condition": "ON_RESULT_SUCCESS",
+                                "timeout": null
                         },
                         {
                                 "cmd": {
@@ -41,26 +33,30 @@
                                         "is_local": false
                                 },
                                 "script": "",
-                                "timestamp_start": null,
-                                "timestamp_stop": 1
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_RESULT_SUCCESS",
+                                "timeout": null
                         },
                         {
                                 "cmd": {},
                                 "script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_safe_landing.py -a 127.0.0.1 -p 14561",
-                                "timestamp_start": null,
-                                "timestamp_stop": 10
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_LANDING_COMPLETE",
+                                "timeout": null
                         },
                         {
                                 "cmd": {},
                                 "script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --open",
-                                "timestamp_start": null,
-                                "timestamp_stop": 5
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_RESULT_SUCCESS",
+                                "timeout": null
                         },
                         {
                                 "cmd": {},
                                 "script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --close",
-                                "timestamp_start": null,
-                                "timestamp_stop": 5
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_RESULT_SUCCESS",
+                                "timeout": null
                         },
                         {
                                 "cmd": {
@@ -79,28 +75,20 @@
                                         "is_local": false
                                 },
                                 "script": "",
-                                "timestamp_start": null,
-                                "timestamp_stop": 5
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_TAKEOFF_COMPLETE",
+                                "timeout": null
                         },
                         {
-                                "cmd": {
-                                        "type": "LONG",
-                                        "target_system": 0,
-                                        "target_component": 0,
-                                        "frame": 0,
-                                        "command": 192,
-                                        "param1": null,
-                                        "param2": 1.0,
-                                        "param3": null,
-                                        "param4": null,
-                                        "param5": 47.3557317,
-                                        "param6": 8.5187574,
-                                        "param7": null,
-                                        "is_local": false
-                                },
+                                "cmd": {},
                                 "script": "",
-                                "timestamp_start": null,
-                                "timestamp_stop": 10
+                                "parameter_set": {
+                                    "parameter_name": "COM_DISARM_LAND",
+                                    "parameter_value": "2.0",
+                                    "parameter_type": "FLOAT"
+                                },
+                                "state_transition_condition": "ON_RESULT_SUCCESS",
+                                "timeout": null
                         }
                 ]
         },
@@ -108,14 +96,16 @@
                 "name": "Turn-on air quality sensor",
                 "description": "Example action to turn-on an onboard sensor",
                 "global_script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --on",
-                "global_timeout": 3.0,
+                "global_timeout": 1.0,
+                "action_complete_condition": "ON_TIMEOUT",
                 "stages": [{}]
         },
         "action_2": {
                 "name": "Turn-off air quality sensor",
                 "description": "Example action to turn-off an onboard sensor",
                 "global_script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --off",
-                "global_timeout": 3.0,
+                "global_timeout": null,
+                "action_complete_condition": "ON_RESULT_SUCCESS",
                 "stages": [{}]
         },
         "action_3": {
@@ -123,17 +113,20 @@
                 "description": "Example action of a delivery with a winch procedure",
                 "global_script": "",
                 "global_timeout": null,
+                "action_complete_condition": "ON_LAST_STAGE_COMPLETE",
                 "stages": [{
                                 "cmd": {},
                                 "script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --descend",
-                                "timestamp_start": null,
-                                "timestamp_stop": 7.0
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_TIMEOUT",
+                                "timeout": 7.0
                         },
                         {
                                 "cmd": {},
                                 "script": "python3 install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --raise",
-                                "timestamp_start": null,
-                                "timestamp_stop": 7.0
+                                "parameter_set": {},
+                                "state_transition_condition": "ON_TIMEOUT",
+                                "timeout": 7.0
                         }
                 ]
         }
