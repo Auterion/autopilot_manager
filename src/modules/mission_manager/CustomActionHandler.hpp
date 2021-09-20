@@ -45,12 +45,14 @@
 // MAVSDK dependencies
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
+#include <mavsdk/plugins/telemetry/telemetry.h>
 
 static constexpr auto customActionHandlerOut = "[Custom Action Handler]";
 
 class CustomActionHandler {
    public:
-    CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
+    CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system, std::shared_ptr<mavsdk::Telemetry> telemetry,
+                        const std::string& path_to_custom_action_file);
     ~CustomActionHandler();
     CustomActionHandler(const CustomActionHandler&) = delete;
     const CustomActionHandler& operator=(const CustomActionHandler&) = delete;
@@ -60,19 +62,22 @@ class CustomActionHandler {
 
    private:
     void new_action_check();
-    void send_progress_status(mavsdk::CustomAction::ActionToExecute action);
-    void process_custom_action(mavsdk::CustomAction::ActionToExecute action);
+    void send_progress_status(const mavsdk::CustomAction::ActionToExecute& action);
+    void process_custom_action(const mavsdk::CustomAction::ActionToExecute& action);
+    void update_action_progress_from_stage(const unsigned& stage_idx,
+                                           const mavsdk::CustomAction::ActionMetadata& action_metadata);
     void execute_custom_action(const mavsdk::CustomAction::ActionMetadata& action_metadata);
 
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<mavsdk::CustomAction> _custom_action;
+    std::shared_ptr<mavsdk::Telemetry> _telemetry;
 
     std::string _path_to_custom_action_file;
 
-    std::atomic<bool> _received_custom_action{false};
     std::atomic<bool> _mission_finished{false};
     std::atomic<bool> _action_stopped{false};
     std::atomic<bool> _new_action{false};
+    std::atomic<bool> _in_air{false};
 
     std::mutex cancel_mtx;
     std::condition_variable cancel_signal;

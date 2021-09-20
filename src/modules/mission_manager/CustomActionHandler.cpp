@@ -44,15 +44,24 @@ using namespace std::chrono_literals;
 static std::atomic<bool> int_signal{false};
 
 CustomActionHandler::CustomActionHandler(std::shared_ptr<mavsdk::System> mavsdk_system,
+                                         std::shared_ptr<mavsdk::Telemetry> telemetry,
                                          const std::string& path_to_custom_action_file)
-    : _mavsdk_system{std::move(mavsdk_system)}, _path_to_custom_action_file{std::move(path_to_custom_action_file)} {}
+    : _mavsdk_system{std::move(mavsdk_system)},
+      _telemetry{std::move(telemetry)},
+      _path_to_custom_action_file{std::move(path_to_custom_action_file)} {}
 
-CustomActionHandler::~CustomActionHandler() { int_signal.store(true, std::memory_order_relaxed); }
+CustomActionHandler::~CustomActionHandler() {
+    int_signal.store(true, std::memory_order_relaxed);
+    _custom_action.reset();
+}
 
 auto CustomActionHandler::start() -> bool {
     if (_mavsdk_system->has_autopilot()) {
         // Custom actions are processed and executed in the Mission Manager
         _custom_action = std::make_shared<mavsdk::CustomAction>(_mavsdk_system);
+
+        // Get the in-air state
+        _telemetry->subscribe_in_air([this](bool in_air) { _in_air = in_air; });
 
         return true;
     }
@@ -91,7 +100,7 @@ auto CustomActionHandler::run() -> void {
         });
 }
 
-void CustomActionHandler::send_progress_status(mavsdk::CustomAction::ActionToExecute action) {
+void CustomActionHandler::send_progress_status(const mavsdk::CustomAction::ActionToExecute& action) {
     while (!_action_stopped.load() && _actions_result.back() != mavsdk::CustomAction::Result::Unknown) {
         mavsdk::CustomAction::ActionToExecute action_exec{};
         action_exec.id = action.id;
@@ -119,7 +128,7 @@ void CustomActionHandler::new_action_check() {
     }
 }
 
-void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToExecute action) {
+void CustomActionHandler::process_custom_action(const mavsdk::CustomAction::ActionToExecute& action) {
     std::cout << customActionHandlerOut << " Custom action #" << action.id << " being processed" << std::endl;
 
     // Get the custom action metadata
@@ -155,49 +164,87 @@ void CustomActionHandler::process_custom_action(mavsdk::CustomAction::ActionToEx
     _progress_threads.back().join();
 }
 
+void CustomActionHandler::update_action_progress_from_stage(
+    const unsigned& stage_idx, const mavsdk::CustomAction::ActionMetadata& action_metadata) {
+    if (!_action_stopped.load()) {
+        _actions_progress.back() = (stage_idx + 1.0) / action_metadata.stages.size() * 100.0;
+
+        if (_actions_progress.back() != 100.0) {
+            _actions_result.back() = mavsdk::CustomAction::Result::InProgress;
+            std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id
+                      << " current progress: " << _actions_progress.back() << "%" << std::endl;
+        } else {
+            _actions_result.back() = mavsdk::CustomAction::Result::Success;
+        }
+    }
+}
+
 void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::ActionMetadata& action_metadata) {
     if (!action_metadata.stages.empty()) {
         for (unsigned i = 0; i < action_metadata.stages.size(); i++) {
+            mavsdk::CustomAction::Result stage_res = mavsdk::CustomAction::Result::Unknown;
+
             if (!_action_stopped.load()) {
-                mavsdk::CustomAction::Result stage_res =
-                    _custom_action->execute_custom_action_stage(action_metadata.stages[i]);
-                (void)stage_res;
+                std::cout << customActionHandlerOut << " Executing stage " << i << "of action #"
+                          << _actions_metadata.back().id << std::endl;
+                stage_res = _custom_action->execute_custom_action_stage(action_metadata.stages[i]);
             }
 
-            auto wait_time = action_metadata.stages[i].timestamp_stop * 1s;
-            std::unique_lock<std::mutex> lock(cancel_mtx);
-            cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
-
-            if (!_action_stopped.load()) {
-                _actions_progress.back() = (i + 1.0) / action_metadata.stages.size() * 100.0;
-
-                if (_actions_progress.back() != 100.0) {
-                    _actions_result.back() = mavsdk::CustomAction::Result::InProgress;
-                    std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id
-                              << " current progress: " << _actions_progress.back() << "%" << std::endl;
-                } else {
-                    _actions_result.back() = mavsdk::CustomAction::Result::Success;
+            if (action_metadata.stages[i].state_transition_condition ==
+                mavsdk::CustomAction::Stage::StateTransitionCondition::OnResultSuccess) {
+                if (stage_res == mavsdk::CustomAction::Result::Success) {
+                    update_action_progress_from_stage(i, action_metadata);
                 }
+            } else if (action_metadata.stages[i].state_transition_condition ==
+                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnTimeout) {
+                auto wait_time = action_metadata.stages[i].timeout * 1s;
+                std::unique_lock<std::mutex> lock(cancel_mtx);
+                cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
+
+                update_action_progress_from_stage(i, action_metadata);
+            } else if (action_metadata.stages[i].state_transition_condition ==
+                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnLandingComplete) {
+                // Wait for the vehicle to be landed
+                while (!_action_stopped.load() && _in_air) {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+
+                update_action_progress_from_stage(i, action_metadata);
+            } else if (action_metadata.stages[i].state_transition_condition ==
+                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnTakeoffComplete) {
+                // Wait for the vehicle to be in-air
+                while (!_action_stopped.load() && !_in_air) {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+
+                update_action_progress_from_stage(i, action_metadata);
             }
         }
 
-    } else if (!action_metadata.global_script.empty()) {
+    } else if (action_metadata.global_script != "") {
         if (!_action_stopped.load()) {
-            std::promise<mavsdk::CustomAction::Result> prom;
-            std::future<mavsdk::CustomAction::Result> fut = prom.get_future();
-            _custom_action->execute_custom_action_global_script_async(
-                action_metadata.global_script,
-                [&prom](mavsdk::CustomAction::Result script_result) { prom.set_value(script_result); });
+            mavsdk::CustomAction::Result result = mavsdk::CustomAction::Result::Unknown;
 
-            if (!std::isnan(action_metadata.global_timeout)) {
+            if (action_metadata.action_complete_condition ==
+                mavsdk::CustomAction::ActionMetadata::ActionCompleteCondition::OnResultSuccess) {
+                if (!_action_stopped.load()) {
+                    result = _custom_action->execute_custom_action_global_script(action_metadata.global_script);
+                }
+            } else if (action_metadata.action_complete_condition ==
+                       mavsdk::CustomAction::ActionMetadata::ActionCompleteCondition::OnTimeout) {
+                std::promise<mavsdk::CustomAction::Result> prom;
+                std::future<mavsdk::CustomAction::Result> fut = prom.get_future();
+                _custom_action->execute_custom_action_global_script_async(
+                    action_metadata.global_script,
+                    [&prom](mavsdk::CustomAction::Result script_result) { prom.set_value(script_result); });
+
                 std::chrono::seconds timeout(static_cast<long int>(action_metadata.global_timeout));
-                while (fut.wait_for(timeout) != std::future_status::ready) {
-                };
+                result = fut.get();
             }
 
-            _actions_result.back() = fut.get();
+            _actions_result.back() = result;
 
-            if (_actions_result.back() == mavsdk::CustomAction::Result::Success) {
+            if (result == mavsdk::CustomAction::Result::Success) {
                 _actions_progress.back() = 100.0;
             }
         }

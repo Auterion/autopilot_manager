@@ -39,6 +39,7 @@
 
 #pragma once
 
+#include <CustomActionHandler.hpp>
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
 #include <ModuleBase.hpp>
@@ -46,8 +47,6 @@
 #include <future>
 #include <iostream>
 #include <string>
-
-#include <CustomActionHandler.hpp>
 
 // MAVSDK dependencies
 #include <mavsdk/geometry.h>

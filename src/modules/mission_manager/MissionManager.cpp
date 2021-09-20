@@ -70,7 +70,6 @@ MissionManager::~MissionManager() { deinit(); }
 
 void MissionManager::init() {
     std::cout << missionManagerOut << " Started!" << std::endl;
-    _custom_action_handler = std::make_shared<CustomActionHandler>(_mavsdk_system, _path_to_custom_action_file);
 
     // Actions are processed and executed in the Mission Manager decion maker
     _action = std::make_shared<mavsdk::Action>(_mavsdk_system);
@@ -80,6 +79,9 @@ void MissionManager::init() {
 
     // Bring up a ServerUtility instance to allow sending status messages
     _server_utility = std::make_shared<mavsdk::ServerUtility>(_mavsdk_system);
+
+    _custom_action_handler =
+        std::make_shared<CustomActionHandler>(_mavsdk_system, _telemetry, _path_to_custom_action_file);
 }
 
 void MissionManager::deinit() {
@@ -342,8 +344,8 @@ void MissionManager::decision_maker_run() {
             }
 
             std::cout << missionManagerOut << " Global position reference initialiazed: Latitude: " << _ref_latitude
-                      << " deg | Longitude: " << _ref_longitude << " deg | Altitude (AMSL): " << _ref_altitude << " meters"
-                      << std::endl;
+                      << " deg | Longitude: " << _ref_longitude << " deg | Altitude (AMSL): " << _ref_altitude
+                      << " meters" << std::endl;
         });
 
     // Get global position
