@@ -40,7 +40,8 @@
 #include <SensorManager.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 
-SensorManager::SensorManager() : Node("sensor_manager"), _downsampline_block_size(8) {}
+SensorManager::SensorManager()
+    : Node("sensor_manager"), _downsampline_block_size(8), _tf_buffer(this->get_clock()), _tf_listener(_tf_buffer) {}
 
 SensorManager::~SensorManager() { deinit(); }
 
@@ -120,10 +121,29 @@ void SensorManager::handle_incoming_depth_image(const sensor_msgs::msg::Image::C
         return;
     }
 
-    std::shared_ptr<DownsampledImageF> downsampled_depth_image = std::make_shared<DownsampledImageF>();
+    std::shared_ptr<ExtendedDownsampledImageF> downsampled_depth_image = std::make_shared<ExtendedDownsampledImageF>();
 
-    downsampled_depth_image->depth_pixel_array = _imageDownsampler->downsample(msg->data.data());
-    downsampled_depth_image->intrinsics = _intrinsics;
+    downsampled_depth_image->downsampled_image.depth_pixel_array = _imageDownsampler->downsample(msg->data.data());
+    downsampled_depth_image->downsampled_image.intrinsics = _intrinsics;
+
+    // Get position and orientation to image
+    geometry_msgs::msg::TransformStamped transformStamped;
+    try {
+        transformStamped =
+            _tf_buffer.lookupTransform(NED_FRAME, CAMERA_LINK_FRAME, msg->header.stamp, rclcpp::Duration(10 * 1e6));
+    } catch (tf2::TransformException& ex) {
+        RCLCPP_ERROR(get_logger(), "%s", ex.what());
+        downsampled_depth_image = nullptr;
+        return;
+    }
+
+    downsampled_depth_image->position =
+        Eigen::Vector3f(transformStamped.transform.translation.x, transformStamped.transform.translation.y,
+                        transformStamped.transform.translation.z);
+    downsampled_depth_image->orientation =
+        Eigen::Quaternionf(transformStamped.transform.rotation.w, transformStamped.transform.rotation.x,
+                           transformStamped.transform.rotation.y, transformStamped.transform.rotation.z);
+    downsampled_depth_image->timestamp_ns = msg->header.stamp.nanosec;
 
     // Make the downsampled depth data available for other modules
     std::lock_guard<std::mutex> lock(_sensor_manager_mutex);

@@ -104,10 +104,10 @@ void CollisionAvoidanceManager::compute_distance_to_obstacle() {
 
     auto depth_msg = _downsampled_depth_update_callback();
 
-    if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {
+    if (depth_msg != nullptr && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
         // Get min depth in ROI
-        DepthPixelArrayF depth_pixel_array = depth_msg->depth_pixel_array;
-        filter_pixels_to_roi(depth_pixel_array, depth_msg->intrinsics);
+        DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
+        filter_pixels_to_roi(depth_pixel_array, depth_msg->downsampled_image.intrinsics);
         auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs) { return lhs.depth < rhs.depth; };
         const auto min_depth_pixel =
             std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);

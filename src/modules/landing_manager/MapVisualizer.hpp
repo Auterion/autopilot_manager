@@ -136,7 +136,7 @@ void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, con
     geometry_msgs::msg::Vector3 scale;
     scale.x = size;
     scale.y = size;
-    scale.z = 0.05;
+    scale.z = 0.1;
 
     publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
@@ -155,7 +155,7 @@ void MapVisualizer::publishCloseGround(const Eigen::MatrixBase<Derived>& point, 
     geometry_msgs::msg::Vector3 scale;
     scale.x = size;
     scale.y = size;
-    scale.z = 0.05;
+    scale.z = 0.1;
 
     publishCube(toPoint(point), color, scale, timestamp, enabled);
 }
@@ -187,9 +187,18 @@ void MapVisualizer::visualizeEsdf(const esdf::EuclideanSignedDistanceFields<T>& 
     }
 
     visualization_msgs::msg::MarkerArray marker_array;
+
+    visualization_msgs::msg::Marker map_marker;
+    map_marker.header.frame_id = NED_FRAME;
+    map_marker.header.stamp = timestamp;
+    map_marker.ns = "esdf";
+    map_marker.id = 0;
+    map_marker.type = visualization_msgs::msg::Marker::CUBE_LIST;
+    map_marker.action = visualization_msgs::msg::Marker::DELETE;
+    marker_array.markers.push_back(map_marker);
+
     const esdfvoxelcube::ESDFVoxelCube esdf_map = esdf.getEsdfMap();
     const double cell_size = esdf_map.getBinEdgeWidth();
-    visualization_msgs::msg::Marker map_marker;
     map_marker.header.frame_id = NED_FRAME;
     map_marker.header.stamp = timestamp;
     map_marker.ns = "esdf";

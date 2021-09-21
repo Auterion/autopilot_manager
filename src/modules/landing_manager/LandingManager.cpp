@@ -51,8 +51,6 @@ LandingManager::LandingManager()
       _timer_mapper({}),
       _timer_map_visualizer({}),
       _tf_broadcaster(this),
-      _tf_buffer(this->get_clock()),
-      _tf_listener(_tf_buffer),
       _vehicle_state(new VehicleState()),
       _state(landing_mapper::eLandingMapperState::UNKNOWN) {}
 
@@ -62,22 +60,25 @@ void LandingManager::initParameters() {
     std::unique_lock<std::mutex> lock(landing_manager_config_mtx);
     _landing_manager_config = _config_update_callback();
 
-    _mapper_parameter.max_search_altitude_m = 22.f;
-    _mapper_parameter.max_window_size_m = 5.f;
+    _mapper_parameter.max_search_altitude_m = 8.f;
+    _mapper_parameter.max_window_size_m = 5;
 
-    _mapper_parameter.distance_threshold_m = 0.1f;
-    _mapper_parameter.mean_tresh = 0.1f;
-    _mapper_parameter.percentage_of_valid_samples_in_window = 0.8f;
-    _mapper_parameter.std_dev_tresh = 0.08f;
+    _mapper_parameter.search_altitude_m = 7.5f;
+    _mapper_parameter.window_size_m = 1.4f;
+
+    _mapper_parameter.distance_threshold_m = 0.05f;
+    _mapper_parameter.mean_tresh = 0.15f;
+    _mapper_parameter.percentage_of_valid_samples_in_window = 0.7f;
+    _mapper_parameter.std_dev_tresh = 0.09f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
-    // These are the only parameters configurable through AMC
-    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
-        _mapper_parameter.search_altitude_m = 10.f;
-    }
-    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
-        _mapper_parameter.window_size_m = 2.f;
-    }
+    //    // These are the only parameters configurable through AMC
+    //    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
+    //        _mapper_parameter.search_altitude_m = 10.f;
+    //    }
+    //    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
+    //        _mapper_parameter.window_size_m = 2.f;
+    //    }
 
     // std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
     //           << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
@@ -118,7 +119,7 @@ void LandingManager::init() {
     _timer_mapper = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
 
     // Vizualizaion runs at 1hz
-    _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
+    _timer_map_visualizer = this->create_wall_timer(500ms, std::bind(&LandingManager::visualizeMap, this));
 
     // Setup odometry subscriber
     _vehicle_odometry_sub = create_subscription<px4_msgs::msg::VehicleOdometry>(
@@ -134,7 +135,7 @@ auto LandingManager::deinit() -> void {}
 auto LandingManager::run() -> void { rclcpp::spin(shared_from_this()); }
 
 bool LandingManager::setSearchAltitude_m(const double altitude) {
-    if (altitude < 0.0) {
+    if (altitude < 1.0) {
         return false;
     } else if (altitude > _mapper_parameter.max_search_altitude_m) {
         return false;
@@ -146,7 +147,7 @@ bool LandingManager::setSearchAltitude_m(const double altitude) {
 }
 
 bool LandingManager::setSearchWindow_m(const double window_size) {
-    if (window_size < 0.0) {
+    if (window_size < 1.0) {
         return false;
     } else if (window_size > _mapper_parameter.max_window_size_m) {
         return false;
@@ -193,67 +194,42 @@ void LandingManager::handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleO
     _tf_broadcaster.sendTransform(tMsg);
 }
 
-std::string string_state(landing_mapper::eLandingMapperState state) {
-    switch (state) {
-        case landing_mapper::eLandingMapperState::CAN_LAND:
-            return "CAN_LAND";
-            break;
-        case landing_mapper::eLandingMapperState::CAN_NOT_LAND:
-            return "CAN_NOT_LAND";
-            break;
-        case landing_mapper::eLandingMapperState::CLOSE_TO_GROUND:
-            return "CLOSE_TO_GROUND";
-            break;
-        default:
-            return "UNKNOWN";
-    }
-}
-
 void LandingManager::mapper() {
     // Here we capture the downsampled depth data computed in the SensorManager
-    std::shared_ptr<DownsampledImageF> depth_msg = _downsampled_depth_update_callback();
+    std::shared_ptr<ExtendedDownsampledImageF> depth_msg = _downsampled_depth_update_callback();
 
     // check for parameter updates
     // TODO: make this call dependent on a dbus param update on the Autopilot Manager
     // instead of running at every loop update
-    updateParameters();
+    // updateParameters();
 
     // TODO: reinstantiate _mapper a after parameter update
 
-    if (depth_msg != nullptr && depth_msg->depth_pixel_array.size() > 0) {
-        const rclcpp::Time timenow = now();
+    if (depth_msg != nullptr && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
+        const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
+        const DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
+        const rclcpp::Time timestamp(depth_msg->timestamp_ns);
+        const Eigen::Vector3f position = depth_msg->position;
+        const Eigen::Quaternionf orientation = depth_msg->orientation;
 
-        // Input new image data
-        geometry_msgs::msg::TransformStamped transformStamped;
-        try {
-            transformStamped = _tf_buffer.lookupTransform(NED_FRAME, CAMERA_LINK_FRAME, rclcpp::Time(0));
-        } catch (tf2::TransformException& ex) {
-            RCLCPP_ERROR(get_logger(), "%s", ex.what());
-            return;
-        }
-        const Eigen::Vector3f trans(transformStamped.transform.translation.x, transformStamped.transform.translation.y,
-                                    transformStamped.transform.translation.z);
-        const Eigen::Quaternionf quat(transformStamped.transform.rotation.w, transformStamped.transform.rotation.x,
-                                      transformStamped.transform.rotation.y, transformStamped.transform.rotation.z);
         {
             std::lock_guard<std::mutex> lock(_map_mutex);
             _pointcloud_for_mapper.clear();
-            _visualizer->prepare_point_cloud_msg(timenow.nanoseconds(), depth_msg->intrinsics.rw,
-                                                 depth_msg->intrinsics.rh, _visualize);
+            _visualizer->prepare_point_cloud_msg(depth_msg->timestamp_ns, intrinsics.rw, intrinsics.rh, _visualize);
 
-            const Eigen::Vector2f principal_point = depth_msg->intrinsics.principal_point();
-            const Eigen::Vector2f inverse_focal_length = depth_msg->intrinsics.inverse_focal_length();
+            const Eigen::Vector2f principal_point = intrinsics.principal_point();
+            const Eigen::Vector2f inverse_focal_length = intrinsics.inverse_focal_length();
 
-            for (const DepthPixelF& depth_pixel : depth_msg->depth_pixel_array) {
+            for (const DepthPixelF& depth_pixel : depth_pixel_array) {
                 const float depth = depth_pixel.depth;
 
                 if (std::isfinite(depth) && (depth > 0.3f) &&
-                    (depth < 20.f)) {  // TODO make 0.3 and 20.f parameter again
+                    (depth < 7.5f)) {  // TODO make 0.3 and 20.f parameter again
                     Eigen::Matrix<float, 3, 1> point(0.0, 0.0, depth);
                     point.head<2>() = (Eigen::Matrix<float, 2, 1>(depth_pixel.x, depth_pixel.y) - principal_point)
                                           .cwiseProduct(inverse_focal_length) *
                                       depth;
-                    point = quat * point + trans;
+                    point = orientation * point + position;
 
                     _pointcloud_for_mapper.push_back(point);
                     _visualizer->add_point_to_point_cloud(point, _visualize);
@@ -290,10 +266,9 @@ void LandingManager::mapper() {
         _landing_state_pub->publish(landing_state);
 
         // Show result
-        visualizeResult(_state, ground_position, timenow);
-        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state
-        // string: "
-        // << string_state(state) << " state value: " << state << std::endl;
+        visualizeResult(state, ground_position, rclcpp::Time());
+        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state "
+        //          << landing_mapper::string_state(state) << std::endl;
     } else {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
@@ -301,7 +276,7 @@ void LandingManager::mapper() {
         }
 
         // Show result
-        // std::cout << landingManagerOut << " state " << string_state(_state) << std::endl;
+        // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
     }
 }
 
@@ -312,9 +287,9 @@ void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
         old_state = _state;
     }
 
-    constexpr float hysteresis_low_thresh = 0.7;
-    constexpr float hysteresis_high_thresh = 0.8;
-    constexpr size_t hysteresis_window_size = 10;
+    constexpr float hysteresis_high_thresh = 0.1;
+    constexpr float hysteresis_low_thresh = 0.5;
+    constexpr size_t hysteresis_window_size = 20;
 
     _states.push_back(state);
     while (_states.size() > hysteresis_window_size) {
@@ -325,13 +300,13 @@ void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
                 _states.size();
 
     if (state == landing_mapper::eLandingMapperState::CAN_LAND) {
-        if (avg < hysteresis_high_thresh) {
-            state = old_state;
-        } else {
+        if (avg >= hysteresis_high_thresh) {
             state = landing_mapper::eLandingMapperState::CAN_LAND;
+        } else {
+            state = old_state;
         }
     } else {
-        if (avg > hysteresis_low_thresh) {
+        if (avg >= hysteresis_low_thresh) {
             state = landing_mapper::eLandingMapperState::CAN_LAND;
         } else {
             state = state;

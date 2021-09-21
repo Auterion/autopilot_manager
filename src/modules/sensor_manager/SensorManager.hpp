@@ -40,12 +40,15 @@
 
 #pragma once
 
+#include <common.h>
+
 #include <ModuleBase.hpp>
 #include <chrono>
 #include <iostream>
 
 // ROS dependencies
-#include <image_downsampler/ImageDownsampler.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -66,7 +69,8 @@ class SensorManager : public rclcpp::Node, ModuleBase {
     auto deinit() -> void override;
     auto run() -> void override;
 
-    std::shared_ptr<DownsampledImageF> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex) get_lastest_downsampled_depth() {
+    std::shared_ptr<ExtendedDownsampledImageF> RCPPUTILS_TSA_GUARDED_BY(_sensor_manager_mutex)
+        get_lastest_downsampled_depth() {
         std::lock_guard<std::mutex> lock(_sensor_manager_mutex);
         return _downsampled_depth;
     }
@@ -90,6 +94,9 @@ class SensorManager : public rclcpp::Node, ModuleBase {
 
     int16_t _downsampline_block_size;
 
+    tf2_ros::Buffer _tf_buffer;
+    tf2_ros::TransformListener _tf_listener;
+
    protected:
-    std::shared_ptr<DownsampledImageF> _downsampled_depth;
+    std::shared_ptr<ExtendedDownsampledImageF> _downsampled_depth;
 };

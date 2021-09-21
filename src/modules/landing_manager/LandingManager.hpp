@@ -47,13 +47,11 @@
 
 // ROS dependencies
 #include <common.h>
-#include <image_downsampler/DataTypes.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_ros/create_timer_ros.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
 
 #include <MapVisualizer.hpp>
+#include <SensorManager.hpp>
 #include <landing_mapper/mapper/LandingMapper.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <rclcpp/qos.hpp>
@@ -94,7 +92,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
         return _state;
     }
 
-    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<DownsampledImageF>()> callback) {
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<ExtendedDownsampledImageF>()> callback) {
         _downsampled_depth_update_callback = callback;
     }
 
@@ -139,13 +137,11 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _landing_state_pub;
 
     tf2_ros::TransformBroadcaster _tf_broadcaster;
-    tf2_ros::Buffer _tf_buffer;
-    tf2_ros::TransformListener _tf_listener;
 
     std::mutex _vehicle_state_mutex;
     std::unique_ptr<VehicleState> _vehicle_state;
 
-    std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
+    std::function<std::shared_ptr<ExtendedDownsampledImageF>()> _downsampled_depth_update_callback;
 
     mutable std::mutex _landing_manager_mutex;
     mutable std::mutex _map_mutex;

@@ -46,7 +46,7 @@
 #include <iostream>
 
 // ROS dependencies
-#include <image_downsampler/DataTypes.h>
+#include <common.h>
 
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -88,7 +88,7 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
         return _depth;
     }
 
-    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<DownsampledImageF>()> callback) {
+    void getDownsampledDepthDataCallback(std::function<std::shared_ptr<ExtendedDownsampledImageF>()> callback) {
         _downsampled_depth_update_callback = callback;
     }
 
@@ -102,7 +102,7 @@ class CollisionAvoidanceManager : public rclcpp::Node, ModuleBase {
                         uint32_t row_max) const;
     void filter_pixels_to_roi(DepthPixelArrayF& pixel, const RectifiedIntrinsicsF& intrinsics);
 
-    std::function<std::shared_ptr<DownsampledImageF>()> _downsampled_depth_update_callback;
+    std::function<std::shared_ptr<ExtendedDownsampledImageF>()> _downsampled_depth_update_callback;
     std::function<CollisionAvoidanceManagerConfiguration()> _config_update_callback;
 
     CollisionAvoidanceManagerConfiguration _collision_avoidance_manager_config;
