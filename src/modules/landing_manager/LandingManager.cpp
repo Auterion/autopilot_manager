@@ -247,7 +247,6 @@ void LandingManager::mapper() {
 
         Eigen::Vector3f ground_position;
         landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
-        stateDebounce(state);
 
         {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -271,40 +270,6 @@ void LandingManager::mapper() {
 
         // Show result
         // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
-    }
-}
-
-void LandingManager::stateDebounce(landing_mapper::eLandingMapperState& state) {
-    landing_mapper::eLandingMapperState old_state;
-    {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        old_state = _state;
-    }
-
-    constexpr float hysteresis_high_thresh = 0.1;
-    constexpr float hysteresis_low_thresh = 0.3;
-    constexpr size_t hysteresis_window_size = 10;
-
-    _states.push_back(state);
-    while (_states.size() > hysteresis_window_size) {
-        _states.pop_front();
-    }
-    float avg = static_cast<float>(
-                    std::count(_states.cbegin(), _states.cend(), landing_mapper::eLandingMapperState::CAN_LAND)) /
-                _states.size();
-
-    if (old_state == landing_mapper::eLandingMapperState::CAN_LAND) {
-        if (avg >= hysteresis_high_thresh) {
-            state = landing_mapper::eLandingMapperState::CAN_LAND;
-        } else {
-            state = old_state;
-        }
-    } else {
-        if (avg >= hysteresis_low_thresh) {
-            state = landing_mapper::eLandingMapperState::CAN_LAND;
-        } else {
-            state = state;
-        }
     }
 }
 

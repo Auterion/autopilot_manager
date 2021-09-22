@@ -113,8 +113,6 @@ class LandingManager : public rclcpp::Node, ModuleBase {
                          const rclcpp::Time& timestamp);
     void visualizeMap();
 
-    void stateDebounce(landing_mapper::eLandingMapperState& state);
-
     std::function<LandingManagerConfiguration()> _config_update_callback;
 
     std::unique_ptr<landing_mapper::LandingMapper<float>> _mapper;
@@ -149,5 +147,4 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     std::vector<Eigen::Vector3f> _pointcloud_for_mapper;
 
     landing_mapper::eLandingMapperState _state;
-    std::deque<landing_mapper::eLandingMapperState> _states;
 };
