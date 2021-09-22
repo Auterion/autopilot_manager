@@ -242,16 +242,10 @@ void LandingManager::mapper() {
         }
 
         // Find plain ground
-        VehicleState local_state;
-        {
-            std::lock_guard<std::mutex> lock(_vehicle_state_mutex);
-            local_state = *_vehicle_state;
-        }
-        _mapper->updateVehiclePosition(local_state.position, local_state.velocity, local_state.acceleration);
-        _mapper->updateVehicleOrientation(local_state.orientation, local_state.angular_velocity.z(), 0);
+        _mapper->updateVehiclePosition(position);
+        _mapper->updateVehicleOrientation(orientation);
 
         Eigen::Vector3f ground_position;
-
         landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
         stateDebounce(state);
 
