@@ -54,9 +54,8 @@ except:
     raise
 
 
-def main():
-    ''' Main funtion '''
-
+def main() -> None:
+    """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
         description="Dummy winch control script")
@@ -78,13 +77,15 @@ def main():
     gcs.wait_heartbeat()
 
     if args.activation:
-        print("\n - Descending payload...\n");
+        print("\n - Descending payload...\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Descending payload...")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Descending payload...")
     else:
-        print("\n - Descending payload...\n");
+        print("\n - Descending payload...\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Raising winch...")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Raising winch...")
 
     gcs.close()
 

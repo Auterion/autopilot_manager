@@ -55,9 +55,17 @@ except:
     raise
 
 
-def main():
-    ''' Main funtion '''
+landing_state = mavutil.mavlink.enums['MAV_LANDED_STATE'][0]
 
+
+def handle_extended_sys_state(msg) -> None:
+    """Handle EXTENDED_SYS_STATE MAVLink message."""
+    global landing_state
+    landing_state = msg.landed_state
+
+
+def main() -> None:
+    """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
         description="Dummy winch control script")
@@ -73,21 +81,28 @@ def main():
         'udp:' + args.address + ':' + args.port, source_system=1)
     gcs.wait_heartbeat()
 
-    print("\n - Safe landing started!\n");
+    print("\n - Safe landing started!\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe landing started!")
+    gcs.mav.statustext_send(
+        mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe landing started!")
 
     time.sleep(1)
 
-    print(" - Executing area verification while descending...\n");
+    print(" - Executing area verification while descending...\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Executing area verification while descending...")
+    gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                            b"Executing area verification while descending...")
 
-    time.sleep(5)
+    while landing_state != 1:  # MAV_LANDED_STATE_ON_GROUND
+        msg = gcs.recv_match(blocking=True)
+        msg_type = msg.get_type()
+        if msg_type == "EXTENDED_SYS_STATE":
+            handle_extended_sys_state(msg)
 
-    print(" - Safe land executed.\n");
+    print(" - Safe land executed.\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe land executed!")
+    gcs.mav.statustext_send(
+        mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe land executed!")
 
     gcs.close()
 

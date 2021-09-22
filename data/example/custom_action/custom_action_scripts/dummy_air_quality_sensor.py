@@ -54,9 +54,8 @@ except:
     raise
 
 
-def main():
-    ''' Main funtion '''
-
+def main() -> None:
+    """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
         description="Dummy air quality sensor control script")
@@ -78,13 +77,15 @@ def main():
     gcs.wait_heartbeat()
 
     if args.activation:
-        print("\n - Air quality sensor turned on!\n");
+        print("\n - Air quality sensor turned on!\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Air quality sensor turned on!")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Air quality sensor turned on!")
     else:
-        print("\n - Air quality sensor turned off!\n");
+        print("\n - Air quality sensor turned off!\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Air quality sensor turned off!")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Air quality sensor turned off!")
 
     gcs.close()
 

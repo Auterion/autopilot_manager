@@ -44,6 +44,7 @@
 """
 
 import argparse
+import time
 
 try:
     from pymavlink import mavutil
@@ -54,9 +55,8 @@ except:
     raise
 
 
-def main():
-    ''' Main funtion '''
-
+def main() -> None:
+    """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
         description="Dummy cargo compartment control script")
@@ -78,13 +78,17 @@ def main():
     gcs.wait_heartbeat()
 
     if args.activation:
-        print("\n - Opening cargo compartment latch...\n");
+        print("\n - Opening cargo compartment latch...\n")
+        time.sleep(3)
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Opening cargo compartment latch...")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Opening cargo compartment latch...")
     else:
-        print("\n - Closing cargo compartment latch...\n");
+        print("\n - Closing cargo compartment latch...\n")
+        time.sleep(3)
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Closing cargo compartment latch...")
+        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
+                                b"Closing cargo compartment latch...")
 
     gcs.close()
 
