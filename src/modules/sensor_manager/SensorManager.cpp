@@ -41,7 +41,7 @@
 #include <sensor_msgs/image_encodings.hpp>
 
 SensorManager::SensorManager()
-    : Node("sensor_manager"), _downsampline_block_size(8), _tf_buffer(this->get_clock()), _tf_listener(_tf_buffer) {}
+    : Node("sensor_manager"), _downsampline_block_size(2), _tf_buffer(this->get_clock()), _tf_listener(_tf_buffer) {}
 
 SensorManager::~SensorManager() { deinit(); }
 
