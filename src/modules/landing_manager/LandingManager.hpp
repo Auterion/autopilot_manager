@@ -113,7 +113,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
                          const rclcpp::Time& timestamp);
     void visualizeMap();
 
-    void stateDebounce(landing_mapper::eLandingMapperState state);
+    void stateDebounce(landing_mapper::eLandingMapperState& state);
 
     std::function<LandingManagerConfiguration()> _config_update_callback;
 

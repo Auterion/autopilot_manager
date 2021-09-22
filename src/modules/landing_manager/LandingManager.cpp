@@ -280,7 +280,7 @@ void LandingManager::mapper() {
     }
 }
 
-void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
+void LandingManager::stateDebounce(landing_mapper::eLandingMapperState& state) {
     landing_mapper::eLandingMapperState old_state;
     {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -288,8 +288,8 @@ void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
     }
 
     constexpr float hysteresis_high_thresh = 0.1;
-    constexpr float hysteresis_low_thresh = 0.5;
-    constexpr size_t hysteresis_window_size = 20;
+    constexpr float hysteresis_low_thresh = 0.3;
+    constexpr size_t hysteresis_window_size = 10;
 
     _states.push_back(state);
     while (_states.size() > hysteresis_window_size) {
@@ -299,7 +299,7 @@ void LandingManager::stateDebounce(landing_mapper::eLandingMapperState state) {
                     std::count(_states.cbegin(), _states.cend(), landing_mapper::eLandingMapperState::CAN_LAND)) /
                 _states.size();
 
-    if (state == landing_mapper::eLandingMapperState::CAN_LAND) {
+    if (old_state == landing_mapper::eLandingMapperState::CAN_LAND) {
         if (avg >= hysteresis_high_thresh) {
             state = landing_mapper::eLandingMapperState::CAN_LAND;
         } else {
