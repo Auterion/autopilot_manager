@@ -69,7 +69,7 @@ void LandingManager::initParameters() {
     _mapper_parameter.distance_threshold_m = 0.05f;
     _mapper_parameter.mean_tresh = 0.15f;
     _mapper_parameter.percentage_of_valid_samples_in_window = 0.7f;
-    _mapper_parameter.std_dev_tresh = 0.09f;
+    _mapper_parameter.std_dev_tresh = 0.1f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
     //    // These are the only parameters configurable through AMC
