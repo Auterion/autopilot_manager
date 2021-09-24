@@ -72,16 +72,16 @@ void LandingManager::initParameters() {
     _mapper_parameter.std_dev_tresh = 0.1f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
-    //    // These are the only parameters configurable through AMC
-    //    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
-    //        _mapper_parameter.search_altitude_m = 10.f;
-    //    }
-    //    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
-    //        _mapper_parameter.window_size_m = 2.f;
-    //    }
+    // These are the only parameters configurable through AMC
+    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
+        _mapper_parameter.search_altitude_m = 10.f;
+    }
+    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
+        _mapper_parameter.window_size_m = 2.f;
+    }
 
-    // std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
-    //           << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
+    std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
+              << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
 }
 
 void LandingManager::updateParameters() {
@@ -119,7 +119,7 @@ void LandingManager::init() {
     _timer_mapper = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
 
     // Vizualizaion runs at 1hz
-    _timer_map_visualizer = this->create_wall_timer(500ms, std::bind(&LandingManager::visualizeMap, this));
+    _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
 
     // Setup odometry subscriber
     _vehicle_odometry_sub = create_subscription<px4_msgs::msg::VehicleOdometry>(
@@ -201,7 +201,7 @@ void LandingManager::mapper() {
     // check for parameter updates
     // TODO: make this call dependent on a dbus param update on the Autopilot Manager
     // instead of running at every loop update
-    // updateParameters();
+    updateParameters();
 
     // TODO: reinstantiate _mapper a after parameter update
 
