@@ -92,11 +92,6 @@ void MissionManager::deinit() {
 }
 
 void MissionManager::run() {
-    while (!_telemetry->health_all_ok()) {
-        std::cout << missionManagerOut << " Waiting for system to be ready..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
-
     // Start the desicion maker thread
     _decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
 
@@ -334,26 +329,33 @@ void MissionManager::decision_maker_run() {
     // Init action trigger timer
     _last_time = std::chrono::system_clock::now();
 
-    // Get global origin to set the reference global position
-    _telemetry->get_gps_global_origin_async(
-        [this](mavsdk::Telemetry::Result result, mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
-            if (result == mavsdk::Telemetry::Result::Success) {
-                _ref_latitude = gps_global_origin.latitude_deg;
-                _ref_longitude = gps_global_origin.longitude_deg;
-                _ref_altitude = gps_global_origin.altitude_m;
-            }
-
-            std::cout << missionManagerOut << " Global position reference initialiazed: Latitude: " << _ref_latitude
-                      << " deg | Longitude: " << _ref_longitude << " deg | Altitude (AMSL): " << _ref_altitude
-                      << " meters" << std::endl;
-        });
-
     // Get global position
     _telemetry->subscribe_position([this](mavsdk::Telemetry::Position position) {
         _current_latitude = position.latitude_deg;
         _current_longitude = position.longitude_deg;
         _current_altitude_amsl = position.absolute_altitude_m;
     });
+
+    // Get global and home positions health
+    _telemetry->subscribe_health([this](mavsdk::Telemetry::Health health) {
+        _is_global_position_ok = health.is_global_position_ok;
+        _is_home_position_ok = health.is_home_position_ok;
+    });
+
+    // Get global origin to set the reference global position
+    _telemetry->get_gps_global_origin_async(
+        [this](mavsdk::Telemetry::Result result, mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
+            // only setup the global origin ref if the global and home positions are valid
+            if (result == mavsdk::Telemetry::Result::Success && _is_global_position_ok && _is_home_position_ok) {
+                _ref_latitude = gps_global_origin.latitude_deg;
+                _ref_longitude = gps_global_origin.longitude_deg;
+                _ref_altitude = gps_global_origin.altitude_m;
+
+                std::cout << missionManagerOut << " Global position reference initialiazed: Latitude: " << _ref_latitude
+                          << " deg | Longitude: " << _ref_longitude << " deg | Altitude (AMSL): " << _ref_altitude
+                          << " meters" << std::endl;
+            }
+        });
 
     // Get local position
     _telemetry->subscribe_position_velocity_ned([this](mavsdk::Telemetry::PositionVelocityNed position_velocity) {

@@ -141,6 +141,8 @@ class MissionManager : public ModuleBase {
     std::atomic<bool> _in_air;
     std::atomic<bool> _landing;
     std::atomic<bool> _on_ground;
+    std::atomic<bool> _is_global_position_ok;
+    std::atomic<bool> _is_home_position_ok;
 
     std::atomic<double> _current_latitude;
     std::atomic<double> _current_longitude;
