@@ -89,6 +89,7 @@ class MissionManager : public ModuleBase {
         double global_position_waypoint_alt_amsl = 0.0;
 
         uint8_t safe_landing_enabled = 0U;
+        double safe_landing_distance_to_ground = 0.0;
         std::string safe_landing_on_no_safe_land = "";
         uint8_t safe_landing_try_landing_after_action = 0U;
 
@@ -109,6 +110,10 @@ class MissionManager : public ModuleBase {
         _landing_condition_state_update_callback = callback;
     }
 
+    void getHeightAboveObstacleCallback(std::function<float()> callback) {
+        _height_above_obstacle_update_callback = callback;
+    }
+
     void decision_maker_run();
 
    private:
@@ -124,6 +129,7 @@ class MissionManager : public ModuleBase {
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
     std::function<uint8_t()> _landing_condition_state_update_callback;
+    std::function<float()> _height_above_obstacle_update_callback;
 
     std::string _path_to_custom_action_file;
 
