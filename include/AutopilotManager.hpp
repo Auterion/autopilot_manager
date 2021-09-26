@@ -92,6 +92,7 @@ class AutopilotManager {
     std::mutex _distance_to_obstacle_mutex;
     std::mutex _downsampled_depth_callback_mutex;
     std::mutex _landing_condition_state_mutex;
+    std::mutex _height_above_obstacle_mutex;
 
     std::string _mavlink_port = "14590";
     std::string _config_path = "/shared_container_dir/autopilot_manager.conf";

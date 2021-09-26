@@ -281,6 +281,7 @@ void AutopilotManager::start() {
             config.global_position_waypoint_lon = _global_position_waypoint_lon;
             config.global_position_waypoint_alt_amsl = _global_position_waypoint_alt_amsl;
             config.safe_landing_enabled = _safe_landing_enabled;
+            config.safe_landing_distance_to_ground = _safe_landing_distance_to_ground;
             config.safe_landing_on_no_safe_land = _safe_landing_on_no_safe_land;
             config.safe_landing_try_landing_after_action = _safe_landing_try_landing_after_action;
             config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
@@ -331,6 +332,12 @@ void AutopilotManager::start() {
         _mission_manager->getCanLandStateCallback([this]() {
             std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
             return _landing_manager->get_latest_landing_condition_state();
+        });
+
+        // Init the callback for getting the latest landing condition state
+        _mission_manager->getHeightAboveObstacleCallback([this]() {
+            std::lock_guard<std::mutex> lock(_height_above_obstacle_mutex);
+            return _landing_manager->get_latest_height_above_obstacle();
         });
 
         // Init and run the Sensor Manager
