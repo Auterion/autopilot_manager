@@ -52,7 +52,8 @@ LandingManager::LandingManager()
       _timer_map_visualizer({}),
       _tf_broadcaster(this),
       _vehicle_state(new VehicleState()),
-      _state(landing_mapper::eLandingMapperState::UNKNOWN) {}
+      _state(landing_mapper::eLandingMapperState::UNKNOWN),
+      _height_above_obstacle{0.f} {}
 
 LandingManager::~LandingManager() { deinit(); }
 
@@ -72,14 +73,6 @@ void LandingManager::initParameters() {
     _mapper_parameter.std_dev_tresh = 0.1f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
-    // These are the only parameters configurable through AMC
-    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
-        _mapper_parameter.search_altitude_m = 10.f;
-    }
-    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
-        _mapper_parameter.window_size_m = 2.f;
-    }
-
     std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
               << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
 }
@@ -89,11 +82,13 @@ void LandingManager::updateParameters() {
     _landing_manager_config = _config_update_callback();
 
     // These are the only parameters configurable through AMC
-    if (!setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
-        _mapper_parameter.search_altitude_m = 10.f;
+    if (_landing_manager_config.safe_landing_distance_to_ground == 0 ||
+        !setSearchAltitude_m(_landing_manager_config.safe_landing_distance_to_ground)) {
+        _mapper_parameter.search_altitude_m = 7.5f;
     }
-    if (!setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
-        _mapper_parameter.window_size_m = 2.f;
+    if (_landing_manager_config.safe_landing_area_square_size == 0 ||
+        !setSearchWindow_m(_landing_manager_config.safe_landing_area_square_size)) {
+        _mapper_parameter.window_size_m = 1.4f;
     }
 
     // std::cout << landingManagerOut << "Square size: " << __mapper_parameter.window_size_m
@@ -246,11 +241,13 @@ void LandingManager::mapper() {
         _mapper->updateVehicleOrientation(orientation);
 
         Eigen::Vector3f ground_position;
-        landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
+        const landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
+        const float height_above_obstacle = _mapper->getHeightAboveObstacle();
 
         {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
             _state = state;
+            _height_above_obstacle = height_above_obstacle;
         }
 
         // Publish landing state to the ROS side

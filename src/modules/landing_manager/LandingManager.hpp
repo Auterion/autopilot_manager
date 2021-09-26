@@ -92,6 +92,11 @@ class LandingManager : public rclcpp::Node, ModuleBase {
         return _state;
     }
 
+    float RCPPUTILS_TSA_GUARDED_BY(_landing_manager_mutex) get_latest_height_above_obstacle() {
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        return _height_above_obstacle;
+    }
+
     void getDownsampledDepthDataCallback(std::function<std::shared_ptr<ExtendedDownsampledImageF>()> callback) {
         _downsampled_depth_update_callback = callback;
     }
@@ -147,4 +152,5 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     std::vector<Eigen::Vector3f> _pointcloud_for_mapper;
 
     landing_mapper::eLandingMapperState _state;
+    float _height_above_obstacle;
 };
