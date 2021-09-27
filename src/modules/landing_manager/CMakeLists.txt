@@ -16,10 +16,10 @@ find_package(rclcpp REQUIRED)
 find_package(PythonInterp 3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
-find_package(tf2_ros REQUIRED)
-find_package(px4_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+
+find_package(landing_mapper REQUIRED)
 
 #################
 # Setup targets #
@@ -33,8 +33,6 @@ ament_target_dependencies(landing-manager
   Eigen3
   landing_mapper
   image_downsampler
-  px4_msgs
-  tf2_ros
   std_msgs
   visualization_msgs
 )
@@ -59,7 +57,7 @@ target_link_libraries(landing-manager
 ############
 
 # Export information to downstream packages
-ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3)
+ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 landing_mapper std_msgs visualization_msgs)
 ament_export_targets(export_landing-manager HAS_LIBRARY_TARGET)
 
 ament_export_include_directories(include)

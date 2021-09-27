@@ -40,14 +40,14 @@
 
 #pragma once
 
+#include <common.h>
+
 #include <Eigen/Core>
 #include <ModuleBase.hpp>
 #include <chrono>
 #include <iostream>
 
 // ROS dependencies
-#include <common.h>
-
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>

@@ -42,21 +42,27 @@
 
 #include <common.h>
 
+#include <Eigen/Dense>
 #include <ModuleBase.hpp>
 #include <chrono>
 #include <iostream>
 
 // ROS dependencies
+#include <message_filters/subscriber.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/create_timer_ros.h>
+#include <tf2_ros/message_filter.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
-static constexpr auto sensorManagerOut = "[Sensor  Manager]";
+inline static constexpr auto sensorManagerOut = "[Sensor  Manager]";
 
 class SensorManager : public rclcpp::Node, ModuleBase {
    public:
@@ -76,14 +82,15 @@ class SensorManager : public rclcpp::Node, ModuleBase {
     }
 
    private:
-    void handle_incoming_depth_image(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
+    void handle_incoming_vehicle_odometry(const px4_msgs::msg::VehicleOdometry::ConstSharedPtr& msg);
     void handle_incoming_camera_info(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg);
+    void handle_incoming_depth_image(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
     bool set_downsampler(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
     mutable std::mutex _sensor_manager_mutex;
 
-    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr _depth_image_sub{};
+    rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr _depth_img_camera_info_sub;
 
     std::shared_ptr<ImageDownsamplerInterface> _imageDownsampler;
@@ -94,8 +101,12 @@ class SensorManager : public rclcpp::Node, ModuleBase {
 
     int16_t _downsampline_block_size;
 
+    tf2_ros::TransformBroadcaster _tf_broadcaster;
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
+    tf2_ros::MessageFilter<sensor_msgs::msg::Image> _tf_depth_filter;
+
+    message_filters::Subscriber<sensor_msgs::msg::Image> _tf_depth_subscriber;
 
    protected:
     std::shared_ptr<ExtendedDownsampledImageF> _downsampled_depth;

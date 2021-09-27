@@ -32,7 +32,7 @@
  ****************************************************************************/
 
 /**
- * @brief commen definitions for landing manager
+ * @brief Common definitions for usage by the modules
  * @file common.h
  * @author Bastian Jäeger <bastian@auterion.com>
  */

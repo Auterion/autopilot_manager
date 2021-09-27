@@ -40,20 +40,16 @@
 
 #pragma once
 
+#include <common.h>
+
 #include <Eigen/Core>
 #include <ModuleBase.hpp>
 #include <chrono>
 #include <iostream>
 
 // ROS dependencies
-#include <common.h>
-#include <tf2_ros/create_timer_ros.h>
-#include <tf2_ros/transform_broadcaster.h>
-
 #include <MapVisualizer.hpp>
-#include <SensorManager.hpp>
 #include <landing_mapper/mapper/LandingMapper.hpp>
-#include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -113,7 +109,6 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     void initParameters();
     void updateParameters();
     void mapper();
-    void handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 
     void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                          const rclcpp::Time& timestamp);
@@ -137,14 +132,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     rclcpp::CallbackGroup::SharedPtr _callback_group_mapper;
     rclcpp::CallbackGroup::SharedPtr _callback_group_telemetry;
 
-    rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _landing_state_pub;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _height_above_obstacle_pub;
-
-    tf2_ros::TransformBroadcaster _tf_broadcaster;
-
-    std::mutex _vehicle_state_mutex;
-    std::unique_ptr<VehicleState> _vehicle_state;
 
     std::function<std::shared_ptr<ExtendedDownsampledImageF>()> _downsampled_depth_update_callback;
 

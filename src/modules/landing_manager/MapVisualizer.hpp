@@ -42,6 +42,8 @@
 
 #include <Eigen/Core>
 #include <landing_mapper/voxelcube/EuclideanSignedDistanceFields.hpp>
+
+// ROS dependencies
 #include <rclcpp/duration.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>

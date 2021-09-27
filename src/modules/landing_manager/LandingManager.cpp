@@ -50,8 +50,6 @@ LandingManager::LandingManager()
       _visualizer(std::make_shared<viz::MapVisualizer>(this)),
       _timer_mapper({}),
       _timer_map_visualizer({}),
-      _tf_broadcaster(this),
-      _vehicle_state(new VehicleState()),
       _state(landing_mapper::eLandingMapperState::UNKNOWN),
       _height_above_obstacle{0.f} {}
 
@@ -116,11 +114,6 @@ void LandingManager::init() {
     // Vizualizaion runs at 1hz
     _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
 
-    // Setup odometry subscriber
-    _vehicle_odometry_sub = create_subscription<px4_msgs::msg::VehicleOdometry>(
-        "fmu/vehicle_odometry/out", 10, std::bind(&LandingManager::handleIncomingVehicleOdometry, this, _1),
-        telemetry_opt);
-
     // Setup landing state publisher
     _landing_state_pub = this->create_publisher<std_msgs::msg::String>("landing_manager/landing_state", 10);
 
@@ -155,42 +148,6 @@ bool LandingManager::setSearchWindow_m(const double window_size) {
     }
 
     return true;
-}
-
-void LandingManager::handleIncomingVehicleOdometry(const px4_msgs::msg::VehicleOdometry::UniquePtr msg) {
-    {
-        std::lock_guard<std::mutex> lock(_vehicle_state_mutex);
-
-        _vehicle_state->position = Eigen::Vector3f(msg->x, msg->y, msg->z);
-        _vehicle_state->orientation = Eigen::Quaternionf(msg->q[0], msg->q[1], msg->q[2], msg->q[3]);
-
-        _vehicle_state->velocity = Eigen::Vector3f(msg->vx, msg->vy, msg->vz);
-        _vehicle_state->angular_velocity = Eigen::Vector3f(msg->rollspeed, msg->pitchspeed, msg->yawspeed);
-
-        _vehicle_state->acceleration = Eigen::Vector3f(msg->ax, msg->ay, msg->az);
-
-        _vehicle_state->valid = true;
-    }
-
-    geometry_msgs::msg::TransformStamped tMsg{};
-
-    tMsg.transform.translation = geometry_msgs::msg::Vector3{};
-    tMsg.transform.translation.x = _vehicle_state->position.x();
-    tMsg.transform.translation.y = _vehicle_state->position.y();
-    tMsg.transform.translation.z = _vehicle_state->position.z();
-
-    tMsg.transform.rotation = geometry_msgs::msg::Quaternion{};
-    tMsg.transform.rotation.w = _vehicle_state->orientation.w();
-    tMsg.transform.rotation.x = _vehicle_state->orientation.x();
-    tMsg.transform.rotation.y = _vehicle_state->orientation.y();
-    tMsg.transform.rotation.z = _vehicle_state->orientation.z();
-
-    tMsg.header.stamp.sec = msg->timestamp / 1000000;
-    tMsg.header.stamp.nanosec = (msg->timestamp - tMsg.header.stamp.sec * 1000000) * 1000;
-    tMsg.header.frame_id = NED_FRAME;
-    tMsg.child_frame_id = BASE_LINK_FRAME;
-
-    _tf_broadcaster.sendTransform(tMsg);
 }
 
 void LandingManager::mapper() {

@@ -11,13 +11,16 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(px4_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 find_package(PythonInterp 3 REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+find_package(image_downsampler REQUIRED)
 
 #################
 # Setup targets #
@@ -26,18 +29,22 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 add_library(sensor-manager SHARED SensorManager.cpp)
 ament_target_dependencies(sensor-manager
   Eigen3
-  sensor_msgs
   image_downsampler
+  px4_msgs
+  sensor_msgs
+  tf2_ros
 )
 target_include_directories(sensor-manager PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME}>
   $<INSTALL_INTERFACE:include/autopilot-manager/${PROJECT_NAME}>
   ${Eigen3_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
+  ${image_downsampler_INCLUDE_DIRS}
 )
 target_link_libraries(sensor-manager
   Eigen3::Eigen
   ${rclcpp_LIBRARIES}
+  ${px4_msgs_LIBRARIES}
   ${sensor_msgs_LIBRARIES}
   ${image_downsampler_LIBRARIES}
 )
@@ -47,7 +54,7 @@ target_link_libraries(sensor-manager
 ############
 
 # Export information to downstream packages
-ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 sensor_msgs)
+ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 image_downsampler px4_msgs sensor_msgs tf2_ros)
 ament_export_targets(export_sensor-manager HAS_LIBRARY_TARGET)
 
 ament_export_include_directories(include)
