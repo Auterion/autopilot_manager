@@ -57,6 +57,7 @@
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/string.hpp>
 
 struct VehicleState {
@@ -138,6 +139,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _vehicle_odometry_sub;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _landing_state_pub;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _height_above_obstacle_pub;
 
     tf2_ros::TransformBroadcaster _tf_broadcaster;
 

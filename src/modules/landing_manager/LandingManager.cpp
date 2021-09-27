@@ -123,6 +123,10 @@ void LandingManager::init() {
 
     // Setup landing state publisher
     _landing_state_pub = this->create_publisher<std_msgs::msg::String>("landing_manager/landing_state", 10);
+
+    // Setup height above obstacle publisher
+    _height_above_obstacle_pub =
+        this->create_publisher<std_msgs::msg::Float32>("landing_manager/height_above_obstacle", 10);
 }
 
 auto LandingManager::deinit() -> void {}
@@ -251,9 +255,14 @@ void LandingManager::mapper() {
         }
 
         // Publish landing state to the ROS side
-        auto landing_state = std_msgs::msg::String();
-        landing_state.data = string_state(state);
-        _landing_state_pub->publish(landing_state);
+        auto landing_state_msg = std_msgs::msg::String();
+        landing_state_msg.data = string_state(state);
+        _landing_state_pub->publish(landing_state_msg);
+
+        // Publish the estimated height above obstacle to the ROS side
+        auto height_above_obstacle_msg = std_msgs::msg::Float32();
+        height_above_obstacle_msg.data = height_above_obstacle;
+        _height_above_obstacle_pub->publish(height_above_obstacle_msg);
 
         // Show result
         visualizeResult(state, ground_position, rclcpp::Time());
