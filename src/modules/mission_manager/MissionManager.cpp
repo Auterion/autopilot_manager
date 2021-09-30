@@ -101,6 +101,49 @@ void MissionManager::run() {
     }
 }
 
+bool MissionManager::set_global_position_reference() {
+    // Get global origin to set the reference global position
+    auto cmd_result = _telemetry->get_gps_global_origin();
+
+    bool result{false};
+    std::string status{};
+
+    if (cmd_result.first == mavsdk::Telemetry::Result::Success) {
+        if (_is_global_position_ok && _is_home_position_ok) {
+            if (cmd_result.second.latitude_deg != 0.0 && cmd_result.second.longitude_deg != 0.0) {
+                _ref_latitude = cmd_result.second.latitude_deg;
+                _ref_longitude = cmd_result.second.longitude_deg;
+                _ref_altitude = cmd_result.second.altitude_m;
+
+                status = std::string(missionManagerOut) +
+                         "Global position reference initialiazed: Latitude: " + std::to_string(_ref_latitude) +
+                         " deg | Longitude: " + std::to_string(_ref_longitude) +
+                         " deg | Altitude (AMSL): " + std::to_string(_ref_altitude) + " meters";
+                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+
+                result = true;
+
+            } else {
+                status = std::string(missionManagerOut) +
+                         "Failed to set the global origin reference because the received values are invalid.";
+                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+            }
+
+        } else {
+            status = std::string(missionManagerOut) +
+                     "Failed to set the global origin reference because there is no GPS lock.";
+            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+        }
+
+    } else {
+        status = std::string(missionManagerOut) + "Failed to fetch the GPS global origin from the flight controller.";
+        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+    }
+
+    std::cout << status << std::endl;
+    return result;
+}
+
 mavsdk::geometry::CoordinateTransformation::GlobalCoordinate MissionManager::get_global_position_from_local_offset(
     const double& offset_x, const double& offset_y) const {
     const double local_position_x =
@@ -180,22 +223,34 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                         std::cout << status << std::endl;
 
                     } else if (safe_landing_on_no_safe_land == "MOVE_XYZ_WRT_CURRENT") {
-                        const auto waypoint =
-                            get_global_position_from_local_offset(local_position_offset_x, local_position_offset_y);
-                        const double waypoint_altitude = _current_altitude_amsl + local_position_offset_z;
+                        // get the global origin from the FMU and set the reference
+                        if (set_global_position_reference()) {
+                            const auto waypoint =
+                                get_global_position_from_local_offset(local_position_offset_x, local_position_offset_y);
+                            const double waypoint_altitude = _current_altitude_amsl + local_position_offset_z;
 
-                        _action->goto_location(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude, NAN);
+                            _action->goto_location(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude,
+                                                   NAN);
 
-                        set_new_waypoint(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude);
+                            set_new_waypoint(waypoint.latitude_deg, waypoint.longitude_deg, waypoint_altitude);
 
-                        status = std::string(missionManagerOut) +
-                                 "Moving XYZ WRT to current vehicle position triggered for Safe Landing. Heading to "
-                                 "determined "
-                                 "Latitude " +
-                                 std::to_string(waypoint.latitude_deg) + " deg, Longitude " +
-                                 std::to_string(waypoint.longitude_deg) + " deg, Altitude (AMSL) " +
-                                 std::to_string(waypoint_altitude) + " meters";
-                        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+                            status =
+                                std::string(missionManagerOut) +
+                                "Moving XYZ WRT to current vehicle position triggered for Safe Landing. Heading to "
+                                "determined "
+                                "Latitude " +
+                                std::to_string(waypoint.latitude_deg) + " deg, Longitude " +
+                                std::to_string(waypoint.longitude_deg) + " deg, Altitude (AMSL) " +
+                                std::to_string(waypoint_altitude) + " meters";
+                            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+
+                        } else {
+                            _action->hold();
+
+                            status = std::string(missionManagerOut) + "Holding position...";
+                            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
+                        }
+
                         std::cout << status << std::endl;
 
                     } else if (safe_landing_on_no_safe_land == "GO_TO_WAYPOINT_XYZ") {
@@ -238,19 +293,30 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
 
                         } else {
-                            // then send the DO_REPOSITION
-                            _action->goto_location(global_position_waypoint_lat, global_position_waypoint_lon,
-                                                   global_position_waypoint_alt_amsl, NAN);
+                            // get the global origin from the FMU and set the reference
+                            if (set_global_position_reference()) {
+                                // then send the DO_REPOSITION
+                                _action->goto_location(global_position_waypoint_lat, global_position_waypoint_lon,
+                                                       global_position_waypoint_alt_amsl, NAN);
 
-                            set_new_waypoint(global_position_waypoint_lat, global_position_waypoint_lon,
-                                             global_position_waypoint_alt_amsl);
+                                set_new_waypoint(global_position_waypoint_lat, global_position_waypoint_lon,
+                                                 global_position_waypoint_alt_amsl);
 
-                            status = std::string(missionManagerOut) +
-                                     "Go-To Global Position Waypoint triggered for Safe Landing. Heading to Latitude " +
-                                     std::to_string(global_position_waypoint_lat) + " deg, Longitude " +
-                                     std::to_string(global_position_waypoint_lon) + " deg, Altitude (AMSL) " +
-                                     std::to_string(global_position_waypoint_alt_amsl) + " meters";
-                            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+                                status =
+                                    std::string(missionManagerOut) +
+                                    "Go-To Global Position Waypoint triggered for Safe Landing. Heading to Latitude " +
+                                    std::to_string(global_position_waypoint_lat) + " deg, Longitude " +
+                                    std::to_string(global_position_waypoint_lon) + " deg, Altitude (AMSL) " +
+                                    std::to_string(global_position_waypoint_alt_amsl) + " meters";
+                                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
+
+                            } else {
+                                _action->hold();
+
+                                status = std::string(missionManagerOut) + "Holding position...";
+                                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning,
+                                                                  status);
+                            }
                         }
 
                         std::cout << status << std::endl;
@@ -379,25 +445,6 @@ void MissionManager::decision_maker_run() {
         _is_global_position_ok = health.is_global_position_ok;
         _is_home_position_ok = health.is_home_position_ok;
     });
-
-    // Get global origin to set the reference global position
-    _telemetry->get_gps_global_origin_async(
-        [this](mavsdk::Telemetry::Result result, mavsdk::Telemetry::GpsGlobalOrigin gps_global_origin) {
-            // only setup the global origin ref if the global and home positions are valid
-            if (result == mavsdk::Telemetry::Result::Success && _is_global_position_ok && _is_home_position_ok) {
-                _ref_latitude = gps_global_origin.latitude_deg;
-                _ref_longitude = gps_global_origin.longitude_deg;
-                _ref_altitude = gps_global_origin.altitude_m;
-
-                const std::string status =
-                    std::string(missionManagerOut) +
-                    "Global position reference initialiazed: Latitude: " + std::to_string(_ref_latitude) +
-                    " deg | Longitude: " + std::to_string(_ref_longitude) +
-                    " deg | Altitude (AMSL): " + std::to_string(_ref_altitude) + " meters";
-                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
-                std::cout << status << std::endl;
-            }
-        });
 
     // Get local position
     _telemetry->subscribe_position_velocity_ned([this](mavsdk::Telemetry::PositionVelocityNed position_velocity) {

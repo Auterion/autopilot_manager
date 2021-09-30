@@ -120,6 +120,7 @@ class MissionManager : public ModuleBase {
     void handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now);
     void handle_simple_collision_avoidance(std::chrono::time_point<std::chrono::system_clock> now);
 
+    bool set_global_position_reference();
     void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
     bool arrived_to_new_waypoint();
 
