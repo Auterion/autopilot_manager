@@ -63,12 +63,13 @@ void LandingManager::initParameters() {
     _mapper_parameter.max_window_size_m = 5;
 
     _mapper_parameter.search_altitude_m = 7.5f;
-    _mapper_parameter.window_size_m = 1.4f;
+    _mapper_parameter.window_size_m = 2.0f;
 
-    _mapper_parameter.distance_threshold_m = 0.05f;
-    _mapper_parameter.mean_tresh = 0.15f;
+    _mapper_parameter.distance_threshold_m = 0.1f;
+    _mapper_parameter.neg_peak_tresh = 0.75f;
+    _mapper_parameter.pos_peak_tresh = 0.19f;
+    _mapper_parameter.std_dev_tresh = 0.075f;
     _mapper_parameter.percentage_of_valid_samples_in_window = 0.7f;
-    _mapper_parameter.std_dev_tresh = 0.1f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
     std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
