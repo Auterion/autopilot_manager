@@ -193,7 +193,18 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
             std::string status{};
 
             if (height_above_obstacle <= (safe_landing_distance_to_ground - 0.5) && !_action_triggered) {
-                if (height_above_obstacle > 0.5 && safe_landing_state == 0 /*eLandingMapperState::UNKNOWN*/) {
+                if (safe_landing_state == 0 /*eLandingMapperState::UNHEALTHY*/) {
+                    // If the safe landing status is unhealthy, then hold position.
+                    _action->hold();
+
+                    status = std::string(missionManagerOut) + "Safe landing system not healthy. Holding position...";
+                    _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
+                    std::cout << status << std::endl;
+
+                    _action_triggered = true;
+                    _last_time = now;
+
+                } else if (height_above_obstacle > 0.5 && safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/) {
                     // If the vehicle is bellow the defined maximum distance to ground to determine if it is
                     // safe to land or not, then it will still try to land until it reaches an height that
                     // allows it to determine if it can land or not. Otherwise, it holds position.
@@ -278,7 +289,6 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                         // action was triggered, the previous waypoint will match the current waypoint. If that's the
                         // case enfore an RTL so to avoid the vehicle getting stuck trying to land in a place it can't
                         // land
-
                         if ((std::abs(global_position_waypoint_lat - _current_latitude) <= 1.0E-5) &&
                             (std::abs(global_position_waypoint_lon - _current_longitude) <= 1.0E-5) &&
                             (std::abs(_previously_set_waypoint_altitude_amsl - _current_altitude_amsl) <= 1.0)) {
