@@ -146,6 +146,18 @@ git clone git@github.com:Auterion/px4_msgs.git -b develop src/px4_msgs
 colcon build --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
+### *px4_ros_com* as an execution dependency
+
+*px4_ros_com* is required as an execution dependency, since it is through it that the
+`vehicle_odometry` data is streamed to be used by the Sensor Manager.
+
+```bash
+cd colcon_ws
+git clone git@github.com:Auterion/px4_ros_com.git -b develop src/px4_ros_com
+# Build with Release optimizations
+colcon build --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
 ### *mavlink-router* config
 
 **Warning: if you one installs mavlink-router system-wide, it needs to take into account that it is going to route MAVLink data on the system.**
@@ -270,6 +282,12 @@ $ ros2 run autopilot-manager autopilot-manager [OPTIONS...]
   -h --help				Print this message
 ```
 
+Or use the provided ROS launch files:
+
+```sh
+$ ros2 launch autopilot-manager autopilot_manager.launch
+```
+
 The autopilot-manager will be looking for autopilot HEARTBEATs, which will result and timeout and exit if they are not received.
 So `mavlink-router` should be running and properly configured with the endpoint where the autopilot is connected.
 
@@ -306,10 +324,27 @@ ros2 launch autopilot-manager static_tf.launch
 ```bash
 source colcon_ws/install/setup.bash
 cd colcon_ws
+# ROS2 run it
 ros2 run autopilot-manager autopilot-manager \
   -a install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_sitl.json \
   -c install/autopilot-manager/share/autopilot-manager/data/config/autopilot_manager.conf \
-  --ros-args -p sim:=true
+  --ros-args -p sim:=true -p use_sim_time:=true
+# Start the microrpts_agent
+```
+
+#### Terminal 3
+
+```bash
+source colcon_ws/install/setup.bash
+microrpts_agent -t UDP
+```
+
+#### Using ROS2 launch
+
+Replaces the usage of the commands on terminal 1 and 2 above.
+
+```bash
+ros2 launch autopilot-manager autopilot_manager_sim.launch
 ```
 
 ## Packaging
