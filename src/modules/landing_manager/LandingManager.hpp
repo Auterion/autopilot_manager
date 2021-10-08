@@ -109,6 +109,7 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     void initParameters();
     void updateParameters();
     void mapper();
+    bool healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const;
 
     void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                          const rclcpp::Time& timestamp);

@@ -151,6 +151,50 @@ bool LandingManager::setSearchWindow_m(const double window_size) {
     return true;
 }
 
+bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const {
+    static constexpr int16_t MAX_NULL_IMAGE = 2;
+    static constexpr int16_t MAX_OLD_TIMESTAMP = 10;
+
+    bool healthy{true};
+
+    struct HealthHandly {
+        int16_t count_image_null{0};
+        int16_t count_timestamp_old{0};
+
+        int64_t last_timestamp{0};
+    };
+    static HealthHandly health;
+
+    if (depth_msg == nullptr) {
+        health.count_image_null++;
+    }
+    else {
+        health.count_image_null = 0;
+
+        const bool is_timestamp_old = health.last_timestamp >= depth_msg->timestamp_ns;
+        health.last_timestamp = depth_msg->timestamp_ns;
+        if (is_timestamp_old) {
+            health.count_timestamp_old++;
+        }
+        else {
+            health.count_timestamp_old = 0;
+        }
+    }
+
+    const bool too_many_null_images = health.count_image_null > MAX_NULL_IMAGE;
+    const bool too_many_old_timestamps = health.count_timestamp_old > MAX_OLD_TIMESTAMP;
+
+    std::cout << "images: " << health.count_image_null
+              << " time: " << health.count_timestamp_old
+              << std::endl;
+
+    if ( too_many_null_images || too_many_old_timestamps) {
+        healthy = false;
+    }
+
+    return healthy;
+}
+
 void LandingManager::mapper() {
     // Here we capture the downsampled depth data computed in the SensorManager
     std::shared_ptr<ExtendedDownsampledImageF> depth_msg = _downsampled_depth_update_callback();
@@ -159,6 +203,12 @@ void LandingManager::mapper() {
     // TODO: make this call dependent on a dbus param update on the Autopilot Manager
     // instead of running at every loop update
     updateParameters();
+    if ( !healthCheck(depth_msg) ) {
+        std::cerr << landingManagerOut << " input is unhealthy" << std::endl;
+        _state = landing_mapper::eLandingMapperState::UNHEALTHY;
+        return;
+    }
+
 
     // TODO: reinstantiate _mapper a after parameter update
 
