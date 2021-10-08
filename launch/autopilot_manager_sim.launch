@@ -1,0 +1,36 @@
+from ament_index_python.packages import get_package_share_directory
+
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.substitutions import ThisLaunchFileDir
+from launch.actions import LogInfo, Shutdown, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+import os
+
+custom_action_config = os.path.join(
+    get_package_share_directory('autopilot-manager'),
+    'data/example/custom_action',
+    'custom_action_sitl.json')
+
+autopilot_manager_config = os.path.join(
+    get_package_share_directory('autopilot-manager'),
+    'data/config',
+    'autopilot_manager.conf')
+
+
+def generate_launch_description():
+    return LaunchDescription([
+        IncludeLaunchDescription(PythonLaunchDescriptionSource(
+            [ThisLaunchFileDir(), '/static_tf.launch'])),
+        Node(
+            package='autopilot-manager',
+            executable='autopilot-manager',
+            output='screen',
+            arguments=['-a', custom_action_config,
+                       '-c', autopilot_manager_config],
+            parameters=[{'sim': 'true', 'use_sim_time': 'true'}],
+            on_exit=[LogInfo(msg=["autopilot-manager failed to start. Stopping everything..."]),
+                     Shutdown(reason='autopilot-manager failed to start')],
+        )
+    ])
