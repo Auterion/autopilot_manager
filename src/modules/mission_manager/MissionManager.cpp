@@ -88,6 +88,7 @@ void MissionManager::deinit() {
     int_signal.store(true, std::memory_order_relaxed);
 
     _decision_maker_th.join();
+    _global_origin_reference_th.join();
     _custom_action_handler.reset();
 }
 
@@ -101,15 +102,19 @@ void MissionManager::run() {
     }
 }
 
-bool MissionManager::set_global_position_reference() {
-    // Get global origin to set the reference global position
-    auto cmd_result = _telemetry->get_gps_global_origin();
-
+void MissionManager::set_global_position_reference() {
     bool result{false};
     std::string status{};
 
-    if (cmd_result.first == mavsdk::Telemetry::Result::Success) {
-        if (_is_global_position_ok && _is_home_position_ok) {
+    while (!_get_gps_origin_success && !int_signal && !(_is_global_position_ok && _is_home_position_ok)) {
+        // Get global origin to set the reference global position
+        auto cmd_result = _telemetry->get_gps_global_origin();
+
+        if (cmd_result.first == mavsdk::Telemetry::Result::Success) {
+            std::cout << std::string(missionManagerOut) + "Successfully received a GPS_GLOBAL_ORIGIN MAVLink message"
+                      << std::endl;
+            _get_gps_origin_success = true;
+
             if (cmd_result.second.latitude_deg != 0.0 && cmd_result.second.longitude_deg != 0.0) {
                 _ref_latitude = cmd_result.second.latitude_deg;
                 _ref_longitude = cmd_result.second.longitude_deg;
@@ -129,19 +134,20 @@ bool MissionManager::set_global_position_reference() {
                 _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
             }
 
+        } else if (cmd_result.first == mavsdk::Telemetry::Result::Timeout) {
+            std::cout << std::string(missionManagerOut) +
+                             "GPS_GLOBAL_ORIGIN stream request timeout. Message not yet received. Retrying..."
+                      << std::endl;
         } else {
-            status = std::string(missionManagerOut) +
-                     "Failed to set the global origin reference because there is no GPS lock.";
-            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+            std::cout << std::string(missionManagerOut) + "GPS_GLOBAL_ORIGIN stream request failed. Retrying..."
+                      << std::endl;
         }
 
-    } else {
-        status = std::string(missionManagerOut) + "Failed to fetch the GPS global origin from the flight controller.";
-        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     std::cout << status << std::endl;
-    return result;
+    _global_origin_reference_set = result;
 }
 
 mavsdk::geometry::CoordinateTransformation::GlobalCoordinate MissionManager::get_global_position_from_local_offset(
@@ -192,7 +198,8 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
         if (_landing && !_on_ground) {
             std::string status{};
 
-            if (height_above_obstacle <= (safe_landing_distance_to_ground - 0.5) && !_action_triggered) {
+            // if (height_above_obstacle <= (safe_landing_distance_to_ground - 0.2) && !_action_triggered) {
+            if (!_action_triggered) {
                 if (safe_landing_state == 0 /*eLandingMapperState::UNHEALTHY*/) {
                     // If the safe landing status is unhealthy, then hold position.
                     _action->hold();
@@ -219,6 +226,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     _last_time = now;
 
                 } else if (safe_landing_state == 3 /*eLandingMapperState::CAN_NOT_LAND*/) {
+                    std::cout << "Cannot land! -----------------------" << std::endl;
                     if (safe_landing_on_no_safe_land == "HOLD") {
                         _action->hold();
 
@@ -235,7 +243,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
                     } else if (safe_landing_on_no_safe_land == "MOVE_XYZ_WRT_CURRENT") {
                         // get the global origin from the FMU and set the reference
-                        if (set_global_position_reference()) {
+                        if (_global_origin_reference_set) {
                             const auto waypoint =
                                 get_global_position_from_local_offset(local_position_offset_x, local_position_offset_y);
                             const double waypoint_altitude = _current_altitude_amsl + local_position_offset_z;
@@ -304,7 +312,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
                         } else {
                             // get the global origin from the FMU and set the reference
-                            if (set_global_position_reference()) {
+                            if (_global_origin_reference_set) {
                                 // then send the DO_REPOSITION
                                 _action->goto_location(global_position_waypoint_lat, global_position_waypoint_lon,
                                                        global_position_waypoint_alt_amsl, NAN);
@@ -462,6 +470,9 @@ void MissionManager::decision_maker_run() {
         _current_pos_y = position_velocity.position.east_m;
         _current_pos_z = position_velocity.position.down_m;
     });
+
+    // Get the GPS global origin and set the global origin reference
+    _global_origin_reference_th = std::thread(&MissionManager::set_global_position_reference, this);
 
     // Get yaw
     _telemetry->subscribe_attitude_euler(

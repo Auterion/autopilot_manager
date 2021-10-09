@@ -120,7 +120,7 @@ class MissionManager : public ModuleBase {
     void handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now);
     void handle_simple_collision_avoidance(std::chrono::time_point<std::chrono::system_clock> now);
 
-    bool set_global_position_reference();
+    void set_global_position_reference();
     void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
     bool arrived_to_new_waypoint();
 
@@ -150,6 +150,8 @@ class MissionManager : public ModuleBase {
     std::atomic<bool> _on_ground;
     std::atomic<bool> _is_global_position_ok;
     std::atomic<bool> _is_home_position_ok;
+    std::atomic<bool> _get_gps_origin_success;
+    std::atomic<bool> _global_origin_reference_set;
 
     std::atomic<double> _current_latitude;
     std::atomic<double> _current_longitude;
@@ -171,4 +173,5 @@ class MissionManager : public ModuleBase {
     std::chrono::time_point<std::chrono::system_clock> _last_time{};
 
     std::thread _decision_maker_th;
+    std::thread _global_origin_reference_th;
 };
