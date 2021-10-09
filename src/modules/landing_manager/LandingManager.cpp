@@ -72,7 +72,7 @@ void LandingManager::initParameters() {
     _mapper_parameter.percentage_of_valid_samples_in_window = 0.7f;
     _mapper_parameter.voxel_size_m = 0.1f;
 
-    std::cout << landingManagerOut << "Square size: " << _mapper_parameter.window_size_m
+    std::cout << landingManagerOut << " Square size: " << _mapper_parameter.window_size_m
               << " | Distance to ground: " << _mapper_parameter.search_altitude_m << std::endl;
 }
 
@@ -200,17 +200,9 @@ void LandingManager::mapper() {
     // instead of running at every loop update
     updateParameters();
 
-    // Check for input health
-    if (!healthCheck(depth_msg)) {
-        std::cerr << landingManagerOut << " Input is unhealthy" << std::endl;
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        _state = landing_mapper::eLandingMapperState::UNHEALTHY;
-        return;
-    }
-
     // TODO: reinstantiate _mapper a after parameter update
 
-    if (depth_msg != nullptr && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
+    if (depth_msg != nullptr && healthCheck(depth_msg) && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
         const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
         const DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
         const rclcpp::Time timestamp(depth_msg->timestamp_ns);
@@ -260,11 +252,6 @@ void LandingManager::mapper() {
             _height_above_obstacle = height_above_obstacle;
         }
 
-        // Publish landing state to the ROS side
-        auto landing_state_msg = std_msgs::msg::String();
-        landing_state_msg.data = string_state(state);
-        _landing_state_pub->publish(landing_state_msg);
-
         // Publish the estimated height above obstacle to the ROS side
         auto height_above_obstacle_msg = std_msgs::msg::Float32();
         height_above_obstacle_msg.data = height_above_obstacle;
@@ -272,16 +259,30 @@ void LandingManager::mapper() {
 
         // Show result
         visualizeResult(state, ground_position, rclcpp::Time());
-        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << " state "
-        //          << landing_mapper::string_state(state) << std::endl;
+        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << std::endl;
+
+    } else if (!healthCheck(depth_msg)) {
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        _state = landing_mapper::eLandingMapperState::UNHEALTHY;
+
     } else {
         std::lock_guard<std::mutex> lock(_landing_manager_mutex);
         if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
             _state = landing_mapper::eLandingMapperState::UNKNOWN;
         }
+    }
 
-        // Show result
-        // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
+    // Show result
+    // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
+
+    // Always publish the landing state to the ROS side
+    {
+        auto landing_state_msg = std_msgs::msg::String();
+
+        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+        landing_state_msg.data = landing_mapper::string_state(_state);
+
+        _landing_state_pub->publish(landing_state_msg);
     }
 }
 
