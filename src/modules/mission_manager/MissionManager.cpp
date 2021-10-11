@@ -96,6 +96,9 @@ void MissionManager::run() {
     // Start the desicion maker thread
     _decision_maker_th = std::thread(&MissionManager::decision_maker_run, this);
 
+    // Get the GPS global origin and set the global origin reference
+    _global_origin_reference_th = std::thread(&MissionManager::set_global_position_reference, this);
+
     // Start custom action handler
     if (_custom_action_handler->start()) {
         _custom_action_handler->run();
@@ -106,7 +109,7 @@ void MissionManager::set_global_position_reference() {
     bool result{false};
     std::string status{};
 
-    while (!_get_gps_origin_success && !int_signal && !(_is_global_position_ok && _is_home_position_ok)) {
+    while (!_get_gps_origin_success && !int_signal) {
         // Get global origin to set the reference global position
         auto cmd_result = _telemetry->get_gps_global_origin();
 
@@ -142,8 +145,6 @@ void MissionManager::set_global_position_reference() {
             std::cout << std::string(missionManagerOut) + "GPS_GLOBAL_ORIGIN stream request failed. Retrying..."
                       << std::endl;
         }
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     std::cout << status << std::endl;
@@ -200,7 +201,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
             // if (height_above_obstacle <= (safe_landing_distance_to_ground - 0.2) && !_action_triggered) {
             if (!_action_triggered) {
-                if (safe_landing_state == 0 /*eLandingMapperState::UNHEALTHY*/) {
+                if (height_above_obstacle > 1.5 && safe_landing_state == 0 /*eLandingMapperState::UNHEALTHY*/) {
                     // If the safe landing status is unhealthy, then hold position.
                     _action->hold();
 
@@ -211,22 +212,22 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     _action_triggered = true;
                     _last_time = now;
 
-                } else if (height_above_obstacle > 0.5 && safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/) {
+                } else if (height_above_obstacle > 1.5 && safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/) {
                     // If the vehicle is bellow the defined maximum distance to ground to determine if it is
                     // safe to land or not, then it will still try to land until it reaches an height that
                     // allows it to determine if it can land or not. Otherwise, it holds position.
                     _action->hold();
 
                     status =
-                        std::string(missionManagerOut) + "Can't determine if it is safe to land. Holding position...";
+                        std::string(missionManagerOut) + "Cannot determine if it is safe to land. Holding position...";
                     _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
                     std::cout << status << std::endl;
 
                     _action_triggered = true;
                     _last_time = now;
 
-                } else if (safe_landing_state == 3 /*eLandingMapperState::CAN_NOT_LAND*/) {
-                    std::cout << "Cannot land! -----------------------" << std::endl;
+                } else if (safe_landing_state == 4 /*eLandingMapperState::CAN_NOT_LAND*/) {
+                    std::cout << std::string(missionManagerOut) << "Cannot land! -----------------------" << std::endl;
                     if (safe_landing_on_no_safe_land == "HOLD") {
                         _action->hold();
 
@@ -470,9 +471,6 @@ void MissionManager::decision_maker_run() {
         _current_pos_y = position_velocity.position.east_m;
         _current_pos_z = position_velocity.position.down_m;
     });
-
-    // Get the GPS global origin and set the global origin reference
-    _global_origin_reference_th = std::thread(&MissionManager::set_global_position_reference, this);
 
     // Get yaw
     _telemetry->subscribe_attitude_euler(

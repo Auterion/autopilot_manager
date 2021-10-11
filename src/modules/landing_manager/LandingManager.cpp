@@ -152,8 +152,8 @@ bool LandingManager::setSearchWindow_m(const double window_size) {
 }
 
 bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const {
-    static constexpr int16_t MAX_NULL_IMAGE = 2;
-    static constexpr int16_t MAX_OLD_TIMESTAMP = 10;
+    static constexpr int16_t MAX_NULL_IMAGE = 5;
+    static constexpr int16_t MAX_OLD_TIMESTAMP = 50;
 
     bool healthy{true};
 
