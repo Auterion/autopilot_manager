@@ -185,6 +185,9 @@ bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF
     // std::cout << "images: " << health.count_image_null << " time: " << health.count_timestamp_old << std::endl;
 
     if (too_many_null_images || too_many_old_timestamps) {
+        std::cerr << landingManagerOut << " Input is unhealthy"
+                  << " count_image_null=" << health.count_image_null
+                  << " count_timestamp_old=" << health.count_timestamp_old << std::endl;
         healthy = false;
     }
 
@@ -201,6 +204,8 @@ void LandingManager::mapper() {
     updateParameters();
 
     // TODO: reinstantiate _mapper a after parameter update
+
+    const bool is_landing_mapper_healthy = healthCheck(depth_msg);
 
     if (depth_msg != nullptr && healthCheck(depth_msg) && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
         const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
