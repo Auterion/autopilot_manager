@@ -207,7 +207,8 @@ void LandingManager::mapper() {
 
     const bool is_landing_mapper_healthy = healthCheck(depth_msg);
 
-    if (depth_msg != nullptr && healthCheck(depth_msg) && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
+    if (depth_msg != nullptr && is_landing_mapper_healthy &&
+        depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
         const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
         const DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
         const rclcpp::Time timestamp(depth_msg->timestamp_ns);
