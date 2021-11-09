@@ -18,7 +18,6 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-
 find_package(landing_mapper REQUIRED)
 
 #################
@@ -41,11 +40,12 @@ target_include_directories(landing-manager PUBLIC
   $<INSTALL_INTERFACE:include/autopilot-manager/${PROJECT_NAME}>
   ${Eigen3_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
+  ${landing_mapper_INCLUDE_DIRS}
 )
 target_link_libraries(landing-manager
   Eigen3::Eigen
+  landing_mapper
   ${rclcpp_LIBRARIES}
-  ${landing_mapper_LIBRARIES}
   ${image_downsampler_LIBRARIES}
   ${px4_msgs_LIBRARIES}
   ${std_msgs_LIBRARIES}

@@ -49,7 +49,7 @@
 
 // ROS dependencies
 #include <MapVisualizer.hpp>
-#include <landing_mapper/mapper/LandingMapper.hpp>
+#include <landing_mapper/LandingMapper.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>

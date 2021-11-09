@@ -41,7 +41,7 @@
 #include <common.h>
 
 #include <Eigen/Core>
-#include <landing_mapper/voxelcube/EuclideanSignedDistanceFields.hpp>
+#include <landing_mapper/EuclideanSignedDistanceFields.hpp>
 
 // ROS dependencies
 #include <rclcpp/duration.hpp>
