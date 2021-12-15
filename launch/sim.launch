@@ -1,0 +1,28 @@
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+import math 
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='autopilot-manager',
+            executable='autopilot-manager',
+            name='autopilot_manager',
+            output='screen',
+            parameters=[
+                { "use_sim_time": True }
+			],
+            arguments=[
+                "-a", 
+                "install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_sitl.json",
+                "-c",
+                "install/autopilot-manager/share/autopilot-manager/data/config/autopilot_manager.conf"
+            ]
+        ),        
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(['install/autopilot-manager/share/autopilot-manager/launch/static_tf.launch'])
+        )
+    ])

@@ -294,7 +294,7 @@ void LandingManager::mapper() {
 
 void LandingManager::visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                                      const rclcpp::Time& timestamp) {
-    Eigen::Vector3f vis_position(position[0], position[1], position[2] - 0.5);
+    Eigen::Vector3f vis_position(position[0], position[1], position[2] - 1.0);
     if (state == landing_mapper::eLandingMapperState::CAN_LAND) {
         _visualizer->publishSafeLand(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     } else if (state == landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {

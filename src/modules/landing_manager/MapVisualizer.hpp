@@ -228,9 +228,10 @@ void MapVisualizer::visualizeEsdf(const esdf::EuclideanSignedDistanceFields<T>& 
     // constexpr float range_max = 320.f;
     // constexpr float range_min = 0.f;
 
-    for (int i = grid_min[0]; i < grid_max[0]; ++i) {
-        for (int j = grid_min[1]; j < grid_max[1]; ++j) {
-            for (int k = grid_min[2]; k < grid_max[2]; ++k) {
+    //for (int k = grid_min[2]; k < grid_max[2]; ++k) {
+    for (int k = grid_max[2]; k > grid_min[2]; --k) {
+        for (int i = grid_min[0]; i < grid_max[0]; ++i) {
+            for (int j = grid_min[1]; j < grid_max[1]; ++j) {
                 const Eigen::Vector3i index(i, j, k);
                 const esdfvoxelcube::ESDFNode<T>& voxel = esdf_map.getNode(index);
                 if (voxel.is_observed && voxel.distance < cell_size) {

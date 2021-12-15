@@ -57,6 +57,10 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
+        camera_depth_optical_frame:
+          Value: true
+        camera_infra1_optical_frame:
+          Value: true
         camera_link:
           Value: true
         enu:
@@ -73,7 +77,10 @@ Visualization Manager:
           ned:
             base_link:
               camera_link:
-                {}
+                camera_depth_optical_frame:
+                  {}
+                camera_infra1_optical_frame:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -158,7 +165,7 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        {}
+        goal_position: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -244,25 +251,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 9.7350435256958
+      Distance: 8.566838264465332
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.5495646595954895
-        Y: 0.48444706201553345
-        Z: -3.908095598220825
+        X: -0.6186971068382263
+        Y: 0.7682192325592041
+        Z: -3.6245615482330322
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.31539881229400635
+      Pitch: 0.34539780020713806
       Target Frame: base_link
       Value: Orbit (rviz_default_plugins)
-      Yaw: 3.4554026126861572
+      Yaw: 4.86356258392334
     Saved:
       - Class: rviz_default_plugins/ThirdPersonFollower
         Distance: 3.5963454246520996
