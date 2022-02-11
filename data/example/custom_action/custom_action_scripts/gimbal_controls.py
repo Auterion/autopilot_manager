@@ -48,7 +48,7 @@ import asyncio
 from mavsdk import System
 from mavsdk.gimbal import ControlMode
 
-async def run():
+async def run() -> None:
     # Parse CLI arguments
     parser = argparse.ArgumentParser(description="Script for controlling the gimbal")
     parser.add_argument('--forward', help="Set gimbal into forward position", action="store_true")
