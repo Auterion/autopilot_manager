@@ -61,7 +61,8 @@ auto CustomActionHandler::start() -> bool {
         _custom_action = std::make_shared<mavsdk::CustomAction>(_mavsdk_system);
 
         // Get the landing state so we can decide if landing or takeoff are complete
-        _telemetry->subscribe_landed_state([this](mavsdk::Telemetry::LandedState landed_state) { _landed_state = landed_state; });
+        _telemetry->subscribe_landed_state(
+            [this](mavsdk::Telemetry::LandedState landed_state) { _landed_state = landed_state; });
 
         return true;
     }

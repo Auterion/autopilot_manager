@@ -145,9 +145,7 @@ class MissionManager : public ModuleBase {
     std::shared_ptr<mavsdk::ServerUtility> _server_utility;
 
     std::atomic<bool> _action_triggered;
-    std::atomic<bool> _in_air;
-    std::atomic<bool> _landing;
-    std::atomic<bool> _on_ground;
+    std::atomic<mavsdk::Telemetry::LandedState> _landed_state{mavsdk::Telemetry::LandedState::Unknown};
     std::atomic<bool> _is_global_position_ok;
     std::atomic<bool> _is_home_position_ok;
     std::atomic<bool> _get_gps_origin_success;
