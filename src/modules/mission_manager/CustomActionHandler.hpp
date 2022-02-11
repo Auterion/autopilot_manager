@@ -77,7 +77,7 @@ class CustomActionHandler {
     std::atomic<bool> _mission_finished{false};
     std::atomic<bool> _action_stopped{false};
     std::atomic<bool> _new_action{false};
-    std::atomic<bool> _in_air{false};
+    std::atomic<mavsdk::Telemetry::LandedState> _landed_state{mavsdk::Telemetry::LandedState::Unknown};
 
     std::mutex cancel_mtx;
     std::condition_variable cancel_signal;

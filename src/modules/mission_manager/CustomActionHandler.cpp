@@ -60,8 +60,8 @@ auto CustomActionHandler::start() -> bool {
         // Custom actions are processed and executed in the Mission Manager
         _custom_action = std::make_shared<mavsdk::CustomAction>(_mavsdk_system);
 
-        // Get the in-air state
-        _telemetry->subscribe_in_air([this](bool in_air) { _in_air = in_air; });
+        // Get the landing state so we can decide if landing or takeoff are complete
+        _telemetry->subscribe_landed_state([this](mavsdk::Telemetry::LandedState landed_state) { _landed_state = landed_state; });
 
         return true;
     }
@@ -205,15 +205,15 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
             } else if (action_metadata.stages[i].state_transition_condition ==
                        mavsdk::CustomAction::Stage::StateTransitionCondition::OnLandingComplete) {
                 // Wait for the vehicle to be landed
-                while (!_action_stopped.load() && _in_air) {
+                while (!_action_stopped.load() && _landed_state != mavsdk::Telemetry::LandedState::OnGround) {
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
 
                 update_action_progress_from_stage(i, action_metadata);
             } else if (action_metadata.stages[i].state_transition_condition ==
                        mavsdk::CustomAction::Stage::StateTransitionCondition::OnTakeoffComplete) {
-                // Wait for the vehicle to be in-air
-                while (!_action_stopped.load() && !_in_air) {
+                // Wait for the vehicle to finish the takeoff
+                while (!_action_stopped.load() && _landed_state != mavsdk::Telemetry::LandedState::InAir) {
                     std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
 
