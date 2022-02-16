@@ -195,9 +195,6 @@ bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF
 }
 
 void LandingManager::mapper() {
-    // Here we capture the downsampled depth data computed in the SensorManager
-    std::shared_ptr<ExtendedDownsampledImageF> depth_msg = _downsampled_depth_update_callback();
-
     // check for parameter updates
     // TODO: make this call dependent on a dbus param update on the Autopilot Manager
     // instead of running at every loop update
@@ -205,90 +202,98 @@ void LandingManager::mapper() {
 
     // TODO: reinstantiate _mapper a after parameter update
 
-    const bool is_landing_mapper_healthy = healthCheck(depth_msg);
+    // Only process the data when the Autopilot Manager is enabled and the Safe Landing
+    // is set as the Decision Maker Input.
+    if (_landing_manager_config.autopilot_manager_enabled && _landing_manager_config.safe_landing_enabled) {
+        // Here we capture the downsampled depth data computed in the SensorManager
+        std::shared_ptr<ExtendedDownsampledImageF> depth_msg = _downsampled_depth_update_callback();
 
-    if (depth_msg != nullptr && is_landing_mapper_healthy &&
-        depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
-        const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
-        const DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
-        const rclcpp::Time timestamp(depth_msg->timestamp_ns);
-        const Eigen::Vector3f position = depth_msg->position;
-        const Eigen::Quaternionf orientation = depth_msg->orientation;
+        const bool is_landing_mapper_healthy = healthCheck(depth_msg);
 
-        {
-            std::lock_guard<std::mutex> lock(_map_mutex);
-            _pointcloud_for_mapper.clear();
-            _visualizer->prepare_point_cloud_msg(depth_msg->timestamp_ns, intrinsics.rw, intrinsics.rh, _visualize);
+        if (depth_msg != nullptr && is_landing_mapper_healthy &&
+            depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
+            const RectifiedIntrinsicsF intrinsics = depth_msg->downsampled_image.intrinsics;
+            const DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
+            const rclcpp::Time timestamp(depth_msg->timestamp_ns);
+            const Eigen::Vector3f position = depth_msg->position;
+            const Eigen::Quaternionf orientation = depth_msg->orientation;
 
-            const Eigen::Vector2f principal_point = intrinsics.principal_point();
-            const Eigen::Vector2f inverse_focal_length = intrinsics.inverse_focal_length();
+            {
+                std::lock_guard<std::mutex> lock(_map_mutex);
+                _pointcloud_for_mapper.clear();
+                _visualizer->prepare_point_cloud_msg(depth_msg->timestamp_ns, intrinsics.rw, intrinsics.rh, _visualize);
 
-            for (const DepthPixelF& depth_pixel : depth_pixel_array) {
-                const float depth = depth_pixel.depth;
+                const Eigen::Vector2f principal_point = intrinsics.principal_point();
+                const Eigen::Vector2f inverse_focal_length = intrinsics.inverse_focal_length();
 
-                if (std::isfinite(depth) && (depth > 0.3f) &&
-                    (depth < 7.5f)) {  // TODO make 0.3 and 20.f parameter again
-                    Eigen::Matrix<float, 3, 1> point(0.0, 0.0, depth);
-                    point.head<2>() = (Eigen::Matrix<float, 2, 1>(depth_pixel.x, depth_pixel.y) - principal_point)
-                                          .cwiseProduct(inverse_focal_length) *
-                                      depth;
-                    point = orientation * point + position;
+                for (const DepthPixelF& depth_pixel : depth_pixel_array) {
+                    const float depth = depth_pixel.depth;
 
-                    _pointcloud_for_mapper.push_back(point);
-                    _visualizer->add_point_to_point_cloud(point, _visualize);
+                    if (std::isfinite(depth) && (depth > 0.3f) &&
+                        (depth < 7.5f)) {  // TODO make 0.3 and 20.f parameter again
+                        Eigen::Matrix<float, 3, 1> point(0.0, 0.0, depth);
+                        point.head<2>() = (Eigen::Matrix<float, 2, 1>(depth_pixel.x, depth_pixel.y) - principal_point)
+                                              .cwiseProduct(inverse_focal_length) *
+                                          depth;
+                        point = orientation * point + position;
+
+                        _pointcloud_for_mapper.push_back(point);
+                        _visualizer->add_point_to_point_cloud(point, _visualize);
+                    }
                 }
+
+                _mapper->updateCloud(_pointcloud_for_mapper);
+
+                _visualizer->visualizePointCloud(_visualize);
             }
 
-            _mapper->updateCloud(_pointcloud_for_mapper);
+            // Find plain ground
+            _mapper->updateVehiclePosition(position);
+            _mapper->updateVehicleOrientation(orientation);
 
-            _visualizer->visualizePointCloud(_visualize);
-        }
+            Eigen::Vector3f ground_position;
+            const landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
+            const float height_above_obstacle = _mapper->getHeightAboveObstacle();
 
-        // Find plain ground
-        _mapper->updateVehiclePosition(position);
-        _mapper->updateVehicleOrientation(orientation);
+            {
+                std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+                _state = state;
+                _height_above_obstacle = height_above_obstacle;
+            }
 
-        Eigen::Vector3f ground_position;
-        const landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
-        const float height_above_obstacle = _mapper->getHeightAboveObstacle();
+            // Publish the estimated height above obstacle to the ROS side
+            auto height_above_obstacle_msg = std_msgs::msg::Float32();
+            height_above_obstacle_msg.data = height_above_obstacle;
+            _height_above_obstacle_pub->publish(height_above_obstacle_msg);
 
-        {
+            // Show result
+            visualizeResult(state, ground_position, rclcpp::Time());
+            // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() <<
+            // std::endl;
+
+        } else if (!healthCheck(depth_msg)) {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-            _state = state;
-            _height_above_obstacle = height_above_obstacle;
-        }
+            _state = landing_mapper::eLandingMapperState::UNHEALTHY;
 
-        // Publish the estimated height above obstacle to the ROS side
-        auto height_above_obstacle_msg = std_msgs::msg::Float32();
-        height_above_obstacle_msg.data = height_above_obstacle;
-        _height_above_obstacle_pub->publish(height_above_obstacle_msg);
+        } else {
+            std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+            if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
+                _state = landing_mapper::eLandingMapperState::UNKNOWN;
+            }
+        }
 
         // Show result
-        visualizeResult(state, ground_position, rclcpp::Time());
-        // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() << std::endl;
+        // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
 
-    } else if (!healthCheck(depth_msg)) {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        _state = landing_mapper::eLandingMapperState::UNHEALTHY;
+        // Always publish the landing state to the ROS side
+        {
+            auto landing_state_msg = std_msgs::msg::String();
 
-    } else {
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        if (_state != landing_mapper::eLandingMapperState::CLOSE_TO_GROUND) {
-            _state = landing_mapper::eLandingMapperState::UNKNOWN;
+            std::lock_guard<std::mutex> lock(_landing_manager_mutex);
+            landing_state_msg.data = landing_mapper::string_state(_state);
+
+            _landing_state_pub->publish(landing_state_msg);
         }
-    }
-
-    // Show result
-    // std::cout << landingManagerOut << " state " << landing_mapper::string_state(_state) << std::endl;
-
-    // Always publish the landing state to the ROS side
-    {
-        auto landing_state_msg = std_msgs::msg::String();
-
-        std::lock_guard<std::mutex> lock(_landing_manager_mutex);
-        landing_state_msg.data = landing_mapper::string_state(_state);
-
-        _landing_state_pub->publish(landing_state_msg);
     }
 }
 

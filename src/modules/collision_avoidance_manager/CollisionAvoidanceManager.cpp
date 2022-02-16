@@ -102,30 +102,37 @@ void CollisionAvoidanceManager::compute_distance_to_obstacle() {
     // instead of running at every loop update
     _collision_avoidance_manager_config = _config_update_callback();
 
-    auto depth_msg = _downsampled_depth_update_callback();
+    // Only process the data when the Autopilot Manager is enabled and the Simple Collsion Avoidance
+    // is set as the Decision Maker Input.
+    if (_collision_avoidance_manager_config.autopilot_manager_enabled &&
+        _collision_avoidance_manager_config.simple_collision_avoid_enabled) {
+        auto depth_msg = _downsampled_depth_update_callback();
 
-    if (depth_msg != nullptr && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
-        // Get min depth in ROI
-        DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
-        filter_pixels_to_roi(depth_pixel_array, depth_msg->downsampled_image.intrinsics);
-        auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs) { return lhs.depth < rhs.depth; };
-        const auto min_depth_pixel =
-            std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);
+        if (depth_msg != nullptr && depth_msg->downsampled_image.depth_pixel_array.size() > 0) {
+            // Get min depth in ROI
+            DepthPixelArrayF depth_pixel_array = depth_msg->downsampled_image.depth_pixel_array;
+            filter_pixels_to_roi(depth_pixel_array, depth_msg->downsampled_image.intrinsics);
+            auto depth_pixel_compare = [](const DepthPixelF& lhs, const DepthPixelF& rhs) {
+                return lhs.depth < rhs.depth;
+            };
+            const auto min_depth_pixel =
+                std::min_element(depth_pixel_array.begin(), depth_pixel_array.end(), depth_pixel_compare);
 
-        // Make the obstacle distance available for the Mission Manager to access
-        {
-            std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
-            _depth = min_depth_pixel->depth;
-        }
+            // Make the obstacle distance available for the Mission Manager to access
+            {
+                std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+                _depth = min_depth_pixel->depth;
+            }
 
-        // Publish obstacle distance back to ROS
-        auto obstacle_dist = std_msgs::msg::Float32();
-        obstacle_dist.data = min_depth_pixel->depth;
-        _obstacle_distance_pub->publish(obstacle_dist);
-    } else {
-        {
-            std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
-            _depth = std::numeric_limits<float>::infinity();
+            // Publish obstacle distance back to ROS
+            auto obstacle_dist = std_msgs::msg::Float32();
+            obstacle_dist.data = min_depth_pixel->depth;
+            _obstacle_distance_pub->publish(obstacle_dist);
+        } else {
+            {
+                std::lock_guard<std::mutex> lock(_collision_avoidance_manager_mutex);
+                _depth = std::numeric_limits<float>::infinity();
+            }
         }
     }
 }
