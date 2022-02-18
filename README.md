@@ -11,11 +11,11 @@ An AuterionOS service for higher level interactivity with onboard and flight con
 _Note: The host system is considered to run Ubuntu 20.04 Focal. Other OS's might be supported, but the provided instructions only cover this OS._
 
 1.  ROS 2 Foxy
-2.  MAVSDK
+2.  MAVSDK (C++ libs)
 3.  `mavlink-router`
 4.  Auterion's `configuration-manager`
 5.  DBUS and Glib
-6.  `pymavlink` (optional, to run the available examples)
+6.  MAVSDK-Python (optional, to run the available examples)
 
 ### ROS packages and workspace library dependencies
 
@@ -120,10 +120,10 @@ and edit it in order to add your system user:
 sudo apt install -y libdbus-glib-1-dev
 ```
 
-### *pymavlink* and its dependencies
+### MAVSDK-Python and its dependencies
 
 ```bash
-pip3 install --user --upgrade pymavlink
+pip3 install --user --upgrade mavsdk
 ```
 
 ## Setup

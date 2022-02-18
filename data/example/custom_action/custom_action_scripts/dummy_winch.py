@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #############################################################################
 #
-#   Copyright (c) 2021 Auterion AG. All rights reserved.
+#   Copyright (c) 2021-2022 Auterion AG. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -44,23 +44,20 @@
 """
 
 import argparse
-
-try:
-    from pymavlink import mavutil
-except:
-    print("Failed to import pymavlink.")
-    print("You may need to install it with 'pip3 install pymavlink pyserial'")
-    print("")
-    raise
+import asyncio
+import sys
+from mavsdk import System
+from mavsdk.server_utility import StatusTextType
 
 
-def main() -> None:
+async def run() -> None:
     """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
         description="Dummy winch control script")
     parser.add_argument('-a', '--address', dest='address', action="store",
-                        help="mavlink-router UDP IP address", required=True)
+                        help="mavlink-router UDP IP address", default="",
+                        required=False)
     parser.add_argument('-p', '--port', dest='port', action="store",
                         help="mavlink-router UDP port", required=True)
     parser.add_argument('--descend', dest='activation', action="store_true",
@@ -71,24 +68,28 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Create a MAVLink connection through a specific UDP port
-    gcs = mavutil.mavlink_connection(
-        'udp:' + args.address + ':' + args.port, source_system=1)
-    gcs.wait_heartbeat()
+    # Init own system (1:MAV_COMP_ID_USER13)
+    system = System(sysid=1, compid=37)
+    # Create a MAVLink connection to a system through a specific IP address
+    # and UDP port
+    await system.connect(system_address="udp://" + args.address + ":" + args.port)
+    print("[Custom Action Script ] Waiting for system to connect...")
+    async for state in system.core.connection_state():
+        if state.is_connected:
+            print(f"[Custom Action Script ] System discovered!")
+            break
 
     if args.activation:
-        print("\n - Descending payload...\n")
+        print("\n[Custom Action Script ]  - Descending payload...\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
-                                b"Descending payload...")
+        await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Descending payload...')
     else:
-        print("\n - Descending payload...\n")
+        print("\n [Custom Action Script ] - Descending payload...\n")
         # Send STATUSTEXT MAVLink message
-        gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
-                                b"Raising winch...")
-
-    gcs.close()
+        await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Raising winch...')
 
 
 if __name__ == '__main__':
-    main()
+    # Start the event loop
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run())

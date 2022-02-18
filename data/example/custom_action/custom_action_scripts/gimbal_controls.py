@@ -37,7 +37,7 @@
 .. automodule:: gimbal-controls
    :platform: Unix
    :synopsis:
-       Script for controlling the gimbal
+       Example script for controlling the gimbal
    :members:
 
 .. codeauthor:: Yannick Fuhrer <yannick@auterion.com>
@@ -45,37 +45,73 @@
 
 import argparse
 import asyncio
+import sys
+from time import sleep
 from mavsdk import System
 from mavsdk.gimbal import ControlMode
 
+
 async def run() -> None:
+    """Main funtion."""
     # Parse CLI arguments
-    parser = argparse.ArgumentParser(description="Script for controlling the gimbal")
-    parser.add_argument('--forward', help="Set gimbal into forward position", action="store_true")
-    parser.add_argument('--down', help="Set gimbal into down position", action="store_true")
+    parser = argparse.ArgumentParser(
+        description="Example script for controlling a gimbal")
+    parser.add_argument('-a', '--address', dest='address', action="store",
+                        help="mavlink-router UDP IP address", default="",
+                        required=False)
+    parser.add_argument('-p', '--port', dest='port', action="store",
+                        help="mavlink-router UDP port", required=True)
+    parser.add_argument(
+        '--right', help="Change gimbal heading 90 degrees right", action="store_true")
+    parser.add_argument(
+        '--left', help="Change gimbal heading 90 degrees left", action="store_true")
+    parser.add_argument(
+        '--down', help="Change gimbal pitch 90 degrees down", action="store_true")
     args = parser.parse_args()
 
-    # Init drone
-    drone = System()
-    await drone.connect(system_address="udp://:14591")
+    # Init own system (1:MAV_COMP_ID_USER14)
+    system = System(sysid=1, compid=38)
+    # Create a MAVLink connection to a system through a specific IP address
+    # and UDP port
+    await system.connect(system_address="udp://" + args.address + ":" + args.port)
 
-    if args.forward:
+    print("[Custom Action Script ] Script: Waiting for system to connect...")
+    async for state in system.core.connection_state():
+        if state.is_connected:
+            print(f"[Custom Action Script ] Script: System discovered!")
+            break
+
+    if args.right:
+        print("\n[Custom Action Script ]  - Gimbal looking right for 3 seconds...\n")
         # take control over gimbal
-        await drone.gimbal.take_control(ControlMode.PRIMARY)
+        await system.gimbal.take_control(ControlMode.PRIMARY)
         # control gimbal
-        await drone.gimbal.set_pitch_and_yaw(0, 0)
+        await system.gimbal.set_pitch_and_yaw(0, 90)
+        sleep(3)
         # release control
-        await drone.gimbal.release_control()
+        await system.gimbal.release_control()
+
+    elif args.left:
+        print("\n[Custom Action Script ]  - Gimbal looking left for 3 seconds...\n")
+        # take control over gimbal
+        await system.gimbal.take_control(ControlMode.PRIMARY)
+        # control gimbal
+        await system.gimbal.set_pitch_and_yaw(0, -90)
+        sleep(3)
+        # release control
+        await system.gimbal.release_control()
 
     elif args.down:
+        print("\n[Custom Action Script ]  - Gimbal looking down for 3 seconds...\n")
         # take control over gimbal
-        await drone.gimbal.take_control(ControlMode.PRIMARY)
+        await system.gimbal.take_control(ControlMode.PRIMARY)
         # control gimbal
-        await drone.gimbal.set_pitch_and_yaw(-90, 0)
+        await system.gimbal.set_pitch_and_yaw(-90, 0)
+        sleep(3)
         # release control
-        await drone.gimbal.release_control()
+        await system.gimbal.release_control()
 
 if __name__ == '__main__':
-    # Start the main function
+    # Start the event loop
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run())

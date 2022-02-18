@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #############################################################################
 #
-#   Copyright (c) 2021 Auterion AG. All rights reserved.
+#   Copyright (c) 2021-2022 Auterion AG. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -44,68 +44,67 @@
 """
 
 import argparse
-import time
-
-try:
-    from pymavlink import mavutil
-except:
-    print("Failed to import pymavlink.")
-    print("You may need to install it with 'pip3 install pymavlink pyserial'")
-    print("")
-    raise
+import asyncio
+import sys
+from time import sleep
+from mavsdk import System
+from mavsdk.server_utility import StatusTextType
+from mavsdk.telemetry import LandedState
 
 
-landing_state = mavutil.mavlink.enums['MAV_LANDED_STATE'][0]
-
-
-def handle_extended_sys_state(msg) -> None:
-    """Handle EXTENDED_SYS_STATE MAVLink message."""
-    global landing_state
-    landing_state = msg.landed_state
-
-
-def main() -> None:
+async def run() -> None:
     """Main funtion."""
     # Parse CLI arguments
     parser = argparse.ArgumentParser(
-        description="Dummy winch control script")
+        description="Dummy safe landing script")
     parser.add_argument('-a', '--address', dest='address', action="store",
-                        help="mavlink-router UDP IP address", required=True)
+                        help="mavlink-router UDP IP address", default="",
+                        required=False)
     parser.add_argument('-p', '--port', dest='port', action="store",
                         help="mavlink-router UDP port", required=True)
 
     args = parser.parse_args()
 
-    # Create a MAVLink connection through a specific UDP port
-    gcs = mavutil.mavlink_connection(
-        'udp:' + args.address + ':' + args.port, source_system=1)
-    gcs.wait_heartbeat()
+    # Init own system (1:MAV_COMP_ID_USER12)
+    system = System(sysid=1, compid=36)
+    # Create a MAVLink connection to a system through a specific IP address
+    # and UDP port
+    await system.connect(system_address="udp://" + args.address + ":" + args.port)
 
-    print("\n - Safe landing started!\n")
+    print("[Custom Action Script ] Waiting for system to connect...")
+    async for state in system.core.connection_state():
+        if state.is_connected:
+            print(f"[Custom Action Script ] System discovered!")
+            break
+
+    # asyncio.ensure_future(get_landed_state(system))
+
+    print("\n[Custom Action Script ]  - Safe landing started!\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(
-        mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe landing started!")
+    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe landing started!')
 
-    time.sleep(1)
+    sleep(1)
 
-    print(" - Executing area verification while descending...\n")
+    print("[Custom Action Script ]  - Executing area verification while descending...\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_NOTICE,
-                            b"Executing area verification while descending...")
+    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Executing area verification while descending...')
 
-    while landing_state != 1:  # MAV_LANDED_STATE_ON_GROUND
-        msg = gcs.recv_match(blocking=True)
-        msg_type = msg.get_type()
-        if msg_type == "EXTENDED_SYS_STATE":
-            handle_extended_sys_state(msg)
+    # Wait until landed
+    await get_landed_state(system)
 
-    print(" - Safe land executed.\n")
+    print("[Custom Action Script ]  - Safe land executed.\n")
     # Send STATUSTEXT MAVLink message
-    gcs.mav.statustext_send(
-        mavutil.mavlink.MAV_SEVERITY_NOTICE, b"Safe land executed!")
+    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe land executed!')
 
-    gcs.close()
+
+async def get_landed_state(system: System):
+    """ Subscribe to Landed State """
+    async for landing_state in system.telemetry.landed_state():
+        if (landing_state == LandedState.ON_GROUND):
+            return landing_state
 
 
 if __name__ == '__main__':
-    main()
+    # Start the event loop
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run())

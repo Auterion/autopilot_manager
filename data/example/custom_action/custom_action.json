@@ -39,21 +39,21 @@
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_safe_landing.py -a 127.0.0.1 -p 14561",
+                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_safe_landing.py -p 14591",
                                 "parameter_set": {},
                                 "state_transition_condition": "ON_LANDING_COMPLETE",
                                 "timeout": null
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --open",
+                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_cargo_compartment.py -p 14591 --open",
                                 "parameter_set": {},
                                 "state_transition_condition": "ON_RESULT_SUCCESS",
                                 "timeout": null
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_cargo_compartment.py -a 127.0.0.1 -p 14561 --close",
+                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_cargo_compartment.py -p 14591 --close",
                                 "parameter_set": {},
                                 "state_transition_condition": "ON_RESULT_SUCCESS",
                                 "timeout": null
@@ -95,7 +95,7 @@
         "action_1": {
                 "name": "Turn-on air quality sensor",
                 "description": "Example action to turn-on an onboard sensor",
-                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --on",
+                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -p 14591 --on",
                 "global_timeout": 1.0,
                 "action_complete_condition": "ON_TIMEOUT",
                 "stages": [{}]
@@ -103,7 +103,7 @@
         "action_2": {
                 "name": "Turn-off air quality sensor",
                 "description": "Example action to turn-off an onboard sensor",
-                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -a 127.0.0.1 -p 14561 --off",
+                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_air_quality_sensor.py -p 14591 --off",
                 "global_timeout": null,
                 "action_complete_condition": "ON_RESULT_SUCCESS",
                 "stages": [{}]
@@ -116,14 +116,14 @@
                 "action_complete_condition": "ON_LAST_STAGE_COMPLETE",
                 "stages": [{
                                 "cmd": {},
-                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --descend",
+                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_winch.py -p 14591 --descend",
                                 "parameter_set": {},
                                 "state_transition_condition": "ON_TIMEOUT",
                                 "timeout": 7.0
                         },
                         {
                                 "cmd": {},
-                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_winch.py -a 127.0.0.1 -p 14561 --raise",
+                                "script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/dummy_winch.py -p 14591 --raise",
                                 "parameter_set": {},
                                 "state_transition_condition": "ON_TIMEOUT",
                                 "timeout": 7.0
@@ -133,15 +133,15 @@
         "action_4": {
                 "name": "Set gimbal into forward position",
                 "description": "Example action to send gimbal commands",
-                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py --forward",
+                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py -p 14591 --forward",
                 "global_timeout": null,
                 "action_complete_condition": "ON_RESULT_SUCCESS",
                 "stages": [{}]
         },
         "action_5": {
-                "name": "Set gimbal into down position",
+                "name": "Set gimbal into downward position",
                 "description": "Example action to send gimbal commands",
-                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py --down",
+                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py -p 14591 --down",
                 "global_timeout": null,
                 "action_complete_condition": "ON_RESULT_SUCCESS",
                 "stages": [{}]
