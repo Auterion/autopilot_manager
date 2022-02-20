@@ -49,7 +49,6 @@ import sys
 from time import sleep
 from mavsdk import System
 from mavsdk.server_utility import StatusTextType
-from mavsdk.telemetry import LandedState
 
 
 async def run() -> None:
@@ -77,8 +76,6 @@ async def run() -> None:
             print(f"[Custom Action Script ] System discovered!")
             break
 
-    # asyncio.ensure_future(get_landed_state(system))
-
     print("\n[Custom Action Script ]  - Safe landing started!\n")
     # Send STATUSTEXT MAVLink message
     await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe landing started!')
@@ -88,20 +85,6 @@ async def run() -> None:
     print("[Custom Action Script ]  - Executing area verification while descending...\n")
     # Send STATUSTEXT MAVLink message
     await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Executing area verification while descending...')
-
-    # Wait until landed
-    await get_landed_state(system)
-
-    print("[Custom Action Script ]  - Safe land executed.\n")
-    # Send STATUSTEXT MAVLink message
-    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe land executed!')
-
-
-async def get_landed_state(system: System):
-    """ Subscribe to Landed State """
-    async for landing_state in system.telemetry.landed_state():
-        if (landing_state == LandedState.ON_GROUND):
-            return landing_state
 
 
 if __name__ == '__main__':
