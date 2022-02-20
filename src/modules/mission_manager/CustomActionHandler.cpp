@@ -73,8 +73,11 @@ auto CustomActionHandler::run() -> void {
     std::cout << customActionHandlerOut << " System ready! Waiting for custom actions to process..." << std::endl;
 
     // Subscribe to the cancelation message
-    _custom_action->subscribe_custom_action_cancellation(
-        [this](bool canceled) { _action_stopped.store(canceled, std::memory_order_relaxed); });
+    _custom_action->subscribe_custom_action_cancellation([this](bool /**/) {
+        std::cout << customActionHandlerOut << " Requested action " << _actions_metadata.back().id
+                  << " to be cancelled..." << std::endl;
+        _action_stopped.store(true, std::memory_order_relaxed);
+    });
 
     auto new_actions_check_th = std::thread(&CustomActionHandler::new_action_check, this);
     new_actions_check_th.detach();
@@ -112,8 +115,7 @@ void CustomActionHandler::send_progress_status(const mavsdk::CustomAction::Actio
         std::future<void> fut = prom.get_future();
 
         // Send response with the result and the progress
-        _custom_action->respond_custom_action_async(
-            action_exec, action_result, [&prom](mavsdk::CustomAction::Result /*result*/) { prom.set_value(); });
+        _custom_action->respond_custom_action(action_exec, action_result);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     };
@@ -186,51 +188,63 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
             mavsdk::CustomAction::Result stage_res = mavsdk::CustomAction::Result::Unknown;
 
             if (!_action_stopped.load()) {
-                std::cout << customActionHandlerOut << " Executing stage " << i << "of action #"
+                std::cout << customActionHandlerOut << " Executing stage " << i << " of action #"
                           << _actions_metadata.back().id << std::endl;
-                stage_res = _custom_action->execute_custom_action_stage(action_metadata.stages[i]);
-            }
 
-            if (action_metadata.stages[i].state_transition_condition ==
-                mavsdk::CustomAction::Stage::StateTransitionCondition::OnResultSuccess) {
-                if (stage_res == mavsdk::CustomAction::Result::Success) {
+                // Execute the stage and process the result
+                std::promise<mavsdk::CustomAction::Result> stage_prom;
+                std::future<mavsdk::CustomAction::Result> stage_fut = stage_prom.get_future();
+                _custom_action->execute_custom_action_stage_async(
+                    action_metadata.stages[i], [&stage_prom, this, i](mavsdk::CustomAction::Result result) {
+                        // If one of the stages of the action fails, then the action fails
+                        if (result != mavsdk::CustomAction::Result::Success) {
+                            std::cout << customActionHandlerOut << " Stage " << i << " of action #"
+                                      << _actions_metadata.back().id << " failed!" << std::endl;
+                            _actions_result.back() = mavsdk::CustomAction::Result::Error;
+                            _action_stopped.store(true, std::memory_order_relaxed);
+                        }
+                        stage_prom.set_value(result);
+                    });
+                stage_res = stage_fut.get();
+
+                // TODO: add a way to cancel a script when an action gets canceled
+
+                if (stage_res != mavsdk::CustomAction::Result::Success) {
+                    break;
+                } else {
+                    if (action_metadata.stages[i].state_transition_condition ==
+                        mavsdk::CustomAction::Stage::StateTransitionCondition::OnTimeout) {
+                        // Advance to next stage after x seconds
+                        auto wait_time = action_metadata.stages[i].timeout * 1s;
+                        std::unique_lock<std::mutex> lock(cancel_mtx);
+                        cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
+                    } else if (action_metadata.stages[i].state_transition_condition ==
+                               mavsdk::CustomAction::Stage::StateTransitionCondition::OnLandingComplete) {
+                        // Wait for the vehicle to be landed
+                        while (!_action_stopped.load() && _landed_state == mavsdk::Telemetry::LandedState::Landing) {
+                            std::this_thread::sleep_for(std::chrono::seconds(1));
+                        }
+
+                    } else if (action_metadata.stages[i].state_transition_condition ==
+                               mavsdk::CustomAction::Stage::StateTransitionCondition::OnTakeoffComplete) {
+                        // Wait for the vehicle to finish the takeoff
+                        while (!_action_stopped.load() && _landed_state == mavsdk::Telemetry::LandedState::TakingOff) {
+                            std::this_thread::sleep_for(std::chrono::seconds(1));
+                        }
+                    }
+
                     update_action_progress_from_stage(i, action_metadata);
                 }
-            } else if (action_metadata.stages[i].state_transition_condition ==
-                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnTimeout) {
-                auto wait_time = action_metadata.stages[i].timeout * 1s;
-                std::unique_lock<std::mutex> lock(cancel_mtx);
-                cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
-
-                update_action_progress_from_stage(i, action_metadata);
-            } else if (action_metadata.stages[i].state_transition_condition ==
-                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnLandingComplete) {
-                // Wait for the vehicle to be landed
-                while (!_action_stopped.load() && _landed_state != mavsdk::Telemetry::LandedState::OnGround) {
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                }
-
-                update_action_progress_from_stage(i, action_metadata);
-            } else if (action_metadata.stages[i].state_transition_condition ==
-                       mavsdk::CustomAction::Stage::StateTransitionCondition::OnTakeoffComplete) {
-                // Wait for the vehicle to finish the takeoff
-                while (!_action_stopped.load() && _landed_state != mavsdk::Telemetry::LandedState::InAir) {
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                }
-
-                update_action_progress_from_stage(i, action_metadata);
             }
         }
 
     } else if (action_metadata.global_script != "") {
-        if (!_action_stopped.load()) {
-            mavsdk::CustomAction::Result result = mavsdk::CustomAction::Result::Unknown;
+        mavsdk::CustomAction::Result result = mavsdk::CustomAction::Result::Unknown;
 
+        if (!_action_stopped.load()) {
             if (action_metadata.action_complete_condition ==
                 mavsdk::CustomAction::ActionMetadata::ActionCompleteCondition::OnResultSuccess) {
-                if (!_action_stopped.load()) {
-                    result = _custom_action->execute_custom_action_global_script(action_metadata.global_script);
-                }
+                result = _custom_action->execute_custom_action_global_script(action_metadata.global_script);
             } else if (action_metadata.action_complete_condition ==
                        mavsdk::CustomAction::ActionMetadata::ActionCompleteCondition::OnTimeout) {
                 std::promise<mavsdk::CustomAction::Result> prom;
@@ -239,32 +253,40 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
                     action_metadata.global_script,
                     [&prom](mavsdk::CustomAction::Result script_result) { prom.set_value(script_result); });
 
-                std::chrono::seconds timeout(static_cast<long int>(action_metadata.global_timeout));
+                // Consider action complete after x seconds
+                auto wait_time = action_metadata.global_timeout * 1s;
+                std::unique_lock<std::mutex> lock(cancel_mtx);
+                cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
+
                 result = fut.get();
             }
+        }
 
-            _actions_result.back() = result;
+        _actions_result.back() = result;
 
-            if (result == mavsdk::CustomAction::Result::Success) {
-                _actions_progress.back() = 100.0;
-            }
+        if (_actions_result.back() == mavsdk::CustomAction::Result::Success) {
+            _actions_progress.back() = 100.0;
         }
     }
 
-    // We wait for half a second to make sure that the ACCEPTED ACKs are sent
+    // We wait for a bit to make sure that the ACKs are sent
     // to the FMU and don't get lost
-    auto wait_time = 500ms;
-    std::unique_lock<std::mutex> lock(cancel_mtx);
-    cancel_signal.wait_for(lock, wait_time, [this]() { return _action_stopped.load(); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    if (_action_stopped.load()) {
-        std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id << " canceled!"
+    if (_actions_result.back() == mavsdk::CustomAction::Result::Timeout) {
+        std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id << " timed-out!"
                   << std::endl;
-        _action_stopped.store(false, std::memory_order_relaxed);
-    } else if (!_action_stopped.load() && _actions_progress.back() == 100) {
+    } else if (_actions_result.back() == mavsdk::CustomAction::Result::Error) {
+        std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id << " failed!"
+                  << std::endl;
+    } else if (_actions_result.back() == mavsdk::CustomAction::Result::Success) {
         std::cout << customActionHandlerOut << " Custom action #" << _actions_metadata.back().id << " executed!"
                   << std::endl;
     }
+
+    _action_stopped.store(true, std::memory_order_relaxed);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    _action_stopped.store(false, std::memory_order_relaxed);
 
     // clear actions after they are processed
     _actions.clear();
