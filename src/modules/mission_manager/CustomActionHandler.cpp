@@ -33,7 +33,7 @@
 
 /**
  * @brief Custom Action Handler
- * @file CustomActionHandler.hpp
+ * @file CustomActionHandler.cpp
  * @author Nuno Marques <nuno@auterion.com>
  */
 
@@ -221,14 +221,16 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
                     } else if (action_metadata.stages[i].state_transition_condition ==
                                mavsdk::CustomAction::Stage::StateTransitionCondition::OnLandingComplete) {
                         // Wait for the vehicle to be landed
-                        while (!_action_stopped.load() && _landed_state == mavsdk::Telemetry::LandedState::Landing) {
+                        while (!_action_stopped.load() && (_landed_state == mavsdk::Telemetry::LandedState::Landing ||
+                                                           _landed_state != mavsdk::Telemetry::LandedState::OnGround)) {
                             std::this_thread::sleep_for(std::chrono::seconds(1));
                         }
 
                     } else if (action_metadata.stages[i].state_transition_condition ==
                                mavsdk::CustomAction::Stage::StateTransitionCondition::OnTakeoffComplete) {
                         // Wait for the vehicle to finish the takeoff
-                        while (!_action_stopped.load() && _landed_state == mavsdk::Telemetry::LandedState::TakingOff) {
+                        while (!_action_stopped.load() && (_landed_state == mavsdk::Telemetry::LandedState::TakingOff ||
+                                                           _landed_state != mavsdk::Telemetry::LandedState::InAir)) {
                             std::this_thread::sleep_for(std::chrono::seconds(1));
                         }
                     }
