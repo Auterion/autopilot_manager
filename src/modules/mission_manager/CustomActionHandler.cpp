@@ -192,24 +192,18 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
                           << _actions_metadata.back().id << std::endl;
 
                 // Execute the stage and process the result
-                std::promise<mavsdk::CustomAction::Result> stage_prom;
-                std::future<mavsdk::CustomAction::Result> stage_fut = stage_prom.get_future();
-                _custom_action->execute_custom_action_stage_async(
-                    action_metadata.stages[i], [&stage_prom, this, i](mavsdk::CustomAction::Result result) {
-                        // If one of the stages of the action fails, then the action fails
-                        if (result != mavsdk::CustomAction::Result::Success) {
-                            std::cout << customActionHandlerOut << " Stage " << i << " of action #"
-                                      << _actions_metadata.back().id << " failed!" << std::endl;
-                            _actions_result.back() = mavsdk::CustomAction::Result::Error;
-                            _action_stopped.store(true, std::memory_order_relaxed);
-                        }
-                        stage_prom.set_value(result);
-                    });
-                stage_res = stage_fut.get();
+                stage_res = _custom_action->execute_custom_action_stage(action_metadata.stages[i]);
 
                 // TODO: add a way to cancel a script when an action gets canceled
 
                 if (stage_res != mavsdk::CustomAction::Result::Success) {
+                    std::cout << customActionHandlerOut << " Stage " << i << " of action #"
+                              << _actions_metadata.back().id << " failed!" << std::endl;
+
+                    _actions_result.back() = mavsdk::CustomAction::Result::Error;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    _action_stopped.store(true, std::memory_order_relaxed);
+
                     break;
                 } else {
                     if (action_metadata.stages[i].state_transition_condition ==
