@@ -50,6 +50,22 @@ from time import sleep
 from mavsdk import System
 from mavsdk.server_utility import StatusTextType
 
+# Global return exit value
+ret = 0
+
+
+async def get_connection(system, ip_address, udp_port):
+    """Get connection."""
+    # Create a MAVLink connection to a system through a specific IP address
+    # and UDP port
+    await system.connect(system_address="udp://" + ip_address + ":" + udp_port)
+
+    print("[Custom Action Script ] Waiting for system to connect...")
+    async for state in system.core.connection_state():
+        if state.is_connected:
+            print(f"[Custom Action Script ] System discovered!")
+            break
+
 
 async def run() -> None:
     """Main funtion."""
@@ -61,33 +77,42 @@ async def run() -> None:
                         required=False)
     parser.add_argument('-p', '--port', dest='port', action="store",
                         help="mavlink-router UDP port", required=True)
+    parser.add_argument('-t', '--timeout', dest='timeout', action="store",
+                        help="Amount of time, in seconds, to wait for system connection",
+                        default=3.0, required=False, type=float)
 
     args = parser.parse_args()
 
     # Init own system (1:MAV_COMP_ID_USER12)
     system = System(sysid=1, compid=36)
-    # Create a MAVLink connection to a system through a specific IP address
-    # and UDP port
-    await system.connect(system_address="udp://" + args.address + ":" + args.port)
 
-    print("[Custom Action Script ] Waiting for system to connect...")
-    async for state in system.core.connection_state():
-        if state.is_connected:
-            print(f"[Custom Action Script ] System discovered!")
-            break
+    # Wait for a system to be connected for X seconds
+    # If timeout, exit with error
+    try:
+        await asyncio.wait_for(get_connection(system, args.address, args.port), timeout=args.timeout)
 
-    print("\n[Custom Action Script ]  - Safe landing started!\n")
-    # Send STATUSTEXT MAVLink message
-    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe landing started!')
+        print("\n[Custom Action Script ]  - Safe landing started!\n")
+        # Send STATUSTEXT MAVLink message
+        await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Safe landing started!')
 
-    sleep(1)
+        sleep(1)
 
-    print("[Custom Action Script ]  - Executing area verification while descending...\n")
-    # Send STATUSTEXT MAVLink message
-    await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Executing area verification while descending...')
+        print(
+            "[Custom Action Script ]  - Executing area verification while descending...\n")
+        # Send STATUSTEXT MAVLink message
+        await system.server_utility.send_status_text(StatusTextType.NOTICE, 'Executing area verification while descending...')
+
+    except asyncio.TimeoutError:
+        global ret
+        ret = 1
+        print(
+            '[Custom Action Script ] Failed to connect to system after {} seconds. Action failed!'.format(args.timeout))
 
 
 if __name__ == '__main__':
     # Start the event loop
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run())
+    try:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(run())
+    finally:
+        sys.exit(ret)
