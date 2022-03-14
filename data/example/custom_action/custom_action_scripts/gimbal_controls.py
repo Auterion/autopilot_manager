@@ -104,6 +104,7 @@ async def run() -> None:
             # control gimbal
             await system.gimbal.set_pitch_and_yaw(0, 90)
             sleep(3)
+            await system.gimbal.set_pitch_and_yaw(0, 0)
             # release control
             await system.gimbal.release_control()
 
@@ -115,6 +116,7 @@ async def run() -> None:
             # control gimbal
             await system.gimbal.set_pitch_and_yaw(0, -90)
             sleep(3)
+            await system.gimbal.set_pitch_and_yaw(0, 0)
             # release control
             await system.gimbal.release_control()
 
@@ -126,6 +128,7 @@ async def run() -> None:
             # control gimbal
             await system.gimbal.set_pitch_and_yaw(-90, 0)
             sleep(3)
+            await system.gimbal.set_pitch_and_yaw(0, 0)
             # release control
             await system.gimbal.release_control()
 

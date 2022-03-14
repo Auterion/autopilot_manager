@@ -152,15 +152,15 @@
                 ]
         },
         "action_4": {
-                "name": "Set gimbal into forward position",
+                "name": "Set gimbal into right position",
                 "description": "Example action to send gimbal commands",
-                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py -p 14591 --forward",
+                "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py -p 14591 --right",
                 "global_timeout": null,
                 "action_complete_condition": "ON_RESULT_SUCCESS",
                 "stages": [{}]
         },
         "action_5": {
-                "name": "Set gimbal into downward position",
+                "name": "Set gimbal into down position",
                 "description": "Example action to send gimbal commands",
                 "global_script": "python3 /shared_container_dir/autopilot-manager/data/custom_action/custom_action_scripts/gimbal_controls.py -p 14591 --down",
                 "global_timeout": null,
