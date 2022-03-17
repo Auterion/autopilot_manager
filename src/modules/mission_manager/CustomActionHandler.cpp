@@ -59,11 +59,6 @@ auto CustomActionHandler::start() -> bool {
     if (_mavsdk_system->has_autopilot()) {
         // Custom actions are processed and executed in the Mission Manager
         _custom_action = std::make_shared<mavsdk::CustomAction>(_mavsdk_system);
-
-        // Get the landing state so we can decide if landing or takeoff are complete
-        _telemetry->subscribe_landed_state(
-            [this](mavsdk::Telemetry::LandedState landed_state) { _landed_state = landed_state; });
-
         return true;
     }
     return false;
@@ -218,6 +213,7 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
                         while (!_action_stopped.load() && (_landed_state == mavsdk::Telemetry::LandedState::Landing ||
                                                            _landed_state != mavsdk::Telemetry::LandedState::OnGround)) {
                             std::this_thread::sleep_for(std::chrono::seconds(1));
+                            _landed_state = _telemetry->landed_state();
                         }
 
                     } else if (action_metadata.stages[i].state_transition_condition ==
@@ -226,6 +222,7 @@ void CustomActionHandler::execute_custom_action(const mavsdk::CustomAction::Acti
                         while (!_action_stopped.load() && (_landed_state == mavsdk::Telemetry::LandedState::TakingOff ||
                                                            _landed_state != mavsdk::Telemetry::LandedState::InAir)) {
                             std::this_thread::sleep_for(std::chrono::seconds(1));
+                            _landed_state = _telemetry->landed_state();
                         }
                     }
 
