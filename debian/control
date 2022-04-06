@@ -8,5 +8,5 @@ Standards-Version: 3.9.2
 
 Package: autopilot-manager
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libeigen3-dev, ros-foxy-builtin-interfaces, ros-foxy-eigen3-cmake-module, ros-foxy-rclcpp, ros-foxy-ros-environment, ros-foxy-rosidl-default-runtime, ros-foxy-sensor-msgs
+Depends: ${shlibs:Depends}, ${misc:Depends}, libeigen3-dev, ros-foxy-builtin-interfaces, ros-foxy-eigen3-cmake-module, ros-foxy-rclcpp, ros-foxy-ros-environment, ros-foxy-rosidl-default-runtime, ros-foxy-sensor-msgs, libtbb2
 Description: Autopilot Manager
