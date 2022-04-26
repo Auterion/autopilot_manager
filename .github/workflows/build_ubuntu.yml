@@ -66,7 +66,7 @@ jobs:
       run: |
         git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 colcon_ws/src/eigen
         git clone git@github.com:Auterion/image_downsampler.git colcon_ws/src/image_downsampler
-        git clone git@github.com:Auterion/landing_mapper.git -b develop_ament colcon_ws/src/landing_mapper
+        git clone git@github.com:Auterion/landing_mapper.git -b develop colcon_ws/src/landing_mapper
         git clone git@github.com:Auterion/px4_msgs.git -b develop colcon_ws/src/px4_msgs
     - name: Check code formatting
       run: tools/check_code_format.sh
