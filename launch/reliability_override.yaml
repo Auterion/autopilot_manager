@@ -1,0 +1,22 @@
+# durability_override.yaml
+/camera/depth/image_rect_raw:
+  reliability: best_effort
+  history: keep_last
+  depth: 5
+  durability: volatile
+/camera/depth/camera_info:
+  reliability: best_effort
+  history: keep_last
+  depth: 5
+  durability: volatile
+
+/camera/infra1/image_rect_raw:
+  reliability: best_effort
+  history: keep_last
+  depth: 5
+  durability: volatile
+/camera/infra1/camera_info:
+  reliability: best_effort
+  history: keep_last
+  depth: 5
+  durability: volatile

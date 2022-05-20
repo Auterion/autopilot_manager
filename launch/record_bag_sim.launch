@@ -1,0 +1,46 @@
+import sys
+
+from datetime import datetime
+
+from launch import LaunchDescription
+from launch.substitutions import ThisLaunchFileDir
+from launch.actions import ExecuteProcess
+
+
+now = datetime.now()
+rosbag_save_location = 'rosbags/safe_landing_bag_' + now.strftime("%Y-%m-%d_%H-%M-%S")
+
+# Default ros2 record command
+cmd_list = ['ros2', 'bag', 'record', '-b', '104857600',
+            '-o', rosbag_save_location,
+            '--qos-profile-overrides-path', [ThisLaunchFileDir(), '/reliability_override.yaml'],
+            '/tf',
+            '/tf_static',
+            '/fmu/out/VehicleOdometry',
+            '/landing_manager/height_above_obstacle',
+            '/landing_manager/landing_state',
+            '/landing_marker',
+            '/map_marker'
+           ]
+
+# Check for command line arg to record image data
+record_images = False
+for arg in sys.argv:
+    if arg.startswith("images:="):
+        value = arg.lstrip("images:=")
+        record_images = value.startswith("true") or value.startswith("True")
+
+if record_images:
+    cmd_list.extend(['/camera/depth/camera_info',
+                     '/camera/depth/image_raw',
+                     '/camera/infra1/image_raw'
+                    ])
+
+
+def generate_launch_description():
+    return LaunchDescription([
+        ExecuteProcess(
+            cmd=cmd_list,
+            output='screen'
+        )
+    ])
