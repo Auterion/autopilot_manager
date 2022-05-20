@@ -63,7 +63,7 @@ void SensorManager::init() {
     auto rmw_qos_profile = qos.get_rmw_qos_profile();
 
     // Camera topic name changes for sim
-    std::string vehicle_odometry_topic{"fmu/vehicle_odometry/out"};
+    std::string vehicle_odometry_topic{"/fmu/out/VehicleOdometry"};
     std::string depth_topic{"/camera/depth/image_rect_raw"};
     std::string depth_camera_info_topic{"/camera/depth/camera_info"};
     if (sim) {
