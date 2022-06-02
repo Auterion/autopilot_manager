@@ -130,8 +130,9 @@ void SensorManager::handle_incoming_vehicle_odometry(const px4_msgs::msg::Vehicl
     tMsg.transform.rotation.y = orientation.y();
     tMsg.transform.rotation.z = orientation.z();
 
-    tMsg.header.stamp.sec = msg->timestamp / 1000000;
-    tMsg.header.stamp.nanosec = (msg->timestamp - tMsg.header.stamp.sec * 1000000) * 1000;
+    // tMsg.header.stamp.sec = msg->timestamp / 1000000;
+    // tMsg.header.stamp.nanosec = (msg->timestamp - tMsg.header.stamp.sec * 1000000) * 1000;
+    tMsg.header.stamp = this->now();
     tMsg.header.frame_id = NED_FRAME;
     tMsg.child_frame_id = BASE_LINK_FRAME;
 
