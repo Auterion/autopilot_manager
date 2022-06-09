@@ -41,8 +41,8 @@
 #include <common.h>
 
 #include <Eigen/Core>
-#include <landing_mapper/EuclideanSignedDistanceFields.hpp>
-#include <landing_mapper/HeightMap.hpp>
+#include <voxel_map/EuclideanSignedDistanceFields.hpp>
+#include <voxel_map/HeightMap.hpp>
 
 // ROS dependencies
 #include <rclcpp/duration.hpp>
@@ -90,8 +90,7 @@ class MapVisualizer {
                        bool enabled = true);
 
     template <typename T>
-    void visualizeHeightMap(const landing_mapper::HeightMap<T>& height_map, const rclcpp::Time& timestamp,
-                            bool enabled);
+    void visualizeHeightMap(const height_map::HeightMap<T>& height_map, const rclcpp::Time& timestamp, bool enabled);
 
     void prepare_point_cloud_msg(int64_t timestamp_ns, size_t width, size_t height, bool enabled = true);
 
@@ -266,7 +265,7 @@ void MapVisualizer::visualizeEsdf(const esdf::EuclideanSignedDistanceFields<T>& 
 }
 
 template <typename T>
-void MapVisualizer::visualizeHeightMap(const landing_mapper::HeightMap<T>& height_map, const rclcpp::Time& timestamp,
+void MapVisualizer::visualizeHeightMap(const height_map::HeightMap<T>& height_map, const rclcpp::Time& timestamp,
                                        bool enabled) {
     if (!enabled) {
         return;

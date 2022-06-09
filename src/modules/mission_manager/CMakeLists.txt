@@ -14,6 +14,7 @@ find_package(MAVSDK REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+find_package(voxel_map REQUIRED)
 find_package(landing_mapper REQUIRED)
 find_package(landing_planner REQUIRED)
 
@@ -30,6 +31,7 @@ target_link_libraries(mission-manager
     MAVSDK::mavsdk_telemetry
     MAVSDK::mavsdk
     Eigen3::Eigen
+    voxel_map
     landing_mapper
     landing_planner
 )

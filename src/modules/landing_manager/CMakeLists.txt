@@ -20,6 +20,7 @@ find_package(image_downsampler REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(timing_tools REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(voxel_map REQUIRED)
 find_package(landing_mapper REQUIRED)
 
 #################
@@ -48,6 +49,7 @@ target_include_directories(landing-manager PUBLIC
 target_link_libraries(landing-manager
   Eigen3::Eigen
   landing_mapper
+  voxel_map
   ${rclcpp_LIBRARIES}
   ${image_downsampler_LIBRARIES}
   ${px4_msgs_LIBRARIES}
