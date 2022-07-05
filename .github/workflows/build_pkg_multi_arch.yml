@@ -73,7 +73,9 @@ jobs:
           git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 /tmp/colcon_ws/src/eigen
           git clone git@github.com:Auterion/image_downsampler.git /tmp/colcon_ws/src/image_downsampler
           git clone git@github.com:Auterion/landing_mapper.git -b develop /tmp/colcon_ws/src/landing_mapper
+          git clone git@github.com:Auterion/landing_planner.git /tmp/colcon_ws/src/landing_planner
           git clone git@github.com:Auterion/px4_msgs.git -b develop /tmp/colcon_ws/src/px4_msgs
+          git clone git@github.com:Auterion/timing_tools.git /tmp/colcon_ws/src/timing_tools
           # Run cross-compilation
           ros_cross_compile /tmp/colcon_ws \
             --arch ${{ matrix.arch }} \
@@ -81,7 +83,7 @@ jobs:
             --rosdistro ${{ matrix.ros2_distro }} \
             --custom-setup-script scripts/cross_compile_dependencies.sh \
             --custom-data-dir /tmp/MAVSDK \
-            --skip-rosdep-keys Eigen3 image_downsampler landing_mapper px4_msgs px4_ros_com \
+            --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner px4_msgs px4_ros_com timing_tools \
             --colcon-defaults /tmp/colcon_ws/src/autopilot_manager/scripts/packaging/defaults.yaml
       - name: Create zip
         run: |
