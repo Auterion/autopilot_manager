@@ -47,10 +47,12 @@
 static std::atomic<bool> int_signal{false};
 
 MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
+                               mavsdk::Mavsdk* mavsdk,
                                const std::string& path_to_custom_action_file)
     : _config_update_callback([]() { return MissionManagerConfiguration{}; }),
       _path_to_custom_action_file{std::move(path_to_custom_action_file)},
       _mission_manager_config{},
+      _mavsdk{mavsdk},
       _mavsdk_system{std::move(mavsdk_system)},
       _action_triggered{false},
       _get_gps_origin_success{false},
@@ -90,6 +92,8 @@ void MissionManager::init() {
 
     // Bring up a ServerUtility instance to allow sending status messages
     _server_utility = std::make_shared<mavsdk::ServerUtility>(_mavsdk_system);
+
+    _mavlink_passthrough = std::make_shared<mavsdk::MavlinkPassthrough>(_mavsdk_system);
 
     _custom_action_handler =
         std::make_shared<CustomActionHandler>(_mavsdk_system, _telemetry, _path_to_custom_action_file);

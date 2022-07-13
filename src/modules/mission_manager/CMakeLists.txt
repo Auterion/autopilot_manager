@@ -29,6 +29,7 @@ target_link_libraries(mission-manager
     MAVSDK::mavsdk_mission_raw
     MAVSDK::mavsdk_server_utility
     MAVSDK::mavsdk_telemetry
+    MAVSDK::mavsdk_mavlink_passthrough
     MAVSDK::mavsdk
     Eigen3::Eigen
     landing_mapper

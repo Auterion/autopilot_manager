@@ -57,12 +57,13 @@
 #include <mavsdk/plugins/mission_raw/mission_raw.h>
 #include <mavsdk/plugins/server_utility/server_utility.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
+#include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 
 static constexpr auto missionManagerOut = "[Mission Manager] ";
 
 class MissionManager : public ModuleBase {
    public:
-    MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
+    MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, mavsdk::Mavsdk* mavsdk, const std::string& path_to_custom_action_file);
     ~MissionManager();
     MissionManager(const MissionManager&) = delete;
     auto operator=(const MissionManager&) -> const MissionManager& = delete;
@@ -178,12 +179,14 @@ class MissionManager : public ModuleBase {
 
     std::mutex mission_manager_config_mtx;
 
+    std::shared_ptr<mavsdk::Mavsdk> _mavsdk;
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<CustomActionHandler> _custom_action_handler;
     std::shared_ptr<mavsdk::Action> _action;
     std::shared_ptr<mavsdk::MissionRaw> _mission_raw;
     std::shared_ptr<mavsdk::Telemetry> _telemetry;
     std::shared_ptr<mavsdk::ServerUtility> _server_utility;
+    std::shared_ptr<mavsdk::MavlinkPassthrough> _mavlink_passthrough;
 
     std::atomic<bool> _action_triggered;
     std::atomic<mavsdk::Telemetry::FlightMode> _flight_mode{mavsdk::Telemetry::FlightMode::Unknown};

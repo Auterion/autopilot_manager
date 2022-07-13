@@ -10,6 +10,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(MAVSDK REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
@@ -50,6 +51,8 @@ add_executable(
 
 target_link_libraries(
     autopilot-manager
+    MAVSDK::mavsdk_mavlink_passthrough
+    MAVSDK::mavsdk
     collision-avoidance-manager
     landing-manager
     mission-manager
