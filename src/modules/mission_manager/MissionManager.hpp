@@ -59,9 +59,12 @@
 #include <mavsdk/plugins/telemetry/telemetry.h>
 #include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 
+// ROS dependencies
+#include <rclcpp/rclcpp.hpp>
+
 static constexpr auto missionManagerOut = "[Mission Manager] ";
 
-class MissionManager : public ModuleBase {
+class MissionManager : public rclcpp::Node, ModuleBase {
    public:
     MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, mavsdk::Mavsdk* mavsdk, const std::string& path_to_custom_action_file);
     ~MissionManager();

@@ -10,6 +10,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+
 find_package(MAVSDK REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
@@ -34,6 +37,7 @@ target_link_libraries(mission-manager
     Eigen3::Eigen
     landing_mapper
     landing_planner
+    ${rclcpp_LIBRARIES}
 )
 
 target_include_directories(mission-manager PUBLIC

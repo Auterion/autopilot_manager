@@ -49,7 +49,8 @@ static std::atomic<bool> int_signal{false};
 MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
                                mavsdk::Mavsdk* mavsdk,
                                const std::string& path_to_custom_action_file)
-    : _config_update_callback([]() { return MissionManagerConfiguration{}; }),
+    : Node("mission_manager"),
+      _config_update_callback([]() { return MissionManagerConfiguration{}; }),
       _path_to_custom_action_file{std::move(path_to_custom_action_file)},
       _mission_manager_config{},
       _mavsdk{mavsdk},
@@ -119,6 +120,8 @@ void MissionManager::run() {
         _custom_action_handler->run();
     }
 
+    rclcpp::spin(shared_from_this());
+    
     _mavlink_passthrough->subscribe_message_async(MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_WAYPOINTS, [this](const mavlink_message_t& _message) {
         if (_message.compid == MAV_COMP_ID_OBSTACLE_AVOIDANCE) {
             return;
