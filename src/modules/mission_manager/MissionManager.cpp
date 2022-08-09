@@ -118,6 +118,114 @@ void MissionManager::run() {
     if (_custom_action_handler->start()) {
         _custom_action_handler->run();
     }
+
+    _mavlink_passthrough->subscribe_message_async(MAVLINK_MSG_ID_TRAJECTORY_REPRESENTATION_WAYPOINTS, [this](const mavlink_message_t& _message) {
+        if (_message.compid == MAV_COMP_ID_OBSTACLE_AVOIDANCE) {
+            return;
+        }
+
+
+        if ( landing_triggered() ) {
+            static float start_pos_x = _current_pos_x;
+            static float start_pos_y = _current_pos_y;
+            static float start_yaw = _current_yaw;
+
+            const int a = 15;
+            const int max = 360/a * 3;
+            static std::array<float, max> x_positions;
+            static std::array<float, max> y_positions;
+
+            static bool init_points = true;
+            if (init_points) {
+                init_points=false;
+
+                if ( 1 ) { // 3 circles
+                    const float start_dist = 4.f;
+
+                    for ( int round=0; round<3; round++ ) {
+                        for ( int i=0; i<24; i++ ) {
+                            x_positions[round*24+i] = start_pos_x + (start_dist*(round+1)) * -sin(i*a*M_PI/180 + start_yaw - M_PI*0.5);
+                            y_positions[round*24+i] = start_pos_y + (start_dist*(round+1)) *  cos(i*a*M_PI/180 + start_yaw - M_PI*0.5);
+                        }
+                    }
+                }
+                else { // spiral
+                    const float start_dist = 4.f;
+                    const float scale = 1.f/(M_PI*4)*start_dist;
+
+                    for ( int i=0; i<max; i++ ) {
+                        x_positions[i] = start_pos_x + (start_dist+i*scale) * -sin(i*a*M_PI/180 + start_yaw - M_PI*0.5);
+                        y_positions[i] = start_pos_y + (start_dist+i*scale) *  cos(i*a*M_PI/180 + start_yaw - M_PI*0.5);
+                    }
+                }
+            }
+
+            static bool print_points = true;
+            if (print_points) {
+                print_points=false;
+
+                std::cout << "Points:" << std::endl;
+                for ( int i=0; i<max; i++ ) {
+                    std::cout << x_positions[i] << ", " << y_positions[i] << std::endl;
+                }
+                std::cout << " end" << std::endl;
+            }
+
+            mavlink_trajectory_representation_waypoints_t wp_message;
+            mavlink_msg_trajectory_representation_waypoints_decode(&_message, &wp_message);
+
+            static int current_i = 0;
+
+            const float d_x = fabs(x_positions[current_i] - _current_pos_x);
+            const float d_y = fabs(y_positions[current_i] - _current_pos_y);
+            if ( (d_x < 0.5f) && (d_y < 0.5f) ) {
+                if ( current_i < max-1 ) {
+                    current_i++;
+                }
+            }
+
+            std::cout << "banana 1 - " << current_i+1 << "/" << max
+                      << " [" << x_positions[current_i] << ", " << y_positions[current_i] << "]"
+                      << "  d_x=" << d_x << "  d_y=" << d_y
+                      << std::endl;
+
+            const float vel_scale = 0.5f;
+
+            Eigen::Vector2f vel_new(_current_pos_x - x_positions[current_i], _current_pos_y - y_positions[current_i]);
+            vel_new = vel_new.normalized()*vel_scale;
+
+            static Eigen::Vector2f vel(vel_new);
+
+            const float smoothing_factor = 0.9f;
+            const float inv_smoothing_factor = 1.f-smoothing_factor;
+
+            vel = vel*smoothing_factor + vel_new*inv_smoothing_factor; // smoothing
+
+            wp_message.valid_points = 1;
+            wp_message.pos_x[0] = x_positions[current_i];
+            wp_message.pos_y[0] = y_positions[current_i];
+            wp_message.pos_yaw[0] = start_yaw;
+            wp_message.vel_x[0] = -vel.x();
+            wp_message.vel_y[0] = -vel.y();
+            wp_message.vel_z[0] = 0.f;
+
+            mavlink_message_t out_message;
+            mavlink_msg_trajectory_representation_waypoints_encode(1, MAV_COMP_ID_OBSTACLE_AVOIDANCE, &out_message, &wp_message);
+
+            _mavlink_passthrough->send_message(out_message);
+        }
+        else {
+            std::cout << "banana 3" << std::endl;
+
+            mavlink_trajectory_representation_waypoints_t wp_message;
+            mavlink_msg_trajectory_representation_waypoints_decode(&_message, &wp_message);
+
+            mavlink_message_t out_message;
+            mavlink_msg_trajectory_representation_waypoints_encode(1, MAV_COMP_ID_OBSTACLE_AVOIDANCE, &out_message, &wp_message);
+
+            _mavlink_passthrough->send_message(out_message);
+        }
+    });
 }
 
 void MissionManager::set_global_position_reference() {
@@ -308,6 +416,12 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     mavsdk::MissionRaw::MissionProgress progress = _mission_raw->mission_progress();
 
     if (safe_landing_enabled) {
+        mavlink_message_t new_heartbeat_message;
+        mavlink_heartbeat_t heartbeat;
+        heartbeat.system_status = MAV_STATE_ACTIVE;
+        mavlink_msg_heartbeat_encode(1, MAV_COMP_ID_OBSTACLE_AVOIDANCE, &new_heartbeat_message, &heartbeat);
+        _mavlink_passthrough->send_message(new_heartbeat_message);
+
         /*
          * If we're not handling an action already, check if we need to start one.
          */
