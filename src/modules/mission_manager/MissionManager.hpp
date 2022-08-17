@@ -152,6 +152,8 @@ class MissionManager : public rclcpp::Node, ModuleBase {
                                     const bool land_when_found_site);
     void landing_site_search_has_ended(const std::string& _debug = "");
 
+    void on_mavlink_trajectory_message(const mavlink_message_t& _message);
+
     void set_global_position_reference();
     void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
     bool arrived_to_new_waypoint();
@@ -170,6 +172,10 @@ class MissionManager : public rclcpp::Node, ModuleBase {
         mavsdk::geometry::CoordinateTransformation::LocalCoordinate local_position) const;
     mavsdk::geometry::CoordinateTransformation::GlobalCoordinate get_global_position_from_local_offset(
         const double& offset_x, const double& offset_y) const;
+
+    void change_mission_wp_location(mavsdk::MissionRaw::MissionItem& _wp, int32_t _x, int32_t _y, float _z) const;
+    void change_missions_landing_site_to_current(const mavsdk::MissionRaw::MissionProgress& _progress);
+    void restore_missions_landing_site_to_current(const std::string& _debug);
 
     std::function<MissionManagerConfiguration()> _config_update_callback;
     std::function<float()> _distance_to_obstacle_update_callback;
@@ -217,6 +223,10 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     std::atomic<double> _new_latitude;
     std::atomic<double> _new_longitude;
     std::atomic<double> _new_altitude_amsl;
+    std::atomic<double> _new_x;
+    std::atomic<double> _new_y;
+    std::atomic<double> _new_z;
+    float _new_yaw;
     std::atomic<double> _previously_set_waypoint_latitude;
     std::atomic<double> _previously_set_waypoint_longitude;
     std::atomic<double> _previously_set_waypoint_altitude_amsl;
