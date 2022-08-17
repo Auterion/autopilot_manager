@@ -38,6 +38,10 @@ def generate_launch_description():
                 'neg_peak_tresh': 0.75,
                 'pos_peak_tresh': 0.19,
                 'std_dev_tresh': 0.085,
+                'slope_threshold_deg': 10.0,
+                'neg_peak_plane_thresh': 0.3,
+                'pos_peak_plane_thresh': 0.3,
+                'std_dev_plane_thresh': 0.1,
                 'percentage_of_valid_samples_in_window': 0.7,
                 'voxel_size_m': 0.1
             }],
