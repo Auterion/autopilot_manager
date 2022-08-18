@@ -680,7 +680,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
             const bool wp_switched = (_landing_waypoint_id != -1) && (_landing_waypoint_id < progress.current);
             
             const bool end_landing_site_search =
-                    on_ground || manual_control || rtl_active || wp_switched;
+                    on_ground || manual_control || rtl_active || wp_switched || !_got_traj;
 
             if ( end_landing_site_search ) {
                 _landing_planner.endSearch();
@@ -696,6 +696,9 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                 } else if ( rtl_active ) {
                     std::cout << std::string(missionManagerOut) << "RTL triggered. Cancelling safe landing." << std::endl;
                     debug_info = "RTL";
+                } else if ( !_got_traj ) {
+                    std::cout << std::string(missionManagerOut) << "OA not active on PX4. Cancelling safe landing." << std::endl;
+                    debug_info = "No OA";
                 } else if ( wp_switched ) {
                     std::cout << std::string(missionManagerOut) << "Target WP changed from "
                               << _landing_waypoint_id << " to " << progress.current << ". Ending safe landing search." << std::endl;
