@@ -156,6 +156,7 @@ class MissionManager : public rclcpp::Node, ModuleBase {
 
     void set_global_position_reference();
     void set_new_waypoint(const double& lat, const double& lon, const double& alt_amsl);
+    void set_new_local_waypoint(const double& x, const double& y, const double& yaw);
     bool arrived_to_new_waypoint();
     bool is_stationary();
     bool debounce_is_stationary(bool is_stationary);

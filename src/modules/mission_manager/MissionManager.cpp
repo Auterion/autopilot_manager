@@ -143,7 +143,9 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
 
     _time_last_traj = this->now();
 
-    if ( std::isfinite(_new_latitude) ) {
+    const bool is_pos_valid = std::isfinite(_new_x) && std::isfinite(_new_y) && std::isfinite(_new_yaw);
+    const bool is_valid = _landing_planner.isActive() && is_pos_valid;
+    if ( is_valid ) {
         mavlink_trajectory_representation_waypoints_t wp_message;
         mavlink_msg_trajectory_representation_waypoints_decode(&_message, &wp_message);
 
@@ -269,6 +271,11 @@ void MissionManager::set_new_waypoint(const double& lat, const double& lon, cons
     _new_longitude = lon;
     _new_altitude_amsl = alt_amsl;
 }
+void MissionManager::set_new_local_waypoint(const double& x, const double& y, const double& yaw) {
+    _new_x = x;
+    _new_y = y;
+    _new_yaw = yaw;
+}
 
 bool MissionManager::arrived_to_new_waypoint() {
     if ((std::abs(_new_latitude - _current_latitude) <= 1.0E-5) &&
@@ -348,11 +355,6 @@ void MissionManager::go_to_new_local_waypoint(
         }
     }
 
-    _new_x = local_waypoint.north_m;
-    _new_y = local_waypoint.east_m;
-    _new_yaw = _current_yaw;
-    std::cout << "set wp to " << "[" << _new_x << ", " << _new_y << "]" << std::endl;
-
     // Store info how to continue after landing site found (return to mission or land).
     if ( !_was_landing_paused && !_was_mission_paused) {
         const bool manual_triggered_land = _flight_mode == mavsdk::Telemetry::FlightMode::Land;
@@ -368,8 +370,8 @@ void MissionManager::go_to_new_local_waypoint(
     }
 
     // Go to waypoint
-//    _action->goto_location(waypoint.latitude_deg, waypoint.longitude_deg, altitude, yaw_rad);
-    set_new_waypoint(waypoint.latitude_deg, waypoint.longitude_deg, altitude);
+    set_new_local_waypoint(local_waypoint.north_m, local_waypoint.east_m, _current_yaw);
+    std::cout << "set wp to " << "[" << _new_x << ", " << _new_y << "]" << std::endl;
 }
 
 void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now) {
@@ -846,7 +848,6 @@ void MissionManager::update_landing_site_search(const uint8_t safe_landing_state
             safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/ ||
             safe_landing_state == 4 /*eLandingMapperState::CAN_NOT_LAND*/) {
             // Attempting to land, but there's a problem.
-            _action->hold();
             std::string status = std::string(missionManagerOut) + "Aborting landing at candidate site";
             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
             std::cout << status << std::endl;
@@ -886,7 +887,7 @@ void MissionManager::update_landing_site_search(const uint8_t safe_landing_state
     std::string status = std::string(missionManagerOut);
     if (should_initiate_landing) {
         status += "Landing site found. ";
-        set_new_waypoint(NAN, NAN, NAN);
+        set_new_local_waypoint(NAN, NAN, NAN);
         if (land_when_found_site) {
             status += "Landing...";
 
@@ -915,7 +916,7 @@ void MissionManager::update_landing_site_search(const uint8_t safe_landing_state
         // End of search pattern.
         // Hold position.
         status += "End of landing site search. Holding position...";
-        set_new_waypoint(NAN, NAN, NAN);
+        set_new_local_waypoint(NAN, NAN, NAN);
         mavsdk::Action::Result result = _action->hold();
         if (result == mavsdk::Action::Result::Success) {
             std::cout << std::string(missionManagerOut) << "Switched to HOLD mode."
@@ -933,9 +934,7 @@ void MissionManager::update_landing_site_search(const uint8_t safe_landing_state
             _landing_planner.getCurrentWaypoint();
         go_to_new_local_waypoint(new_wpt, _landing_planner.getSearchAltitude(), _current_yaw * 180. / M_PI);
         std::stringstream ss;
-        ss << "[Landing Site Search] Waypoint set: Lat " << std::fixed << std::setprecision(6) << _new_latitude
-           << "°, Lon " << _new_longitude << "°, Alt " << std::setprecision(2) << _new_altitude_amsl
-           << "m AMSL, Local (" << new_wpt.north_m << ", " << new_wpt.east_m << ")";
+        ss << "[Landing Site Search] Waypoint set: Local (" << new_wpt.north_m << ", " << new_wpt.east_m << ")";
         status += ss.str();
         // _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
     } else {
@@ -976,7 +975,7 @@ void MissionManager::landing_site_search_has_ended(const std::string& _debug) {
         if (_debug != "") {
             ss << " (" << _debug << ")";
         }
-        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, ss.str());
+        _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, ss.str());
     }
 
     // TODO rework and put to a separate function
