@@ -160,7 +160,7 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
                   << "  d_x=" << d_x << " d_y" << d_y
                   << std::endl;
 
-        const float vel_scale = 0.75f; // TODO make this ROS parameter
+        const float vel_scale = 0.5f; // TODO make this ROS parameter
 
         Eigen::Vector2f vel_new(_current_pos_x - _new_x, _current_pos_y - _new_y);
         vel_new = vel_new.normalized()*vel_scale;
