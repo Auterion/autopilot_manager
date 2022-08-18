@@ -246,4 +246,8 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     double _landing_longitude_deg;
     double _landing_altitude_m;
     int _landing_waypoint_id;
+
+    rclcpp::Time _time_last_traj;
+
+    bool _got_traj;
 };
