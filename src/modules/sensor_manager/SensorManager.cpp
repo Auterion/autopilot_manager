@@ -276,8 +276,8 @@ void SensorManager::health_check() {
     const auto s_since_last_odom = (now - _time_last_odometry).seconds();
     const auto s_since_last_image = (now - _time_last_image).seconds();
 
-    const bool is_odom_healthy = s_since_last_odom < std::chrono::duration<double>(2500ms).count();
-    const bool is_image_healthy = s_since_last_image < std::chrono::duration<double>(2500ms).count();
+    const bool is_odom_healthy = s_since_last_odom < std::chrono::duration<double>(2.5s).count();
+    const bool is_image_healthy = s_since_last_image < std::chrono::duration<double>(2.5s).count();
     const bool is_healthy = is_odom_healthy && is_image_healthy;
 
     const rclcpp::Duration warning_interval(2, 0);
