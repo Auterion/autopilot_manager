@@ -305,12 +305,23 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
     if (safe_landing_enabled) {
         /*
-         * If we're not handling an action already, check if we need to start one.
+         * If we're not handling an action already and landing has been triggered, check if we need to start the safe
+         * landing action.
          */
         if (!_action_triggered) {
             std::string status{};
 
             if (landing_triggered()) {
+                /*
+                 *  Stop landing and hold if
+                 *      1. vehicle is >1.5m above ground and mapper is "unhealthy"
+                 *  Start the landing site search if
+                 *      1. mapper says "cannot land", or
+                 *      2. mapper has no data ("unknown") and vehicle is still >1.5m above ground
+                 *  Land without intervention if
+                 *      1. mapper says "can land", "too high" or "close to ground", or
+                 *      2. mapper is "unhealthy" or "unknown" but vehicle is already near the ground (<=1.5m)
+                 */
                 if (height_above_obstacle > 1.5 && safe_landing_state == 0 /*eLandingMapperState::UNHEALTHY*/) {
                     // If the safe landing status is unhealthy, then hold position.
                     _action->hold();
@@ -322,22 +333,10 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     _action_triggered = true;
                     _last_time = now;
 
-                } else if (height_above_obstacle > 1.5 && safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/) {
-                    // If the vehicle is bellow the defined maximum distance to ground to determine if it is
-                    // safe to land or not, then it will still try to land until it reaches an height that
-                    // allows it to determine if it can land or not. Otherwise, it holds position.
-                    _action->hold();
-
-                    status =
-                        std::string(missionManagerOut) + "Cannot determine if it is safe to land. Holding position...";
-                    _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
-                    std::cout << status << std::endl;
-
-                    _action_triggered = true;
-                    _last_time = now;
-
-                } else if (safe_landing_state == 4 /*eLandingMapperState::CAN_NOT_LAND*/) {
-                    std::cout << std::string(missionManagerOut) << "Cannot land! -----------------------" << std::endl;
+                } else if (safe_landing_state == 4 /*eLandingMapperState::CAN_NOT_LAND*/ ||
+                           (safe_landing_state == 1 /*eLandingMapperState::UNKNOWN*/ && height_above_obstacle > 1.5)) {
+                    std::cout << std::string(missionManagerOut) << "Cannot land! ----------------------- ("
+                              << +safe_landing_state << ")" << std::endl;
                     if (safe_landing_on_no_safe_land == "HOLD") {
                         _action->hold();
 
