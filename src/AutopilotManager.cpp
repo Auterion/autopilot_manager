@@ -292,7 +292,8 @@ void AutopilotManager::start() {
         _landing_manager = std::make_shared<LandingManager>(system);
 
         // Create Mission Manager
-        _mission_manager = std::make_shared<MissionManager>(system, &_mavsdk_mission_computer, _custom_action_config_path);
+        _mission_manager =
+            std::make_shared<MissionManager>(system, &_mavsdk_mission_computer, _custom_action_config_path);
 
         // Init the callback for setting the Mission Manager parameters
         _mission_manager->setConfigUpdateCallback([this]() {

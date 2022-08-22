@@ -54,10 +54,10 @@
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
+#include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 #include <mavsdk/plugins/mission_raw/mission_raw.h>
 #include <mavsdk/plugins/server_utility/server_utility.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
-#include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 
 // ROS dependencies
 #include <rclcpp/rclcpp.hpp>
@@ -66,7 +66,8 @@ static constexpr auto missionManagerOut = "[Mission Manager] ";
 
 class MissionManager : public rclcpp::Node, ModuleBase {
    public:
-    MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, mavsdk::Mavsdk* mavsdk, const std::string& path_to_custom_action_file);
+    MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, mavsdk::Mavsdk* mavsdk,
+                   const std::string& path_to_custom_action_file);
     ~MissionManager();
     MissionManager(const MissionManager&) = delete;
     auto operator=(const MissionManager&) -> const MissionManager& = delete;
