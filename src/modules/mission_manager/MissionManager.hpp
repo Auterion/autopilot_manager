@@ -251,5 +251,6 @@ class MissionManager : public rclcpp::Node, ModuleBase {
 
     rclcpp::Time _time_last_traj;
 
-    bool _got_traj;
+    bool _oa_connected;
+    bool _oa_trajectory_available;
 };

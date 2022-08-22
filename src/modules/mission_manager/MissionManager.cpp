@@ -83,7 +83,8 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, ma
       _landing_altitude_m{NAN},
       _landing_waypoint_id{-1},
       _time_last_traj{this->now()},
-      _got_traj{true} {}
+      _oa_connected{true},
+      _oa_trajectory_available{true} {}
 
 MissionManager::~MissionManager() { deinit(); }
 
@@ -403,14 +404,31 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     mavsdk::MissionRaw::MissionProgress progress = _mission_raw->mission_progress();
 
     if (safe_landing_enabled) {
+        // TODO: separate into function
+        // Check if OA trajectory is available
         const auto ros_now = this->get_clock()->now();
         const auto s_since_last_traj = (ros_now - _time_last_traj).seconds();
-        const bool get_traj = s_since_last_traj < 0.5f;
+        const bool trajectory_time_valid = s_since_last_traj < 0.5f;
 
-        if (_got_traj && !get_traj) {
-            _got_traj = false;
-        } else if (get_traj) {
-            _got_traj = true;
+        // Check if old trajectory
+        if (_oa_trajectory_available != trajectory_time_valid) {
+            _oa_trajectory_available = trajectory_time_valid;
+            if (!trajectory_time_valid) {
+                std::cout << ">>>>> Trajectory timed out " << s_since_last_traj << std::endl;
+            } else {
+                std::cout << ">>>>> Got trajectory back!" << std::endl;
+            }
+        }
+
+        // Check if REALLY old trajectory
+        const bool oa_connection_time_valid = s_since_last_traj < 2.f;
+        if (_oa_connected != oa_connection_time_valid) {
+            _oa_connected = oa_connection_time_valid;
+            if (!oa_connection_time_valid) {
+                std::cout << ">>>>> OA connection timed out " << s_since_last_traj << std::endl;
+            } else {
+                std::cout << ">>>>> OA reconnected" << std::endl;
+            }
         }
 
         mavlink_message_t new_heartbeat_message;
@@ -499,7 +517,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                         std::cout << status << std::endl;
 
                     } else if (safe_landing_on_no_safe_land == "LANDING_SITE_SEARCH") {
-                        if (_got_traj) {
+                        if (_oa_trajectory_available) {
                             std::cout << "*" << std::endl
                                       << "***" << std::endl
                                       << "***** Starting Landing Site Search" << std::endl
@@ -567,7 +585,8 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                                 _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning,
                                                                   status);
                             }
-
+                        } else if (_oa_connected) {
+                            status = std::string(missionManagerOut) + "Waiting for OA trajectory from PX4...";
                         } else {
                             _action->hold();
                             landing_site_search_has_ended("No OA");
@@ -681,7 +700,8 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
             const bool rtl_active = _flight_mode == mavsdk::Telemetry::FlightMode::ReturnToLaunch;
             const bool wp_switched = (_landing_waypoint_id != -1) && (_landing_waypoint_id < progress.current);
 
-            const bool end_landing_site_search = on_ground || manual_control || rtl_active || wp_switched || !_got_traj;
+            const bool end_landing_site_search =
+                on_ground || manual_control || rtl_active || wp_switched || !_oa_connected;
 
             if (end_landing_site_search) {
                 _landing_planner.endSearch();
@@ -698,7 +718,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     std::cout << std::string(missionManagerOut) << "RTL triggered. Cancelling safe landing."
                               << std::endl;
                     debug_info = "RTL";
-                } else if (!_got_traj) {
+                } else if (!_oa_connected) {
                     std::cout << std::string(missionManagerOut) << "OA not active on PX4. Cancelling safe landing."
                               << std::endl;
                     debug_info = "No OA";
@@ -709,6 +729,9 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                 }
 
                 landing_site_search_has_ended(debug_info);
+            } else if (!_oa_trajectory_available) {
+                // OA trajectory is temporarily missing: wait until OA is available or times out
+                std::cout << std::string(missionManagerOut) << "Waiting... OA not active on PX4." << std::endl;
             } else {
                 update_landing_site_search(safe_landing_state, height_above_obstacle,
                                            safe_landing_try_landing_after_action);
