@@ -253,4 +253,6 @@ class MissionManager : public rclcpp::Node, ModuleBase {
 
     bool _oa_connected;
     bool _oa_trajectory_available;
+
+    static constexpr bool DEBUG_PRINT{false};
 };

@@ -153,9 +153,11 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
         const float d_x = abs(_current_pos_x - _new_x);
         const float d_y = abs(_current_pos_y - _new_y);
 
-        std::cout << "[" << _current_pos_x << ", " << _current_pos_y << "] >>->> "
-                  << "[" << _new_x << ", " << _new_y << "]"
-                  << "  d_x=" << d_x << " d_y" << d_y << std::endl;
+        if (DEBUG_PRINT) {
+            std::cout << "[" << _current_pos_x << ", " << _current_pos_y << "] >>->> "
+                      << "[" << _new_x << ", " << _new_y << "]"
+                      << "  d_x=" << d_x << " d_y" << d_y << std::endl;
+        }
 
         const float vel_scale = 0.5f;  // TODO make this ROS parameter
 
@@ -429,6 +431,10 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
             } else {
                 std::cout << ">>>>> OA reconnected" << std::endl;
             }
+        }
+
+        if (!trajectory_time_valid && DEBUG_PRINT) {
+            std::cout << "OA trajectory stale. Time since last = " << s_since_last_traj << std::endl;
         }
 
         mavlink_message_t new_heartbeat_message;
