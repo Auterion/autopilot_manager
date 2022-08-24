@@ -270,27 +270,36 @@ void LandingManager::mapper() {
                 const Eigen::Vector2f inverse_focal_length = intrinsics.inverse_focal_length();
 
                 timing_tools::Timer timer_pointcloud_depth_to_3D("point cloud: depth->3D ", true);
+                float point_height_min = std::numeric_limits<float>::max();
                 for (const DepthPixelF& depth_pixel : depth_pixel_array) {
                     const float depth = depth_pixel.depth;
 
                     // TODO those ROS2 paramters
                     const float min_depth_to_use = 0.7f;
                     const float max_depth_to_use = 16.f;
-                    if (std::isfinite(depth) && (depth > min_depth_to_use) && (depth < max_depth_to_use)) {
+                    if (std::isfinite(depth) && (depth > min_depth_to_use)) {
                         Eigen::Matrix<float, 3, 1> point(0.0, 0.0, depth);
                         point.head<2>() = (Eigen::Matrix<float, 2, 1>(depth_pixel.x, depth_pixel.y) - principal_point)
                                               .cwiseProduct(inverse_focal_length) *
                                           depth;
                         point = orientation * point + position;
 
-                        _pointcloud_for_mapper.push_back(point);
-                        _visualizer->add_point_to_point_cloud(point, _visualize);
+                        if (depth < max_depth_to_use) {
+                            _pointcloud_for_mapper.push_back(point);
+                            _visualizer->add_point_to_point_cloud(point, _visualize);
+                        }
+
+                        const float point_height = point(2) - position(2);
+                        if (point_height < point_height_min) {
+                            point_height_min = point_height;
+                        }
                     }
                 }
                 timer_pointcloud_depth_to_3D.stop();
 
                 timing_tools::Timer timer_pointcloud_map_update("point cloud: map update", true);
                 _mapper->updateCloud(_pointcloud_for_mapper);
+                _mapper->setImageHeightEstimate(point_height_min);
                 timer_pointcloud_map_update.stop();
 
                 _visualizer->visualizePointCloud(_visualize);
