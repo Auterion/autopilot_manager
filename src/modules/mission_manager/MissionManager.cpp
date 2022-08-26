@@ -403,6 +403,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                             landing_planner::LandingPlannerConfig lp_config;
                             lp_config.max_distance = landing_site_search_max_distance;
                             lp_config.min_height = landing_site_search_min_height;
+                            lp_config.max_height = safe_landing_distance_to_ground;
                             lp_config.min_distance_after_abort = landing_site_search_min_distance_after_abort;
                             lp_config.waypoint_arrival_radius = landing_site_search_arrival_radius;
                             lp_config.site_assess_time = landing_site_search_assess_time;
@@ -701,16 +702,16 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
             std::cout << "_landing_waypoint_id " << _landing_waypoint_id << std::endl;
             std::cout << "safe_landing_state " << safe_landing_state << std::endl;
         }
-    } else if (too_high_for_mapper) {
-        // Adjust search altitude
-        _landing_planner.adjustSearchAltitude(_current_altitude_amsl, height_above_obstacle,
-                                              _mission_manager_config.safe_landing_distance_to_ground);
     } else {
-        _landing_planner.checkForWaypointArrival({_current_pos_x, _current_pos_y}, _current_altitude_amsl,
-                                                 is_stationary(), safe_landing_state);
-        if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
-            // Switched into ATTEMPTING_TO_LAND
-            should_initiate_landing = true;
+        _landing_planner.adjustSearchAltitude(_current_altitude_amsl, height_above_obstacle);
+
+        if (!too_high_for_mapper) {
+            _landing_planner.checkForWaypointArrival({_current_pos_x, _current_pos_y}, _current_altitude_amsl,
+                                                    is_stationary(), safe_landing_state);
+            if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
+                // Switched into ATTEMPTING_TO_LAND
+                should_initiate_landing = true;
+            }
         }
     }
 
