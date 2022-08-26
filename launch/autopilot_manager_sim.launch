@@ -38,7 +38,7 @@ def generate_launch_description():
                 'neg_peak_tresh': 0.75,
                 'pos_peak_tresh': 0.19,
                 'std_dev_tresh': 0.085,
-                'slope_threshold_deg': 10.0,
+                'slope_threshold_deg': 5.5,
                 'below_plane_deviation_thresh_m': 0.3,
                 'above_plane_deviation_thresh_m': 0.3,
                 'std_dev_from_plane_thresh_m': 0.1,
