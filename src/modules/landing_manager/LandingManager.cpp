@@ -338,8 +338,7 @@ void LandingManager::mapper() {
 
             // Show result
             visualizeResult(state, ground_position, now());
-            // std::cout << landingManagerOut << " height " << ground_position.z() - local_state.position.z() <<
-            // std::endl;
+            visualizeGroundPlane(_mapper->getGroundNormal(), ground_position, now());
 
         } else if (!is_landing_mapper_healthy) {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -378,6 +377,11 @@ void LandingManager::visualizeResult(landing_mapper::eLandingMapperState state, 
     } else {
         _visualizer->publishGround(vis_position, timestamp, _mapper_parameter.window_size_m, _visualize);
     }
+}
+
+void LandingManager::visualizeGroundPlane(const Eigen::Vector3f& normal, const Eigen::Vector3f& position,
+                                          const rclcpp::Time& timestamp) {
+    _visualizer->visualizeGroundPlane(normal, position, timestamp, _mapper_parameter.window_size_m, _visualize);
 }
 
 void LandingManager::visualizeMap() {

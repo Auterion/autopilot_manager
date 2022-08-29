@@ -125,6 +125,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                          const rclcpp::Time& timestamp);
+    void visualizeGroundPlane(const Eigen::Vector3f& normal, const Eigen::Vector3f& position,
+                              const rclcpp::Time& timestamp);
     void visualizeMap();
 
     void printStats();

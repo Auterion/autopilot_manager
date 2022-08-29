@@ -87,6 +87,10 @@ class MapVisualizer {
     template <typename T>
     void visualizeHeightMap(const height_map::HeightMap<T>& height_map, const rclcpp::Time& timestamp, bool enabled);
 
+    template <class Derived>
+    void visualizeGroundPlane(const Eigen::MatrixBase<Derived>& normal, const Eigen::MatrixBase<Derived>& position,
+                              const rclcpp::Time& timestamp, float size, bool enabled) const;
+
     void prepare_point_cloud_msg(int64_t timestamp_ns, size_t width, size_t height, bool enabled = true);
 
     template <typename T>
@@ -239,6 +243,57 @@ void MapVisualizer::visualizeHeightMap(const height_map::HeightMap<T>& height_ma
         }
     }
     marker_array.markers.push_back(map_marker);
+    marker_map_pub_->publish(marker_array);
+}
+
+template <class Derived>
+void MapVisualizer::visualizeGroundPlane(const Eigen::MatrixBase<Derived>& normal,
+                                         const Eigen::MatrixBase<Derived>& position, const rclcpp::Time& timestamp,
+                                         float size, bool enabled) const {
+    if (!enabled) {
+        return;
+    }
+
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
+
+    std_msgs::msg::ColorRGBA color;
+    color.a = .6;
+    color.r = 1.;
+    color.g = 1.;
+    color.b = 1.;
+
+    geometry_msgs::msg::Vector3 scale;
+    scale.x = size;
+    scale.y = size;
+    scale.z = 0.01;
+
+    visualization_msgs::msg::MarkerArray marker_array;
+    visualization_msgs::msg::Marker m;
+
+    m.header.frame_id = NED_FRAME;
+    m.header.stamp = timestamp;
+    m.ns = "ground_plane";
+    m.type = visualization_msgs::msg::Marker::CUBE;
+    m.action = visualization_msgs::msg::Marker::ADD;
+    m.scale = scale;
+    m.color = color;
+    m.lifetime = rclcpp::Duration(5, 0);
+    m.id = 0;
+    m.pose.position = toPoint(position);
+
+    // Compute orientation in angle-axis form
+    const Eigen::Vector3f vertical = {0., 0., -1.};
+    const Eigen::Vector3f axis = vertical.cross(normal).normalized();
+    const float angle = acos(-normal(2));
+
+    // Convert to quaternion
+    const Eigen::Vector3f axis_scaled = axis * sin(angle / 2);
+    m.pose.orientation.x = axis_scaled(0);
+    m.pose.orientation.y = axis_scaled(1);
+    m.pose.orientation.z = axis_scaled(2);
+    m.pose.orientation.w = cos(angle / 2);
+
+    marker_array.markers.push_back(m);
     marker_map_pub_->publish(marker_array);
 }
 
