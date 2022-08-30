@@ -55,6 +55,7 @@ target_link_libraries(sensor-manager
   ${rclcpp_LIBRARIES}
   ${sensor_msgs_LIBRARIES}
   ${image_downsampler_LIBRARIES}
+  ${px4_msgs_LIBRARIES}
   ${timing_tools_LIBRARIES}
 )
 
@@ -63,7 +64,7 @@ target_link_libraries(sensor-manager
 ############
 
 # Export information to downstream packages
-ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 image_downsampler sensor_msgs tf2_ros)
+ament_export_dependencies(ament_cmake rclcpp eigen3_cmake_module Eigen3 image_downsampler sensor_msgs px4_msgs tf2_ros)
 ament_export_targets(export_sensor-manager HAS_LIBRARY_TARGET)
 
 ament_export_include_directories(include)

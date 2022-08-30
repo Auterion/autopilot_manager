@@ -68,6 +68,7 @@ jobs:
         git clone git@github.com:Auterion/image_downsampler.git colcon_ws/src/image_downsampler
         git clone git@github.com:Auterion/landing_mapper.git -b develop colcon_ws/src/landing_mapper
         git clone git@github.com:Auterion/landing_planner.git colcon_ws/src/landing_planner
+        git clone git@github.com:Auterion/px4_msgs.git colcon_ws/src/px4_msgs
         git clone git@github.com:Auterion/timing_tools.git colcon_ws/src/timing_tools
     - name: Check code formatting
       run: tools/check_code_format.sh
@@ -76,4 +77,4 @@ jobs:
         cd colcon_ws
         ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
-        colcon build
+        colcon build --event-handlers console_direct+
