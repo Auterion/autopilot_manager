@@ -145,6 +145,9 @@ void LandingManager::init() {
     // Setup height above obstacle publisher
     _height_above_obstacle_pub =
         this->create_publisher<std_msgs::msg::Float32>("landing_manager/height_above_obstacle", 10);
+
+    // Setup ground slope angle publisher
+    _ground_slope_angle_pub = this->create_publisher<std_msgs::msg::Float32>("landing_manager/ground_slope_angle", 10);
 }
 
 auto LandingManager::deinit() -> void {}
@@ -323,6 +326,7 @@ void LandingManager::mapper() {
             Eigen::Vector3f ground_position;
             const landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
             const float height_above_obstacle = _mapper->getHeightAboveObstacle();
+            const float ground_slope_angle = _mapper->getGroundSlopeAngle();
             timer_check_landing_area.stop();
 
             {
@@ -331,10 +335,15 @@ void LandingManager::mapper() {
                 _height_above_obstacle = height_above_obstacle;
             }
 
-            // Publish the estimated height above obstacle to the ROS side
+            // Publish the estimated height above obstacle
             auto height_above_obstacle_msg = std_msgs::msg::Float32();
             height_above_obstacle_msg.data = height_above_obstacle;
             _height_above_obstacle_pub->publish(height_above_obstacle_msg);
+
+            // Publish estimated ground slope angle
+            auto ground_slope_msg = std_msgs::msg::Float32();
+            ground_slope_msg.data = ground_slope_angle;
+            _ground_slope_angle_pub->publish(ground_slope_msg);
 
             // Show result
             visualizeResult(state, ground_position, now());

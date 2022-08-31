@@ -707,7 +707,7 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
 
         if (!too_high_for_mapper) {
             _landing_planner.checkForWaypointArrival({_current_pos_x, _current_pos_y}, _current_altitude_amsl,
-                                                    is_stationary(), safe_landing_state);
+                                                     is_stationary(), safe_landing_state);
             if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
                 // Switched into ATTEMPTING_TO_LAND
                 should_initiate_landing = true;
