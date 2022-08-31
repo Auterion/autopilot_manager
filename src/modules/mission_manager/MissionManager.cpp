@@ -317,7 +317,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                 /*
                  *  Stop landing and hold if
                  *      1. vehicle is >1.5m above ground and mapper is "unhealthy"
-                 *  Start the landing site search if
+                 *  Start safe landing if
                  *      1. mapper says "cannot land", or
                  *      2. mapper has no data ("unknown") and vehicle is still >1.5m above ground
                  *  Land without intervention if
@@ -329,6 +329,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     safe_landing_state == LandingMapperState::UNHEALTHY && height_above_obstacle > 1.5;
                 const bool unknown_and_above_1_5m =
                     safe_landing_state == LandingMapperState::UNKNOWN && height_above_obstacle > 1.5;
+                const bool should_trigger_safe_landing = cannot_land || unknown_and_above_1_5m;
                 if (unhealthy_and_above_1_5m) {
                     // If the safe landing status is unhealthy, then hold position.
                     _action->hold();
@@ -339,7 +340,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
                     _action_triggered = true;
                     _last_time = now;
-                } else if (cannot_land || unknown_and_above_1_5m) {
+                } else if (should_trigger_safe_landing) {
                     std::cout << std::string(missionManagerOut) << "Cannot land! ----------------------- ("
                               << safe_landing_state << ")" << std::endl;
                     if (safe_landing_on_no_safe_land == "HOLD") {
