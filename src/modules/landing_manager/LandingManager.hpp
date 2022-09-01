@@ -123,6 +123,8 @@ class LandingManager : public rclcpp::Node, ModuleBase {
     void mapper();
     bool healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const;
 
+    void publishHeightStats(const height_map::HeightMapStats& height_stats) const;
+
     void visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
                          const rclcpp::Time& timestamp);
     void visualizeGroundPlane(const Eigen::Vector3f& normal, const Eigen::Vector3f& position,
@@ -162,7 +164,12 @@ class LandingManager : public rclcpp::Node, ModuleBase {
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr _landing_state_pub;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _height_above_obstacle_pub;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _ground_slope_angle_pub;
+
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _valid_sample_percentage_pub;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _slope_angle_pub;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _above_plane_max_deviation_pub;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _below_plane_max_deviation_pub;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr _std_dev_from_plane_pub;
 
     std::function<std::shared_ptr<ExtendedDownsampledImageF>()> _downsampled_depth_update_callback;
 

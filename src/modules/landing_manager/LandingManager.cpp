@@ -146,8 +146,16 @@ void LandingManager::init() {
     _height_above_obstacle_pub =
         this->create_publisher<std_msgs::msg::Float32>("landing_manager/height_above_obstacle", 10);
 
-    // Setup ground slope angle publisher
-    _ground_slope_angle_pub = this->create_publisher<std_msgs::msg::Float32>("landing_manager/ground_slope_angle", 10);
+    // Setup publishers for the height map statistics
+    _valid_sample_percentage_pub =
+        this->create_publisher<std_msgs::msg::Float32>("landing_manager/stats/valid_sample_percentage", 10);
+    _slope_angle_pub = this->create_publisher<std_msgs::msg::Float32>("landing_manager/stats/slope_angle", 10);
+    _above_plane_max_deviation_pub =
+        this->create_publisher<std_msgs::msg::Float32>("landing_manager/stats/above_plane_max_deviation", 10);
+    _below_plane_max_deviation_pub =
+        this->create_publisher<std_msgs::msg::Float32>("landing_manager/stats/below_plane_max_deviation", 10);
+    _std_dev_from_plane_pub =
+        this->create_publisher<std_msgs::msg::Float32>("landing_manager/stats/std_dev_from_plane", 10);
 }
 
 auto LandingManager::deinit() -> void {}
@@ -326,7 +334,6 @@ void LandingManager::mapper() {
             Eigen::Vector3f ground_position;
             const landing_mapper::eLandingMapperState state = _mapper->checkLandingArea(ground_position);
             const float height_above_obstacle = _mapper->getHeightAboveObstacle();
-            const float ground_slope_angle = _mapper->getGroundSlopeAngle();
             timer_check_landing_area.stop();
 
             {
@@ -340,14 +347,13 @@ void LandingManager::mapper() {
             height_above_obstacle_msg.data = height_above_obstacle;
             _height_above_obstacle_pub->publish(height_above_obstacle_msg);
 
-            // Publish estimated ground slope angle
-            auto ground_slope_msg = std_msgs::msg::Float32();
-            ground_slope_msg.data = ground_slope_angle;
-            _ground_slope_angle_pub->publish(ground_slope_msg);
+            // Publish ground height stats
+            const height_map::HeightMapStats height_stats = _mapper->getHeightStats();
+            publishHeightStats(height_stats);
 
             // Show result
             visualizeResult(state, ground_position, now());
-            visualizeGroundPlane(_mapper->getGroundNormal(), ground_position, now());
+            visualizeGroundPlane(height_stats.slope_normal, ground_position, now());
 
         } else if (!is_landing_mapper_healthy) {
             std::lock_guard<std::mutex> lock(_landing_manager_mutex);
@@ -374,6 +380,25 @@ void LandingManager::mapper() {
 
         timer_mapper.stop();
     }
+}
+
+void LandingManager::publishHeightStats(const height_map::HeightMapStats& height_stats) const {
+    auto stats_msg = std_msgs::msg::Float32();
+
+    stats_msg.data = height_stats.valid_samples / height_stats.samples * 100.;
+    _valid_sample_percentage_pub->publish(stats_msg);
+
+    stats_msg.data = height_stats.slope_deg;
+    _slope_angle_pub->publish(stats_msg);
+
+    stats_msg.data = height_stats.above_plane_max_deviation_m;
+    _above_plane_max_deviation_pub->publish(stats_msg);
+
+    stats_msg.data = height_stats.below_plane_max_deviation_m;
+    _below_plane_max_deviation_pub->publish(stats_msg);
+
+    stats_msg.data = height_stats.std_dev_from_plane_m;
+    _std_dev_from_plane_pub->publish(stats_msg);
 }
 
 void LandingManager::visualizeResult(landing_mapper::eLandingMapperState state, const Eigen::Vector3f& position,
