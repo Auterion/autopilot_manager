@@ -298,9 +298,10 @@ void SensorManager::health_check() {
             ss << " - Images unhealthy.";
         }
 
-        RCLCPP_ERROR(get_logger(), ss.str());
+        const std::string error_string = ss.str();
+        RCLCPP_ERROR(get_logger(), error_string.c_str());
         if (_server_utility) {
-            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, ss.str());
+            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, error_string);
         }
     } else if (!health_reported_once) {
         health_reported_once = true;
