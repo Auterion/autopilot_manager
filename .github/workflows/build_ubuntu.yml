@@ -70,7 +70,7 @@ jobs:
       run: |
         git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 colcon_ws/src/eigen
         git clone git@github.com:Auterion/image_downsampler.git colcon_ws/src/image_downsampler
-        git clone git@github.com:Auterion/landing_mapper.git -b develop colcon_ws/src/landing_mapper
+        git clone git@github.com:Auterion/landing_mapper.git -b new-height-map colcon_ws/src/landing_mapper
         git clone git@github.com:Auterion/landing_planner.git colcon_ws/src/landing_planner
         git clone git@github.com:Auterion/px4_msgs.git colcon_ws/src/px4_msgs
         git clone git@github.com:Auterion/timing_tools.git colcon_ws/src/timing_tools
