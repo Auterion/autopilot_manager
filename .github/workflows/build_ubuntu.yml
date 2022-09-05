@@ -18,9 +18,10 @@ jobs:
   build:
     name: ROS 2 ${{ matrix.ros2_distro }}
     runs-on: ubuntu-20.04
+    container: px4io/px4-dev-ros2-${{ matrix.ros2_distro }}:2021-05-31
     strategy:
       matrix:
-        ros2_distro: [foxy, galactic]
+        ros2_distro: [foxy]
     steps:
     - uses: actions/checkout@v2
     - name: Disable the keychain credential helper
@@ -45,11 +46,8 @@ jobs:
         sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list'
         # Install ROS 2 ${{ matrix.ros2_distro }} packages
         sudo apt update
-        sudo apt install -y \
-          python3-colcon-common-extensions \
-          ros-${{ matrix.ros2_distro }}-ros-base \
+        sudo apt install -y --no-install-recommends \
           ros-${{ matrix.ros2_distro }}-sensor-msgs \
-          ros-${{ matrix.ros2_distro }}-image-pipeline \
           ros-${{ matrix.ros2_distro }}-visualization-msgs
         # Setup environment
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
@@ -65,20 +63,22 @@ jobs:
         # Install Clang formatter
         sudo apt install -y clang-format-10
     - name: Create colcon workspace
-      run: mkdir -p colcon_ws/src
+      run: |
+        unset ROS_DISTRO
+        mkdir -p /tmp/colcon_ws/src
+        cp -ar ${GITHUB_WORKSPACE} /tmp/colcon_ws/src/autopilot_manager
     - name: Fetch source dependencies
       run: |
-        git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 colcon_ws/src/eigen
-        git clone git@github.com:Auterion/image_downsampler.git colcon_ws/src/image_downsampler
-        git clone git@github.com:Auterion/landing_mapper.git -b new-height-map colcon_ws/src/landing_mapper
-        git clone git@github.com:Auterion/landing_planner.git colcon_ws/src/landing_planner
-        git clone git@github.com:Auterion/px4_msgs.git colcon_ws/src/px4_msgs
-        git clone git@github.com:Auterion/timing_tools.git colcon_ws/src/timing_tools
+        git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 /tmp/colcon_ws/src/eigen
+        git clone git@github.com:Auterion/image_downsampler.git /tmp/colcon_ws/src/image_downsampler
+        git clone git@github.com:Auterion/landing_mapper.git -b new-height-map /tmp/colcon_ws/src/landing_mapper
+        git clone git@github.com:Auterion/landing_planner.git /tmp/colcon_ws/src/landing_planner
+        git clone git@github.com:Auterion/px4_msgs.git /tmp/colcon_ws/src/px4_msgs
+        git clone git@github.com:Auterion/timing_tools.git /tmp/colcon_ws/src/timing_tools
     - name: Check code formatting
       run: tools/check_code_format.sh
     - name: Build
+      working-directory: /tmp/colcon_ws
       run: |
-        cd colcon_ws
-        ln -s ${GITHUB_WORKSPACE} src/autopilot_manager
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
         colcon build --event-handlers console_direct+
