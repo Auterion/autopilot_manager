@@ -11,6 +11,10 @@ on:
     branches:
       - '*'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   packaging:
     name: "ROS 2 ${{ matrix.ros2_distro }} - ${{ matrix.arch }}"

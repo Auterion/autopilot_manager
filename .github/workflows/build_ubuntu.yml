@@ -10,6 +10,10 @@ on:
     branches:
       - '*'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: ROS 2 ${{ matrix.ros2_distro }}
