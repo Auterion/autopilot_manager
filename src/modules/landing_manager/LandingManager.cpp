@@ -72,34 +72,26 @@ void LandingManager::initParameters() {
     // Map config
     this->declare_parameter("max_search_altitude_m");
     this->declare_parameter("max_window_size_m");
+    this->declare_parameter("voxel_size_m");
     // Safe-to-land parameters
-    this->declare_parameter("distance_threshold_m");
-    this->declare_parameter("neg_peak_tresh");
-    this->declare_parameter("pos_peak_tresh");
-    this->declare_parameter("std_dev_tresh");
     this->declare_parameter("slope_threshold_deg");
     this->declare_parameter("below_plane_deviation_thresh_m");
     this->declare_parameter("above_plane_deviation_thresh_m");
     this->declare_parameter("std_dev_from_plane_thresh_m");
     this->declare_parameter("percentage_of_valid_samples_in_window");
-    this->declare_parameter("voxel_size_m");
 
     // Get ROS parameters with defaults
     // Map config
     this->get_parameter_or("max_search_altitude_m", _mapper_parameter.max_search_altitude_m, 8);
     this->get_parameter_or("max_window_size_m", _mapper_parameter.max_window_size_m, 8);
+    this->get_parameter_or("voxel_size_m", _mapper_parameter.voxel_size_m, 0.1f);
     // Safe-to-land parameters
-    this->get_parameter_or("distance_threshold_m", _mapper_parameter.distance_threshold_m, 0.1f);
-    this->get_parameter_or("neg_peak_tresh", _mapper_parameter.neg_peak_tresh, 0.75f);
-    this->get_parameter_or("pos_peak_tresh", _mapper_parameter.pos_peak_tresh, 0.19f);
-    this->get_parameter_or("std_dev_tresh", _mapper_parameter.std_dev_tresh, 0.085f);
     this->get_parameter_or("slope_threshold_deg", _mapper_parameter.slope_threshold_deg, 10.f);
     this->get_parameter_or("below_plane_deviation_thresh_m", _mapper_parameter.below_plane_deviation_thresh_m, 0.3f);
     this->get_parameter_or("above_plane_deviation_thresh_m", _mapper_parameter.above_plane_deviation_thresh_m, 0.3f);
     this->get_parameter_or("std_dev_from_plane_thresh_m", _mapper_parameter.std_dev_from_plane_thresh_m, 0.1f);
     this->get_parameter_or("percentage_of_valid_samples_in_window",
                            _mapper_parameter.percentage_of_valid_samples_in_window, 0.7f);
-    this->get_parameter_or("voxel_size_m", _mapper_parameter.voxel_size_m, 0.1f);
 }
 
 void LandingManager::updateParameters() {
