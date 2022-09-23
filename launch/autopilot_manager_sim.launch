@@ -37,8 +37,8 @@ def generate_launch_description():
                 'voxel_size_m': 0.1,
                 'percentage_of_valid_samples_in_window': 0.7,
                 'slope_threshold_deg': 9.0,
-                'below_plane_deviation_thresh_m': 0.2,
-                'above_plane_deviation_thresh_m': 0.2,
+                'below_plane_deviation_thresh_m': 0.17,
+                'above_plane_deviation_thresh_m': 0.17,
                 'std_dev_from_plane_thresh_m': 0.1
             }],
             on_exit=[LogInfo(msg=["autopilot-manager failed to start. Stopping everything..."]),
