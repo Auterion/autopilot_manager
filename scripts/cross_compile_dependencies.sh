@@ -12,7 +12,7 @@ PWD=$(pwd)
 # Install MAVSDK from source
 # used by ros_cross_compile
 cd custom-data \
-        && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON -Bbuild/default -H. \
+        && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=OFF -Bbuild/default -H. \
         && cmake --build build/default --target install -j`nproc --all` \
         && ldconfig
 
