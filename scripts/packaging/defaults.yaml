@@ -1,4 +1,4 @@
 build:
   event-handlers: ["console_direct+"]
-  cmake-args: ["-DCMAKE_BUILD_TYPE=Release"]
+  cmake-args: ["-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_PREFIX_PATH=/custom-data/build/default/third_party/install"]
   cmake-force-configure: true
