@@ -88,6 +88,12 @@ jobs:
           cd /tmp/colcon_ws/install_${{ matrix.arch }}
           rm -rf px4_msgs px4_ros_com # we don't need the px4_msgs and px4_ros_com packaged here
           zip -r autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip .
+      - name: Upload as job artefact
+        uses: actions/upload-artifact@v2
+        with:
+          name: autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
+          path: /tmp/colcon_ws/install_${{ matrix.arch }}/autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
+          retention-days: 5
       - name: Publish artefacts
         if: startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@2.2.1
