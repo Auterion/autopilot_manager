@@ -65,6 +65,8 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
             DBUS_TYPE_UINT32, &safe_landing_enabled, DBUS_TYPE_DOUBLE, &safe_landing_area_square_size, DBUS_TYPE_DOUBLE,
             &safe_landing_distance_to_ground, DBUS_TYPE_STRING, &returnedSafeLandingOnNoSafeLand, DBUS_TYPE_UINT32,
             &safe_landing_try_landing_after_action,
+            // Landing site search configurations
+            DBUS_TYPE_DOUBLE, &landing_site_search_max_distance, DBUS_TYPE_DOUBLE, &landing_site_search_min_height,
             // Simple collision avoidance configurations
             DBUS_TYPE_UINT32, &simple_collision_avoid_enabled, DBUS_TYPE_DOUBLE,
             &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING, &returnedCollAvoidOnCondTrue,
@@ -107,6 +109,10 @@ bool AutopilotManagerConfig::InitFromMessage(DBusMessage* request) {
             std::cout << "    safe_landing_try_landing_after_action: " << std::boolalpha
                       << std::to_string(safe_landing_try_landing_after_action) << std::endl;
 
+            std::cout << "    landing_site_search_max_distance: " << landing_site_search_max_distance << std::endl;
+            std::cout << "    landing_site_search_min_height: " << landing_site_search_min_height << std::endl;
+            std::cout << "    landing_site_search_spiral_spacing: " << landing_site_search_spiral_spacing << std::endl;
+
             std::cout << "    simple_collision_avoid_enabled: " << std::boolalpha
                       << std::to_string(simple_collision_avoid_enabled) << std::endl;
             std::cout << "    simple_collision_avoid_distance_threshold: " << simple_collision_avoid_distance_threshold
@@ -138,6 +144,8 @@ bool AutopilotManagerConfig::AppendToMessage(DBusMessage* reply) const {
             DBUS_TYPE_UINT32, &safe_landing_enabled, DBUS_TYPE_DOUBLE, &safe_landing_area_square_size, DBUS_TYPE_DOUBLE,
             &safe_landing_distance_to_ground, DBUS_TYPE_STRING, &safe_landing_on_no_safe_land, DBUS_TYPE_UINT32,
             &safe_landing_try_landing_after_action,
+            // Landing site search configurations
+            DBUS_TYPE_DOUBLE, &landing_site_search_max_distance, DBUS_TYPE_DOUBLE, &landing_site_search_min_height,
             // Simple collision avoidance configurations
             DBUS_TYPE_UINT32, &simple_collision_avoid_enabled, DBUS_TYPE_DOUBLE,
             &simple_collision_avoid_distance_threshold, DBUS_TYPE_STRING,
@@ -171,12 +179,29 @@ bool AutopilotManagerConfig::WriteToFile(const std::string& config_path) const {
         file << "global_position_waypoint_lon=" << std::to_string(global_position_waypoint_lon) << std::endl;
         file << "global_position_waypoint_alt_amsl=" << std::to_string(global_position_waypoint_alt_amsl) << std::endl;
 
+        file << "camera_offset_x=" << std::to_string(camera_offset_x) << std::endl;
+        file << "camera_offset_y=" << std::to_string(camera_offset_y) << std::endl;
+        file << "camera_yaw=" << std::to_string(camera_yaw) << std::endl;
+
         file << "safe_landing_enabled=" << std::to_string(simple_collision_avoid_enabled) << std::endl;
         file << "safe_landing_area_square_size=" << std::to_string(safe_landing_area_square_size) << std::endl;
         file << "safe_landing_distance_to_ground=" << std::to_string(safe_landing_distance_to_ground) << std::endl;
         file << "safe_landing_on_no_safe_land=" << safe_landing_on_no_safe_land << std::endl;
         file << "safe_landing_try_landing_after_action=" << std::to_string(safe_landing_try_landing_after_action)
              << std::endl;
+
+        file << "landing_site_search_max_speed=" << std::to_string(landing_site_search_max_speed) << std::endl;
+        file << "landing_site_search_max_distance=" << std::to_string(landing_site_search_max_distance) << std::endl;
+        file << "landing_site_search_min_height=" << std::to_string(landing_site_search_min_height) << std::endl;
+        file << "landing_site_search_min_distance_after_abort="
+             << std::to_string(landing_site_search_min_distance_after_abort) << std::endl;
+        file << "landing_site_search_arrival_radius=" << std::to_string(landing_site_search_arrival_radius)
+             << std::endl;
+        file << "landing_site_search_assess_time=" << std::to_string(landing_site_search_assess_time) << std::endl;
+        file << "landing_site_search_strategy=" << landing_site_search_strategy << std::endl;
+        file << "landing_site_search_spiral_spacing=" << std::to_string(landing_site_search_spiral_spacing)
+             << std::endl;
+        file << "landing_site_search_spiral_points=" << std::to_string(landing_site_search_spiral_points) << std::endl;
 
         file << "simple_collision_avoid_enabled=" << std::to_string(simple_collision_avoid_enabled) << std::endl;
         file << "simple_collision_avoid_distance_threshold="
