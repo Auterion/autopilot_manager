@@ -230,7 +230,6 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     std::atomic<double> _previously_set_waypoint_latitude;
     std::atomic<double> _previously_set_waypoint_longitude;
     std::atomic<double> _previously_set_waypoint_altitude_amsl;
-    std::atomic<double> _original_max_speed;
 
     landing_planner::LandingPlanner _landing_planner;
 

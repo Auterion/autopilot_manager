@@ -74,7 +74,6 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _previously_set_waypoint_latitude{0.0},
       _previously_set_waypoint_longitude{0.0},
       _previously_set_waypoint_altitude_amsl{0.0},
-      _original_max_speed{-1.0},
       _landing_planner{},
       _time_last_traj{this->now()},
       _got_traj{true},
@@ -87,7 +86,6 @@ void MissionManager::init() {
 
     // Actions are processed and executed in the Mission Manager decion maker
     _action = std::make_shared<mavsdk::Action>(_mavsdk_system);
-    _action->set_maximum_speed(5.f);
 
     // Telemetry data checks are fundamental for proper execution
     _telemetry = std::make_shared<mavsdk::Telemetry>(_mavsdk_system);
@@ -422,7 +420,6 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     const float safe_landing_distance_to_ground = _mission_manager_config.safe_landing_distance_to_ground;
     const bool safe_landing_try_landing_after_action = _mission_manager_config.safe_landing_try_landing_after_action;
     const std::string safe_landing_on_no_safe_land = _mission_manager_config.safe_landing_on_no_safe_land;
-    const double landing_site_search_max_speed = _mission_manager_config.landing_site_search_max_speed;
     const double landing_site_search_max_distance = _mission_manager_config.landing_site_search_max_distance;
     const double landing_site_search_min_height = _mission_manager_config.landing_site_search_min_height;
     const double landing_site_search_min_distance_after_abort =
@@ -570,18 +567,6 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                                                          lp_config);
 
                             if (_landing_planner.isActive()) {
-                                // Lower the maximum speed
-                                mavsdk::Action::Result result =
-                                    _action->set_maximum_speed(landing_site_search_max_speed);
-                                if (result == mavsdk::Action::Result::Success) {
-                                    std::cout << std::string(missionManagerOut) << "Lowering maximum speed from "
-                                              << _original_max_speed << " to " << landing_site_search_max_speed
-                                              << std::endl;
-                                } else {
-                                    std::cout << std::string(missionManagerOut)
-                                              << "Could not lower maximum speed for landing site search." << std::endl;
-                                }
-
                                 // Set the first waypoint in the search pattern
                                 const mavsdk::geometry::CoordinateTransformation::LocalCoordinate new_wpt =
                                     _landing_planner.getCurrentWaypoint();
@@ -855,15 +840,6 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
 }
 
 void MissionManager::landing_site_search_has_ended(const std::string& _debug) {
-    mavsdk::Action::Result result = _action->set_maximum_speed(_original_max_speed);
-    if (result == mavsdk::Action::Result::Success) {
-        std::cout << std::string(missionManagerOut) << "Restoring maximum speed to " << _original_max_speed
-                  << std::endl;
-    } else {
-        std::cout << std::string(missionManagerOut) << "Could not restore maximum speed after landing site search."
-                  << std::endl;
-    }
-
     // Unset the waypoint override
     set_new_local_waypoint(NAN, NAN, NAN);
 
@@ -980,10 +956,6 @@ void MissionManager::decision_maker_run() {
         _current_vel_y = position_velocity.velocity.east_m_s;
         _current_vel_z = position_velocity.velocity.down_m_s;
     });
-
-    // Get the original maximum speed when not doing a landing site search
-    _original_max_speed = _action->get_maximum_speed().second;
-    std::cout << "Original maximum speed = " << _original_max_speed << std::endl;
 
     // Get yaw
     _telemetry->subscribe_attitude_euler(
