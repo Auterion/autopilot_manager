@@ -41,12 +41,12 @@ jobs:
             if [ \"$(git show-ref --tags)\" ]; then \\
               tag=$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1/p'); \\
               if [[ -z \$(echo $tag | xargs) ]]; then \\
-                echo 1.1.3; \\
+                echo 1.2.0; \\
               else \\
                 echo $tag; \\
               fi; \\
             else \\
-              echo 1.1.3; \\
+              echo 1.2.0; \\
             fi"
           )
           ARCH=$(bash -c "if [ \"${{ matrix.arch }}\" = \"x86_64\" ]; then echo amd64; elif [ \"${{ matrix.arch }}\" = \"aarch64\" ]; then echo arm64; fi")
@@ -76,7 +76,7 @@ jobs:
           # Add source dependencies
           git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 /tmp/colcon_ws/src/eigen
           git clone git@github.com:Auterion/image_downsampler.git /tmp/colcon_ws/src/image_downsampler
-          git clone git@github.com:Auterion/landing_mapper.git -b new-height-map /tmp/colcon_ws/src/landing_mapper
+          git clone git@github.com:Auterion/landing_mapper.git /tmp/colcon_ws/src/landing_mapper
           git clone git@github.com:Auterion/landing_planner.git /tmp/colcon_ws/src/landing_planner
           git clone git@github.com:Auterion/px4_msgs.git /tmp/colcon_ws/src/px4_msgs
           git clone git@github.com:Auterion/timing_tools.git /tmp/colcon_ws/src/timing_tools
