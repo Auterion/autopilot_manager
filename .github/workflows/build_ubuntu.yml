@@ -47,7 +47,9 @@ jobs:
         # Install ROS 2 ${{ matrix.ros2_distro }} packages
         sudo apt update
         sudo apt install -y --no-install-recommends \
+          ros-${{ matrix.ros2_distro }}-pybind11-vendor \
           ros-${{ matrix.ros2_distro }}-sensor-msgs \
+          ros-${{ matrix.ros2_distro }}-test-msgs \
           ros-${{ matrix.ros2_distro }}-visualization-msgs
         # Setup environment
         source /opt/ros/${{ matrix.ros2_distro }}/setup.bash
@@ -75,6 +77,11 @@ jobs:
         git clone git@github.com:Auterion/landing_planner.git /tmp/colcon_ws/src/landing_planner
         git clone git@github.com:Auterion/px4_msgs.git /tmp/colcon_ws/src/px4_msgs
         git clone git@github.com:Auterion/timing_tools.git /tmp/colcon_ws/src/timing_tools
+        if [ ${{ matrix.ros2_distro }} == 'foxy' ]
+        then
+          git clone git@github.com:Auterion/ros2bagger.git /tmp/colcon_ws/src/ros2bagger
+          git clone git@github.com:ros2/rosbag2.git -b foxy-future /tmp/colcon_ws/src/rosbag2
+        fi
     - name: Build
       working-directory: /tmp/colcon_ws
       run: |
