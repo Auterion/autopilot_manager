@@ -21,11 +21,15 @@ _Note: The host system is considered to run Ubuntu 20.04 Focal. Other OS's might
 ### ROS packages and workspace library dependencies
 
 1.  Auterion library packages:
+    - `image_downsampler`
     - `landing_mapper`
     - `landing_planner`
-    - `image_downsampler`
+    - `px4_msgs`
     - `timing_tools`
 2.  Eigen v3.3.9
+3.  If using ROS2 Foxy:
+    - Auterion `ros2bagger`
+    - [`rosbag2`](https://github.com/ros2/rosbag2) at `foxy-future`
 
 ### ROS 2 Foxy
 
@@ -149,9 +153,13 @@ git clone git@github.com:Auterion/autopilot_manager.git src/autopilot_manager
 # Clone the required dependencies
 git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 src/eigen
 git clone git@github.com:Auterion/image_downsampler.git src/image_downsampler
-git clone git@github.com:Auterion/landing_mapper.git -b develop src/landing_mapper
-git clone git@github.com:Auterion/landing_planner.git
-git clone git@github.com:Auterion/timing_tools.git
+git clone git@github.com:Auterion/landing_mapper.git src/landing_mapper
+git clone git@github.com:Auterion/landing_planner.git src/landing_planner
+git clone git@github.com:Auterion/px4_msgs.git src/px4_msgs
+git clone git@github.com:Auterion/timing_tools.git src/timing_tools
+# Only on ROS2 Foxy: clone data recording tools
+git clone git@github.com:Auterion/ros2bagger.git src/ros2bagger
+git clone git@github.com:ros2/rosbag2.git -b foxy-future src/rosbag2
 # Build with Release optimizations
 colcon build --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
@@ -384,7 +392,7 @@ ros_cross_compile colcon_ws/src \
   --rosdistro foxy \
   --custom-setup-script colcon_ws/src/autopilot_manager/scripts/cross_compile_dependencies.sh \
   --custom-data-dir /tmp/MAVSDK \
-  --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner timing_tools \
+  --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner px4_msgs timing_tools ros2bagger rosbag2 \
   --colcon-defaults ~/colcon_ws/src/autopilot_manager/scripts/packaging/defaults.yaml
 ```
 
