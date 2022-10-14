@@ -41,12 +41,12 @@ jobs:
             if [ \"$(git show-ref --tags)\" ]; then \\
               tag=$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1/p'); \\
               if [[ -z \$(echo $tag | xargs) ]]; then \\
-                echo 1.2.0; \\
+                echo 1.2.1; \\
               else \\
                 echo $tag; \\
               fi; \\
             else \\
-              echo 1.2.0; \\
+              echo 1.2.1; \\
             fi"
           )
           ARCH=$(bash -c "if [ \"${{ matrix.arch }}\" = \"x86_64\" ]; then echo amd64; elif [ \"${{ matrix.arch }}\" = \"aarch64\" ]; then echo arm64; fi")
