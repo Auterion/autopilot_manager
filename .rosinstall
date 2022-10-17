@@ -1,0 +1,34 @@
+# Source dependencies for the ROS2 Foxy workspace
+
+- git:
+    local-name: ../eigen
+    uri: 'https://gitlab.com/libeigen/eigen.git'
+    version: 3.3.9
+- git:
+    local-name: ../image_downsampler
+    uri: 'git@github.com:Auterion/image_downsampler.git'
+    version: develop
+- git:
+    local-name: ../landing_mapper
+    uri: 'git@github.com:Auterion/landing_mapper.git'
+    version: master
+- git:
+    local-name: ../landing_planner
+    uri: 'git@github.com:Auterion/landing_planner.git'
+    version: master
+- git:
+    local-name: ../px4_msgs
+    uri: 'git@github.com:Auterion/px4_msgs.git'
+    version: develop
+- git:
+    local-name: ../timing_tools
+    uri: 'git@github.com:Auterion/timing_tools.git'
+    version: master
+- git:
+    local-name: ../ros2bagger
+    uri: 'git@github.com:Auterion/ros2bagger.git'
+    version: master
+- git:
+    local-name: ../rosbag2
+    uri: 'git@github.com:ros2/rosbag2.git'
+    version: foxy-future

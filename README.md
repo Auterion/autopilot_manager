@@ -148,21 +148,17 @@ source /opt/ros/foxy/setup.bash
 # Create colcon workspace
 mkdir -p colcon_ws/src
 cd colcon_ws
-# Clone the autopilot-manager package
+# Clone the autopilot_manager package
 git clone git@github.com:Auterion/autopilot_manager.git src/autopilot_manager
 # Clone the required dependencies
-git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 src/eigen
-git clone git@github.com:Auterion/image_downsampler.git src/image_downsampler
-git clone git@github.com:Auterion/landing_mapper.git src/landing_mapper
-git clone git@github.com:Auterion/landing_planner.git src/landing_planner
-git clone git@github.com:Auterion/px4_msgs.git src/px4_msgs
-git clone git@github.com:Auterion/timing_tools.git src/timing_tools
-# Only on ROS2 Foxy: clone data recording tools
-git clone git@github.com:Auterion/ros2bagger.git src/ros2bagger
-git clone git@github.com:ros2/rosbag2.git -b foxy-future src/rosbag2
+cd src/autopilot_manager
+rosws update -t .
 # Build with Release optimizations
+cd ../../
 colcon build --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
+
+_Note:_ If using ROS2 Galactic, replace `.rosinstall` with `.rosinstall.galactic` before running `rosws`.
 
 #### Installing private repos
 

@@ -60,6 +60,7 @@ jobs:
           sudo apt update && sudo apt install -y --no-install-recommends \
             git \
             python3-pip \
+            python3-rosinstall \
             qemu-user-static
           sudo pip3 install ros_cross_compile
       - name: Configure workspace
@@ -67,24 +68,21 @@ jobs:
           unset ROS_DISTRO
           mkdir -p /tmp/colcon_ws/src
           cp -ar ${GITHUB_WORKSPACE} /tmp/colcon_ws/src/autopilot_manager/
-      - name: Fetch source dependencies
+      - name: Clone MAVSDK
         run: |
           # Clone MAVSDK to be built from source
           git clone --recursive https://github.com/Auterion/MAVSDK.git -b main /tmp/MAVSDK
           # Add COLCON_IGNORE to the MAVSDK dir so colcon doesn't build it
           touch /tmp/MAVSDK/COLCON_IGNORE
-          # Add source dependencies
-          git clone https://gitlab.com/libeigen/eigen.git -b 3.3.9 /tmp/colcon_ws/src/eigen
-          git clone git@github.com:Auterion/image_downsampler.git /tmp/colcon_ws/src/image_downsampler
-          git clone git@github.com:Auterion/landing_mapper.git /tmp/colcon_ws/src/landing_mapper
-          git clone git@github.com:Auterion/landing_planner.git /tmp/colcon_ws/src/landing_planner
-          git clone git@github.com:Auterion/px4_msgs.git /tmp/colcon_ws/src/px4_msgs
-          git clone git@github.com:Auterion/timing_tools.git /tmp/colcon_ws/src/timing_tools
-          if [ ${{ matrix.ros2_distro }} == 'foxy' ]
+      - name: Fetch source dependencies
+        working-directory: /tmp/colcon_ws/src/autopilot_manager
+        run: |
+          if [ ${{ matrix.ros2_distro }} == 'galactic' ]
           then
-            git clone git@github.com:Auterion/ros2bagger.git /tmp/colcon_ws/src/ros2bagger
-            git clone git@github.com:ros2/rosbag2.git -b foxy-future /tmp/colcon_ws/src/rosbag2
+            cp .rosinstall.galactic .rosinstall
+            echo "Using source dependencies for ROS2 Galactic"
           fi
+          rosws update -t .
       - name: Setup source dependencies in develop mode
         if: github.event_name == 'pull_request' && github.base_ref != 'main'
         run: |
