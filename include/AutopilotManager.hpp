@@ -80,7 +80,7 @@ class AutopilotManager {
     uint8_t _safe_landing_try_landing_after_action = false;
 
     // Landing site search configurations
-    double _landing_site_search_max_speed = 0.0;
+    double _landing_site_search_speed = 0.0;
     double _landing_site_search_max_distance = 0.0;
     double _landing_site_search_min_height = 0.0;
     double _landing_site_search_min_distance_after_abort = 0.0;

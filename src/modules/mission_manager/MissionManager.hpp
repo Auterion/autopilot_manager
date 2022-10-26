@@ -108,7 +108,7 @@ class MissionManager : public rclcpp::Node, ModuleBase {
         uint8_t safe_landing_try_landing_after_action = 0U;
 
         // Landing site search config
-        double landing_site_search_max_speed = 0.0;
+        double landing_site_search_speed = 0.0;
         double landing_site_search_max_distance = 0.0;
         double landing_site_search_min_height = 0.0;
         double landing_site_search_min_distance_after_abort = 0.0;

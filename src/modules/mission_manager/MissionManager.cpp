@@ -169,7 +169,9 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
         } else {
             // Not landing: command a horizontal velocity to follow the search pattern
 
-            const float vel_scale = 0.5f;  // TODO make this ROS parameter
+            std::unique_lock<std::mutex> lock(mission_manager_config_mtx);
+            const float vel_scale = _mission_manager_config.landing_site_search_speed;
+            lock.unlock();
 
             Eigen::Vector2f vel_new(_current_pos_x - _new_x, _current_pos_y - _new_y);
             vel_new = vel_new.normalized() * vel_scale;

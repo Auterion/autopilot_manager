@@ -190,7 +190,7 @@ bool AutopilotManagerConfig::WriteToFile(const std::string& config_path) const {
         file << "safe_landing_try_landing_after_action=" << std::to_string(safe_landing_try_landing_after_action)
              << std::endl;
 
-        file << "landing_site_search_max_speed=" << std::to_string(landing_site_search_max_speed) << std::endl;
+        file << "landing_site_search_speed=" << std::to_string(landing_site_search_speed) << std::endl;
         file << "landing_site_search_max_distance=" << std::to_string(landing_site_search_max_distance) << std::endl;
         file << "landing_site_search_min_height=" << std::to_string(landing_site_search_min_height) << std::endl;
         file << "landing_site_search_min_distance_after_abort="
@@ -305,8 +305,8 @@ bool AutopilotManagerConfig::InitFromFile(const std::string& config_path) {
                 safe_landing_try_landing_after_action = std::stoi(sin.str());
             }
 
-            if (line.find("landing_site_search_max_speed") != std::string::npos) {
-                landing_site_search_max_speed = std::stod(sin.str());
+            if (line.find("landing_site_search_speed") != std::string::npos) {
+                landing_site_search_speed = std::stod(sin.str());
             }
             if (line.find("landing_site_search_max_distance") != std::string::npos) {
                 landing_site_search_max_distance = std::stod(sin.str());
@@ -383,7 +383,7 @@ void AutopilotManagerConfig::Print() const {
     std::cout << "    safe_landing_try_landing_after_action: " << std::boolalpha
               << std::to_string(safe_landing_try_landing_after_action) << std::endl;
 
-    std::cout << "    landing_site_search_max_speed: " << landing_site_search_max_speed << std::endl;
+    std::cout << "    landing_site_search_speed: " << landing_site_search_speed << std::endl;
     std::cout << "    landing_site_search_max_distance: " << landing_site_search_max_distance << std::endl;
     std::cout << "    landing_site_search_min_height: " << landing_site_search_min_height << std::endl;
     std::cout << "    landing_site_search_min_distance_after_abort: " << landing_site_search_min_distance_after_abort
