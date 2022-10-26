@@ -59,6 +59,7 @@
 #include <mavsdk/plugins/custom_action/custom_action.h>
 #include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 #include <mavsdk/plugins/mission_raw/mission_raw.h>
+#include <mavsdk/plugins/param/param.h>
 #include <mavsdk/plugins/server_utility/server_utility.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>
 
@@ -172,6 +173,8 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     bool landing_triggered();
     bool under_manual_control();
 
+    void update_landing_speed_config();
+
     mavsdk::geometry::CoordinateTransformation::LocalCoordinate get_local_position_from_local_offset(
         const double& offset_x, const double& offset_y) const;
     mavsdk::geometry::CoordinateTransformation::GlobalCoordinate get_global_position_from_local_position(
@@ -193,6 +196,7 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<CustomActionHandler> _custom_action_handler;
     std::shared_ptr<mavsdk::Action> _action;
+    std::shared_ptr<mavsdk::Param> _param;
     std::shared_ptr<mavsdk::Telemetry> _telemetry;
     std::shared_ptr<mavsdk::ServerUtility> _server_utility;
     std::shared_ptr<mavsdk::MavlinkPassthrough> _mavlink_passthrough;
@@ -204,6 +208,10 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     std::atomic<bool> _is_global_position_ok;
     std::atomic<bool> _is_home_position_ok;
     std::atomic<bool> _global_origin_reference_set;
+
+    std::atomic<double> _landing_speed;
+    std::atomic<double> _landing_crawl_speed;
+    std::atomic<double> _landing_crawl_altitude;
 
     std::atomic<int> _is_stationary_debounce_counter;
 

@@ -60,6 +60,9 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _mavsdk_system{std::move(mavsdk_system)},
       _action_triggered{false},
       _global_origin_reference_set{false},
+      _landing_speed{0.7},
+      _landing_crawl_speed{0.3},
+      _landing_crawl_altitude{1.0},
       _is_stationary_debounce_counter{0},
       _current_latitude{0.0},
       _current_longitude{0.0},
@@ -86,6 +89,9 @@ void MissionManager::init() {
 
     // Actions are processed and executed in the Mission Manager decion maker
     _action = std::make_shared<mavsdk::Action>(_mavsdk_system);
+
+    // Parameter interface
+    _param = std::make_shared<mavsdk::Param>(_mavsdk_system);
 
     // Telemetry data checks are fundamental for proper execution
     _telemetry = std::make_shared<mavsdk::Telemetry>(_mavsdk_system);
@@ -416,6 +422,29 @@ bool MissionManager::under_manual_control() {
     }
 }
 
+void MissionManager::update_landing_speed_config() {
+    std::pair<mavsdk::Param::Result, float> result;
+
+    // Get the landing speed
+    result = _param->get_param_float("MPC_LAND_SPEED");
+    if (std::get<0>(result) == mavsdk::Param::Result::Success) {
+        _landing_speed = std::get<1>(result);
+    }
+
+    // Get the crawl speed and altitude
+    result = _param->get_param_float("MPC_LAND_CRWL");
+    if (std::get<0>(result) == mavsdk::Param::Result::Success) {
+        _landing_crawl_speed = std::get<1>(result);
+    }
+    result = _param->get_param_float("MPC_LAND_ALT3");
+    if (std::get<0>(result) == mavsdk::Param::Result::Success) {
+        _landing_crawl_altitude = std::get<1>(result);
+    }
+
+    std::cout << missionManagerOut << "Landing speed = " << _landing_speed << "m/s (" << _landing_crawl_speed
+              << "m/s below " << _landing_crawl_altitude << "m)" << std::endl;
+}
+
 void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now) {
     std::unique_lock<std::mutex> lock(mission_manager_config_mtx);
     const bool safe_landing_enabled = _mission_manager_config.safe_landing_enabled;
@@ -551,6 +580,9 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
                             status = "Starting Landing Site Search";
                             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
+
+                            // Set the landing speeds
+                            update_landing_speed_config();
 
                             // Configure landing planner
                             landing_planner::LandingPlannerConfig lp_config;
