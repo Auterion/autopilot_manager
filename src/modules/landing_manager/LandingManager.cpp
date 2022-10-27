@@ -79,6 +79,8 @@ void LandingManager::initParameters() {
     this->declare_parameter("above_plane_deviation_thresh_m");
     this->declare_parameter("std_dev_from_plane_thresh_m");
     this->declare_parameter("percentage_of_valid_samples_in_window");
+    // Enable debug logging
+    this->declare_parameter("debug_mapper");
 
     // Get ROS parameters with defaults
     // Map config
@@ -92,6 +94,8 @@ void LandingManager::initParameters() {
     this->get_parameter_or("std_dev_from_plane_thresh_m", _mapper_parameter.std_dev_from_plane_thresh_m, 0.1f);
     this->get_parameter_or("percentage_of_valid_samples_in_window",
                            _mapper_parameter.percentage_of_valid_samples_in_window, 0.7f);
+    // Enable debug logging
+    this->get_parameter_or("debug_mapper", _mapper_parameter.debug_print, false);
 }
 
 void LandingManager::updateParameters() {

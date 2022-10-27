@@ -30,7 +30,8 @@ def generate_launch_description():
                 'slope_threshold_deg': 9.0,
                 'below_plane_deviation_thresh_m': 0.18,
                 'above_plane_deviation_thresh_m': 0.18,
-                'std_dev_from_plane_thresh_m': 0.055
+                'std_dev_from_plane_thresh_m': 0.055,
+                'debug_mapper': False
             }],
             on_exit=[LogInfo(msg=["autopilot-manager failed to start. Stopping everything..."]),
                      Shutdown(reason='autopilot-manager failed to start')],
