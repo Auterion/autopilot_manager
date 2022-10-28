@@ -792,16 +792,8 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
      *  STEP 1: Decide what to do
      */
     bool should_initiate_landing = false;
-    const landing_planner::LandingSearchState search_state = _landing_planner.state();
-    const bool found_candidate_landing_site = search_state == landing_planner::LandingSearchState::SEARCH_ACTIVE &&
-                                              safe_landing_state == LandingMapperState::CAN_LAND &&
-                                              _landing_planner.isValidCandidateSite({_current_pos_x, _current_pos_y});
-    const bool busy_landing = search_state == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND;
-    const bool too_high_for_mapper = safe_landing_state == LandingMapperState::TOO_HIGH;
-    if (found_candidate_landing_site) {
-        // Observed a safe place while searching for a landing site.
-        _landing_planner.candidateSiteFoundAt({_current_pos_x, _current_pos_y});
-    } else if (busy_landing) {
+    const bool busy_landing = _landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND;
+    if (busy_landing) {
         if (safe_landing_state == LandingMapperState::UNHEALTHY || safe_landing_state == LandingMapperState::UNKNOWN ||
             safe_landing_state == LandingMapperState::CAN_NOT_LAND) {
             // Attempting to land, but there's a problem.
@@ -811,15 +803,11 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
             _landing_planner.abortLanding(-_current_pos_z, height_above_obstacle);
         }
     } else {
-        _landing_planner.adjustSearchAltitude(-_current_pos_z, height_above_obstacle);
-
-        if (!too_high_for_mapper) {
-            _landing_planner.checkForWaypointArrival({_current_pos_x, _current_pos_y}, -_current_pos_z, is_stationary(),
-                                                     safe_landing_state);
-            if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
-                // Switched into ATTEMPTING_TO_LAND
-                should_initiate_landing = true;
-            }
+        _landing_planner.updateSearch({_current_pos_x, _current_pos_y}, -_current_pos_z, height_above_obstacle,
+                                      is_stationary(), safe_landing_state);
+        if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
+            // Switched into ATTEMPTING_TO_LAND
+            should_initiate_landing = true;
         }
     }
 
