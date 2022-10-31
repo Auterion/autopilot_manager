@@ -67,7 +67,7 @@ jobs:
           unset ROS_DISTRO
           mkdir -p /tmp/colcon_ws/src
           cp -ar ${GITHUB_WORKSPACE} /tmp/colcon_ws/src/autopilot_manager/
-      - name: Build & Packaging (autopilot_manager)
+      - name: Fetch source dependencies
         run: |
           # Clone MAVSDK to be built from source
           git clone --recursive https://github.com/Auterion/MAVSDK.git -b main /tmp/MAVSDK
@@ -85,6 +85,16 @@ jobs:
             git clone git@github.com:Auterion/ros2bagger.git /tmp/colcon_ws/src/ros2bagger
             git clone git@github.com:ros2/rosbag2.git -b foxy-future /tmp/colcon_ws/src/rosbag2
           fi
+      - name: Setup source dependencies in develop mode
+        if: github.event_name == 'pull_request' && github.base_ref != 'main'
+        run: |
+          echo "Setting up develop-mode sources for PR to branch ${{ github.base_ref }}"
+          # Landing Mapper
+          cd /tmp/colcon_ws/src/landing_mapper
+          git checkout develop
+          cd -
+      - name: Build
+        run: |
           # Run cross-compilation
           ros_cross_compile /tmp/colcon_ws \
             --arch ${{ matrix.arch }} \
