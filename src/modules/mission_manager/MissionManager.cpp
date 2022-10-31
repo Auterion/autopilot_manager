@@ -146,8 +146,8 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
         mavlink_trajectory_representation_waypoints_t wp_message;
         mavlink_msg_trajectory_representation_waypoints_decode(&_message, &wp_message);
 
-        if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
-            // Attempting to land: command a downward velocity
+        if (_landing_planner.shouldLand()) {
+            // Vehicle should land: command a downward velocity
 
             // Determine landing speed
             const float height_above_obstacle = _height_above_obstacle_update_callback();
@@ -792,7 +792,7 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
      *  STEP 1: Decide what to do
      */
     bool should_initiate_landing = false;
-    const bool busy_landing = _landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND;
+    const bool busy_landing = _landing_planner.shouldLand();
     if (busy_landing) {
         if (safe_landing_state == LandingMapperState::UNHEALTHY || safe_landing_state == LandingMapperState::UNKNOWN ||
             safe_landing_state == LandingMapperState::CAN_NOT_LAND) {
@@ -805,8 +805,8 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
     } else {
         _landing_planner.updateSearch({_current_pos_x, _current_pos_y}, -_current_pos_z, height_above_obstacle,
                                       is_stationary(), safe_landing_state);
-        if (_landing_planner.state() == landing_planner::LandingSearchState::ATTEMPTING_TO_LAND) {
-            // Switched into ATTEMPTING_TO_LAND
+        if (_landing_planner.shouldLand()) {
+            // Planner has approved a landing site
             should_initiate_landing = true;
         }
     }
@@ -827,7 +827,7 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
             _landing_planner.endSearch();
         }
         _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, status);
-    } else if (_landing_planner.state() == landing_planner::LandingSearchState::ENDED) {
+    } else if (_landing_planner.isEnded()) {
         // End of search pattern.
         // Hold position.
         status += "End of landing site search. Holding position...";
@@ -856,7 +856,7 @@ void MissionManager::update_landing_site_search(const landing_mapper::eLandingMa
     /*
      *  STEP 3: Restore normal flight configuration if search has ended
      */
-    if (_landing_planner.state() == landing_planner::LandingSearchState::ENDED) {
+    if (_landing_planner.isEnded()) {
         landing_site_search_has_ended("END");
     }
 }
