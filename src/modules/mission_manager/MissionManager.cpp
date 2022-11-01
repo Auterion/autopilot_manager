@@ -151,9 +151,9 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
 
             // Determine landing speed
             const float height_above_obstacle = _height_above_obstacle_update_callback();
-            float land_velocity = 0.7;
-            if (height_above_obstacle < 1.) {
-                land_velocity = 0.3;
+            float land_velocity = _landing_speed;
+            if (height_above_obstacle < _landing_crawl_altitude) {
+                land_velocity = _landing_crawl_speed;
             }
 
             // Command the landing speed and position
