@@ -172,6 +172,8 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     bool landing_triggered();
     bool under_manual_control();
 
+    void update_obstacle_avoidance_enabled();
+
     mavsdk::geometry::CoordinateTransformation::LocalCoordinate get_local_position_from_local_offset(
         const double& offset_x, const double& offset_y) const;
     mavsdk::geometry::CoordinateTransformation::GlobalCoordinate get_global_position_from_local_position(
@@ -240,7 +242,8 @@ class MissionManager : public rclcpp::Node, ModuleBase {
 
     rclcpp::Time _time_last_traj;
 
-    bool _got_traj;
+    std::atomic<bool> _got_traj;
+    std::atomic<bool> _obstacle_avoidance_enabled;
 
     timing_tools::FrequencyMeter _frequency_traj;
 
