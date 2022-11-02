@@ -80,6 +80,7 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _landing_planner{},
       _time_last_traj{this->now()},
       _got_traj{true},
+      _obstacle_avoidance_enabled{false},
       _frequency_traj("traj in") {}
 
 MissionManager::~MissionManager() { deinit(); }
@@ -445,6 +446,28 @@ void MissionManager::update_landing_speed_config() {
               << "m/s below " << _landing_crawl_altitude << "m)" << std::endl;
 }
 
+void MissionManager::update_obstacle_avoidance_enabled() {
+    // Get 'obstacle avoidance enabled' parameter from PX4
+    const std::pair<mavsdk::Param::Result, int> result = _param->get_param_int("COM_OBS_AVOID");
+
+    if (std::get<0>(result) == mavsdk::Param::Result::Success) {
+        const int value = std::get<1>(result);
+        if (value == 1 && !_obstacle_avoidance_enabled) {
+            _obstacle_avoidance_enabled = true;
+            std::cout << missionManagerOut << "Obstacle avoidance has been enabled in PX4." << std::endl;
+        } else if (value != 1 && _obstacle_avoidance_enabled) {
+            _obstacle_avoidance_enabled = false;
+            std::cout << missionManagerOut << "Obstacle avoidance has been disabled in PX4." << std::endl;
+            if (value != 0) {
+                std::cout << missionManagerOut << "Unexpected value for parameter COM_OBS_AVOID: " << value
+                          << std::endl;
+            }
+        }
+    } else {
+        std::cout << missionManagerOut << "Could not get parameter COM_OBS_AVOID." << std::endl;
+    }
+}
+
 void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::system_clock> now) {
     std::unique_lock<std::mutex> lock(mission_manager_config_mtx);
     const bool safe_landing_enabled = _mission_manager_config.safe_landing_enabled;
@@ -494,6 +517,12 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
          */
         if (!_action_triggered) {
             std::string status{};
+
+            if (!_obstacle_avoidance_enabled) {
+                // If no actions are currently in progress and OA is disabled, do nothing for safe landing.
+                // If OA is disabled, actions will still be processed.
+                return;
+            }
 
             if (landing_triggered()) {
                 /*
@@ -734,8 +763,10 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                                                                 // always communicated when Land WP is inside a mission
             const bool manual_control = under_manual_control();
             const bool rtl_active = _flight_mode == mavsdk::Telemetry::FlightMode::ReturnToLaunch;
+            const bool avoidance_interface_not_active = !_obstacle_avoidance_enabled || !_got_traj;
 
-            const bool end_landing_site_search = on_ground || manual_control || rtl_active || !_got_traj;
+            const bool end_landing_site_search =
+                on_ground || manual_control || rtl_active || avoidance_interface_not_active;
 
             if (end_landing_site_search) {
                 _landing_planner.endSearch();
@@ -752,9 +783,13 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                     std::cout << std::string(missionManagerOut) << "RTL triggered. Cancelling safe landing."
                               << std::endl;
                     debug_info = "RTL";
-                } else if (!_got_traj) {
-                    std::cout << std::string(missionManagerOut) << "OA not active on PX4. Cancelling safe landing."
-                              << std::endl;
+                } else if (avoidance_interface_not_active) {
+                    // Hold position when OA is lost, otherwise landing would continue at the original landing site
+                    _action->hold();
+
+                    std::string status = "OA not active on PX4. Cancelling safe landing and holding position.";
+                    _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
+                    std::cout << missionManagerOut << status << std::endl;
                     debug_info = "No OA";
                 }
 
@@ -998,6 +1033,9 @@ void MissionManager::decision_maker_run() {
     while (!int_signal) {
         // Update configuration at each iteration
         _mission_manager_config = _config_update_callback();
+
+        // Check if avoidance is enabled
+        update_obstacle_avoidance_enabled();
 
         if (_mission_manager_config.autopilot_manager_enabled) {
             auto now = std::chrono::system_clock::now();
