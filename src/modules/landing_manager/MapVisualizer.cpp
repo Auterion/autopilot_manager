@@ -95,8 +95,32 @@ void MapVisualizer::publishCube(const geometry_msgs::msg::Point& point, std_msgs
 
     m.header.frame_id = NED_FRAME;
     m.header.stamp = timestamp;
-    m.ns = "goal_position";
+    m.ns = "landing_marker";
     m.type = visualization_msgs::msg::Marker::CUBE;
+    m.action = visualization_msgs::msg::Marker::ADD;
+    m.scale = scale;
+    m.color = color;
+    m.lifetime = rclcpp::Duration(5, 0);
+    m.id = 0;
+    m.pose.position = point;
+    marker_goal.markers.push_back(m);
+    marker_pub_->publish(marker_goal);
+}
+
+void MapVisualizer::publishCylinder(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
+                                    const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
+                                    bool enabled) const {
+    if (!enabled) {
+        return;
+    }
+
+    visualization_msgs::msg::MarkerArray marker_goal;
+    visualization_msgs::msg::Marker m;
+
+    m.header.frame_id = NED_FRAME;
+    m.header.stamp = timestamp;
+    m.ns = "landing_marker";
+    m.type = visualization_msgs::msg::Marker::CYLINDER;
     m.action = visualization_msgs::msg::Marker::ADD;
     m.scale = scale;
     m.color = color;

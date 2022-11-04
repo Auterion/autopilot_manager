@@ -75,6 +75,12 @@ class MapVisualizer {
                      const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
 
     template <class Derived>
+    void publishCylinder(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
+                         const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
+    void publishCylinder(const geometry_msgs::msg::Point& point, std_msgs::msg::ColorRGBA& color,
+                         const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp, bool enabled) const;
+
+    template <class Derived>
     void publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                          bool enabled) const;
     template <class Derived>
@@ -128,6 +134,14 @@ void MapVisualizer::publishCube(const Eigen::MatrixBase<Derived>& point, std_msg
 }
 
 template <class Derived>
+void MapVisualizer::publishCylinder(const Eigen::MatrixBase<Derived>& point, std_msgs::msg::ColorRGBA& color,
+                                    const geometry_msgs::msg::Vector3& scale, const rclcpp::Time& timestamp,
+                                    bool enabled) const {
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
+    publishCylinder(toPoint(point), color, scale, timestamp, enabled);
+}
+
+template <class Derived>
 void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, const rclcpp::Time& timestamp, float size,
                                     bool enabled) const {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 3);
@@ -143,7 +157,7 @@ void MapVisualizer::publishSafeLand(const Eigen::MatrixBase<Derived>& point, con
     scale.y = size;
     scale.z = 0.1;
 
-    publishCube(toPoint(point), color, scale, timestamp, enabled);
+    publishCylinder(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
@@ -162,7 +176,7 @@ void MapVisualizer::publishCloseGround(const Eigen::MatrixBase<Derived>& point, 
     scale.y = size;
     scale.z = 0.1;
 
-    publishCube(toPoint(point), color, scale, timestamp, enabled);
+    publishCylinder(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <class Derived>
@@ -181,7 +195,7 @@ void MapVisualizer::publishGround(const Eigen::MatrixBase<Derived>& point, const
     scale.y = size;
     scale.z = 0.1;
 
-    publishCube(toPoint(point), color, scale, timestamp, enabled);
+    publishCylinder(toPoint(point), color, scale, timestamp, enabled);
 }
 
 template <typename T>
@@ -273,7 +287,7 @@ void MapVisualizer::visualizeGroundPlane(const Eigen::MatrixBase<Derived>& norma
     m.header.frame_id = NED_FRAME;
     m.header.stamp = timestamp;
     m.ns = "ground_plane";
-    m.type = visualization_msgs::msg::Marker::CUBE;
+    m.type = visualization_msgs::msg::Marker::CYLINDER;
     m.action = visualization_msgs::msg::Marker::ADD;
     m.scale = scale;
     m.color = color;
