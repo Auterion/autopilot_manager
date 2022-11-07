@@ -1012,8 +1012,14 @@ void MissionManager::decision_maker_run() {
         // Update configuration at each iteration
         _mission_manager_config = _config_update_callback();
 
-        // Check if avoidance is enabled
-        update_obstacle_avoidance_enabled();
+        // Check if avoidance is enabled (at a slower rate than this main loop)
+        static constexpr int UPDATE_OA_ENABLED_RELATIVE_RATE = 20;  // 1Hz
+        static int update_oa_enabled_counter = 0;
+        if (update_oa_enabled_counter % UPDATE_OA_ENABLED_RELATIVE_RATE == 0) {
+            update_obstacle_avoidance_enabled();
+            update_oa_enabled_counter = 0;
+        }
+        update_oa_enabled_counter++;
 
         if (_mission_manager_config.autopilot_manager_enabled) {
             auto now = std::chrono::system_clock::now();
