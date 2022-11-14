@@ -382,7 +382,7 @@ void LandingManager::mapper() {
 void LandingManager::publishHeightStats(const height_map::HeightMapStats& height_stats) const {
     auto stats_msg = std_msgs::msg::Float32();
 
-    stats_msg.data = height_stats.valid_samples / height_stats.samples * 100.;
+    stats_msg.data = height_stats.valid_samples * 100. / height_stats.samples;
     _valid_sample_percentage_pub->publish(stats_msg);
 
     stats_msg.data = height_stats.slope_deg;
