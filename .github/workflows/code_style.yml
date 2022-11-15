@@ -17,4 +17,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Check code style
-      run: tools/check_code_format.sh
+      run: tools/dev/check_code_format.sh

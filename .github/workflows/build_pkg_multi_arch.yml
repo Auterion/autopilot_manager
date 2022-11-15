@@ -98,10 +98,10 @@ jobs:
             --arch ${{ matrix.arch }} \
             --os ubuntu \
             --rosdistro ${{ matrix.ros2_distro }} \
-            --custom-setup-script scripts/cross_compile_dependencies.sh \
+            --custom-setup-script tools/packaging/cross_compile_dependencies.sh \
             --custom-data-dir /tmp/MAVSDK \
             --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner px4_msgs timing_tools ros2bagger rosbag2 \
-            --colcon-defaults /tmp/colcon_ws/src/autopilot_manager/scripts/packaging/defaults.yaml
+            --colcon-defaults /tmp/colcon_ws/src/autopilot_manager/tools/packaging/defaults.yaml
       - name: Create zip
         run: |
           cd /tmp/colcon_ws/install_${{ matrix.arch }}

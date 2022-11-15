@@ -372,7 +372,7 @@ sudo pip3 install ros_cross_compile
 _ros_cross_compile_ can be used to compile the package for other architectures, like `arm64`. For that, it uses _qemu_ to
 start an emulation in a container of the environment we want to use to build the package. It requires also that MAVSDK
 gets built for that same architecture or installed during the _ros_cross_compile_ process. The `--custom-setup-script`
-`--custom-data-dir` options can be used. `scripts/cross_compile_dependencies.sh` gets loaded to the container so to
+`--custom-data-dir` options can be used. `tools/packaging/cross_compile_dependencies.sh` gets loaded to the container so to
 and install the required dependencies to the build process. The following commands can be used to build the package for
 the `arm64` (`aarch64`) arch and ROS 2 Foxy (we will be building MAVSDK and installing it from source):
 
@@ -386,10 +386,10 @@ ros_cross_compile colcon_ws/src \
   --arch aarch64 \
   --os ubuntu \
   --rosdistro foxy \
-  --custom-setup-script colcon_ws/src/autopilot_manager/scripts/cross_compile_dependencies.sh \
+  --custom-setup-script colcon_ws/src/autopilot_manager/tools/packaging/cross_compile_dependencies.sh \
   --custom-data-dir /tmp/MAVSDK \
   --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner px4_msgs timing_tools ros2bagger rosbag2 \
-  --colcon-defaults ~/colcon_ws/src/autopilot_manager/scripts/packaging/defaults.yaml
+  --colcon-defaults ~/colcon_ws/src/autopilot_manager/tools/packaging/defaults.yaml
 ```
 
 The resulting package installation files can be found in `colcon_ws/install_aarch64` and can be copied to the target device,
@@ -408,5 +408,5 @@ Please follow the contribution guidelines in [CONTRIBUTING](CONTRIBUTING.md).
 One requires clang-format-10 to format the code. Use the following command to format it:
 
 ```sh
-sh tools/fix_style.sh .
+sh tools/dev/fix_style.sh .
 ```
