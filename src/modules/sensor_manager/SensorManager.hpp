@@ -45,6 +45,7 @@
 
 #include <Eigen/Dense>
 #include <ModuleBase.hpp>
+#include <ObstacleAvoidanceModule.hpp>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -75,7 +76,7 @@
 
 inline static constexpr auto sensorManagerOut = "[Sensor Manager] ";
 
-class SensorManager : public rclcpp::Node, ModuleBase {
+class SensorManager : public rclcpp::Node, public ObstacleAvoidanceModule, ModuleBase {
    public:
     SensorManager(std::shared_ptr<mavsdk::System> mavsdk_system);
     ~SensorManager();

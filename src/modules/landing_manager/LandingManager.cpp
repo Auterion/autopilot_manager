@@ -255,9 +255,13 @@ void LandingManager::mapper() {
 
     // TODO: reinstantiate _mapper a after parameter update
 
-    // Only process the data when the Autopilot Manager is enabled and the Safe Landing
-    // is set as the Decision Maker Input.
-    if (_landing_manager_config.autopilot_manager_enabled && _landing_manager_config.safe_landing_enabled) {
+    // Only process the data to build a landing map when the Autopilot Manager is enabled, Safe Landing is set as the
+    // decision maker, and the OA interface is enabled (i.e. the user has activated Safe Landing).
+    const bool should_build_landing_map = _landing_manager_config.autopilot_manager_enabled &&
+                                          _landing_manager_config.safe_landing_enabled &&
+                                          obstacle_avoidance_is_enabled();
+
+    if (should_build_landing_map) {
         timing_tools::Timer timer_mapper("mapper: total", true);
 
         // Here we capture the downsampled depth data computed in the SensorManager
