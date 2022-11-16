@@ -19,6 +19,8 @@
 #include <mission_manager/MissionManager.hpp>
 #include <sensor_manager/SensorManager.hpp>
 
+static constexpr auto autopilotManagerOut = "[Autopilot Manager] ";
+
 class AutopilotManager {
    public:
     AutopilotManager(const std::string& mavlinkPort, const std::string& configPath,
@@ -44,9 +46,15 @@ class AutopilotManager {
     void run_sensor_manager();
     void run_collision_avoidance_manager();
     void run_landing_manager();
+    void run_mission_manager();
+
+    void run();
+    void update_obstacle_avoidance_enabled();
 
     auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
     auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
+
+    std::atomic<bool> _obstacle_avoidance_enabled;
 
     uint8_t _autopilot_manager_enabled = false;
     std::string _decision_maker_input_type = "";
@@ -100,6 +108,7 @@ class AutopilotManager {
     std::thread _sensor_manager_th;
     std::thread _landing_manager_th;
     std::thread _collision_avoidance_manager_th;
+    std::thread _mission_manager_th;
 
     std::shared_ptr<MissionManager> _mission_manager;
     std::shared_ptr<SensorManager> _sensor_manager;
@@ -117,6 +126,10 @@ class AutopilotManager {
     std::string _custom_action_config_path =
         "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
 
+    std::shared_ptr<mavsdk::Param> _param;
+
     static constexpr uint8_t kDefaultSystemId = 1;
     static constexpr uint8_t kMavCompIDOnBoardComputer3 = 193;
+
+    std::atomic<bool> _interrupt_received{false};
 };
