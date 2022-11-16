@@ -46,7 +46,8 @@ const auto METHOD_SET_CONFIG = "set_config";
 
 AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::string& configPath = "",
                                    const std::string& customActionConfigPath = "")
-    : _mavlink_port(mavlinkPort),
+    : _obstacle_avoidance_enabled(false),
+      _mavlink_port(mavlinkPort),
       _config_path(configPath.empty() ? _config_path : configPath),
       _custom_action_config_path(customActionConfigPath.empty() ? _custom_action_config_path : customActionConfigPath) {
     initialProvisioning();
@@ -55,9 +56,12 @@ AutopilotManager::AutopilotManager(const std::string& mavlinkPort, const std::st
 }
 
 AutopilotManager::~AutopilotManager() {
+    _interrupt_received.store(true, std::memory_order_relaxed);
+
     _sensor_manager_th.join();
     _collision_avoidance_manager_th.join();
     _landing_manager_th.join();
+    _mission_manager_th.join();
     _mission_manager.reset();
     _sensor_manager.reset();
     _collision_avoidance_manager.reset();
@@ -405,7 +409,13 @@ void AutopilotManager::start() {
 
         // Init and run the Mission Manager
         _mission_manager->init();
-        _mission_manager->run();
+        _mission_manager_th = std::thread(&AutopilotManager::run_mission_manager, this);
+
+        // Parameter interface
+        _param = std::make_shared<mavsdk::Param>(system);
+
+        // Run the main Autopilot Manager main loop
+        run();
 
     } else {
         std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
@@ -426,4 +436,48 @@ void AutopilotManager::run_collision_avoidance_manager() {
 void AutopilotManager::run_landing_manager() {
     // Run the Landing Manager node
     _landing_manager->run();
+}
+
+void AutopilotManager::run_mission_manager() {
+    // Run the Mission Manager node
+    _mission_manager->run();
+}
+
+void AutopilotManager::run() {
+    while (!_interrupt_received) {
+        // Get COM_OBS_AVOID parameter
+        update_obstacle_avoidance_enabled();
+
+        // Update at 1Hz
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
+void AutopilotManager::update_obstacle_avoidance_enabled() {
+    // Get 'obstacle avoidance enabled' parameter from PX4
+    const auto [result, value] = _param->get_param_int("COM_OBS_AVOID");
+
+    if (result != mavsdk::Param::Result::Success) {
+        std::cout << autopilotManagerOut << "Could not get parameter COM_OBS_AVOID." << std::endl;
+        return;
+    }
+
+    const bool should_be_enabled = value == 1;
+    const bool should_change = should_be_enabled != _obstacle_avoidance_enabled;
+    const bool is_valid = value == 0 || value == 1;
+
+    if (!should_change) {
+        return;
+    }
+
+    _obstacle_avoidance_enabled = should_be_enabled;
+    std::cout << autopilotManagerOut << "Obstacle avoidance has been " << (should_be_enabled ? "enabled" : "disabled")
+              << " in PX4." << std::endl;
+
+    if (!is_valid) {
+        std::cout << autopilotManagerOut << "Unexpected value for parameter COM_OBS_AVOID: " << value << std::endl;
+    }
+
+    // Update the modules that use the OA-enabled parameter
+    _mission_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
 }

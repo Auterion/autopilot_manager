@@ -45,6 +45,7 @@
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
 #include <ModuleBase.hpp>
+#include <ObstacleAvoidanceModule.hpp>
 #include <atomic>
 #include <future>
 #include <iostream>
@@ -67,7 +68,7 @@
 
 static constexpr auto missionManagerOut = "[Mission Manager] ";
 
-class MissionManager : public rclcpp::Node, ModuleBase {
+class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, ModuleBase {
    public:
     MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system, const std::string& path_to_custom_action_file);
     ~MissionManager();
@@ -172,8 +173,6 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     bool landing_triggered();
     bool under_manual_control();
 
-    void update_obstacle_avoidance_enabled();
-
     mavsdk::geometry::CoordinateTransformation::LocalCoordinate get_local_position_from_local_offset(
         const double& offset_x, const double& offset_y) const;
     mavsdk::geometry::CoordinateTransformation::GlobalCoordinate get_global_position_from_local_position(
@@ -243,7 +242,6 @@ class MissionManager : public rclcpp::Node, ModuleBase {
     rclcpp::Time _time_last_traj;
 
     std::atomic<bool> _got_traj;
-    std::atomic<bool> _obstacle_avoidance_enabled;
 
     timing_tools::FrequencyMeter _frequency_traj;
 
