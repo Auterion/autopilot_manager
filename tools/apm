@@ -1,0 +1,85 @@
+#!/bin/bash
+
+APM_CONFIG_DIR="/shared_container_dir/autopilot-manager/data/config"
+APM_CONFIG_SOURCE_DIR="/usr/src/app/autopilot-manager/autopilot-manager/share/autopilot-manager/data/config"
+
+display_usage() {
+	echo -e "Autopilot Manager configuration tool\n"
+	echo -e "Usage:  apm COMMAND [OPTION]\n"
+    echo -e "Commands:"
+    echo -e "  restart           Restart the systemd service for Autopilot Manager"
+    echo -e "  update-config     Update the autopilot_manager.conf file used from the source installation directory"
+    echo -e "  safe-landing      Configure Safe Landing"
+}
+
+restart_systemd_service() {
+    systemctl restart autopilot-manager.service
+}
+
+update_config() {
+    # Update the config file in /shared_container_dir
+    mkdir -p $APM_CONFIG_DIR
+    cp -rf $APM_CONFIG_SOURCE_DIR $APM_CONFIG_DIR/../
+    echo "Copied from $APM_CONFIG_SOURCE_DIR to $APM_CONFIG_DIR"
+
+    # Restart Autopilot Manager after applying config changes
+    restart_systemd_service
+}
+
+safe_landing_usage() {
+    echo -e "Usage:  apm safe-landing OPTION [ARGS]\n"
+    echo -e "Options:"
+    echo -e "  enable      Enable Safe Landing in the Autopilot Manager"
+    echo -e "  disable     Disable Safe Landing in the Autopilot Manager"
+}
+
+safe_landing() {
+    # TODO: enable setting of (one or more) launch file parameters here
+    case $1 in
+        enable)
+            # Enable Safe Landing
+            sed -i -E "s/safe_landing_enabled=.*/safe_landing_enabled=1/" $APM_CONFIG_DIR/autopilot_manager.conf
+            ;;
+        disable)
+            # Disable Safe Landing
+            sed -i -E "s/safe_landing_enabled=.*/safe_landing_enabled=0/" $APM_CONFIG_DIR/autopilot_manager.conf
+            ;;
+        *)
+            echo -e "Unexpected argument '$1' for safe landing\n"
+            safe_landing_usage
+            exit 1
+            ;;
+    esac
+
+    # Restart Autopilot Manager after applying config changes
+    restart_systemd_service
+}
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+# If no arguments supplied, display usage
+if [  $# == 0 ]
+then
+    display_usage
+    exit 1
+fi
+
+case $1 in
+    --help | -h)
+        display_usage
+        ;;
+    restart)
+        restart_systemd_service
+        ;;
+    update-config)
+        update_config
+        ;;
+    safe-landing)
+        safe_landing ${@: 2}
+        ;;
+    *)
+        echo -e "Unexpected command '$1'.\n"
+        display_usage
+        exit 1
+        ;;
+esac

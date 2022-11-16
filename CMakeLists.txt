@@ -89,6 +89,7 @@ install(TARGETS autopilot-manager
 set(CUSTOM_ACTION_DATA_DIR "share/${PROJECT_NAME}/data/example/" CACHE FILEPATH "Path to custom action configuration examples and scripts")
 set(CONFIG_DATA_DIR "share/${PROJECT_NAME}/data/config/" CACHE FILEPATH "Path to autopilot manager default parameters file")
 set(DBUS_CONFIG_DIR "share/${PROJECT_NAME}/dbus/" CACHE FILEPATH "Path to autopilot manager DBUS configuration file")
+set(TOOLS_DIR "share/${PROJECT_NAME}/tools/" CACHE FILEPATH "Path to autopilot manager helper tools")
 
 # ## Note for usage in the Skynode: ##
 # As the Autopilot Manager will be installed in a read-only partition,
@@ -108,6 +109,16 @@ install(DIRECTORY data/config/
 # This should be copied/moved manually to /usr/share/dbus-1/system.d/
 install(FILES com.auterion.autopilot_manager.conf
   DESTINATION ${DBUS_CONFIG_DIR})
+
+# Install helper tools
+# ## Note for usage on the Skynode: ##
+# Create a symbolic link in /usr/local/bin with:
+# ln -s /usr/src/app/autopilot-manager/autopilot-manager/share/autopilot-manager/tools/* /usr/local/bin/
+install(
+  FILES
+  tools/apm
+  DESTINATION ${TOOLS_DIR}
+)
 
 # Install launch files
 install(DIRECTORY
