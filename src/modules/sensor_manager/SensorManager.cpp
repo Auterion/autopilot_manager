@@ -273,6 +273,11 @@ void SensorManager::health_check() {
         return;
     }
 
+    // Do nothing if OA interface is not enabled
+    if (!obstacle_avoidance_is_enabled()) {
+        return;
+    }
+
     const auto s_since_last_odom = (now - _time_last_odometry).seconds();
     const auto s_since_last_image = (now - _time_last_image).seconds();
 

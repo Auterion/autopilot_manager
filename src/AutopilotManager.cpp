@@ -480,4 +480,6 @@ void AutopilotManager::update_obstacle_avoidance_enabled() {
 
     // Update the modules that use the OA-enabled parameter
     _mission_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
+    _landing_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
+    _sensor_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
 }

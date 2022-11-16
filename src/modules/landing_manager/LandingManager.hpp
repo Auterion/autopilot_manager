@@ -45,6 +45,7 @@
 
 #include <Eigen/Core>
 #include <ModuleBase.hpp>
+#include <ObstacleAvoidanceModule.hpp>
 #include <chrono>
 #include <iostream>
 
@@ -70,7 +71,7 @@ struct VehicleState {
 
 static constexpr auto landingManagerOut = "[Landing Manager] ";
 
-class LandingManager : public rclcpp::Node, ModuleBase {
+class LandingManager : public rclcpp::Node, public ObstacleAvoidanceModule, ModuleBase {
    public:
     LandingManager(std::shared_ptr<mavsdk::System> mavsdk_system);
     ~LandingManager();
