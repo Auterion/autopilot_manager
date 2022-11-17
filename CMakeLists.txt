@@ -52,6 +52,7 @@ add_executable(
 target_link_libraries(
     autopilot-manager
     MAVSDK::mavsdk_mavlink_passthrough
+    MAVSDK::mavsdk_param
     MAVSDK::mavsdk
     collision-avoidance-manager
     landing-manager

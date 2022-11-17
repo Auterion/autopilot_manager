@@ -2,6 +2,7 @@
 
 #include <dbus/dbus.h>
 #include <mavsdk/mavsdk.h>
+#include <mavsdk/plugins/param/param.h>
 
 #include <AutopilotManagerConfig.hpp>
 #include <DbusInterface.hpp>
