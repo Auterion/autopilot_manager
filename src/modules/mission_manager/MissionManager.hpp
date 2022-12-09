@@ -157,6 +157,8 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
                                     const float height_above_obstacle, const bool land_when_found_site);
     void landing_site_search_has_ended(const std::string& _debug = "");
 
+    void send_avoidance_mavlink_heartbeat();
+
     void on_mavlink_trajectory_message(const mavlink_message_t& _message);
     void flight_mode_callback(const mavsdk::Telemetry::FlightMode& flight_mode);
 
