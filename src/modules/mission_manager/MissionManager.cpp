@@ -58,7 +58,7 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _path_to_custom_action_file{std::move(path_to_custom_action_file)},
       _mission_manager_config{},
       _mavsdk_system{std::move(mavsdk_system)},
-      _action_triggered{false},
+      _action_in_progress{false},
       _global_origin_reference_set{false},
       _landing_speed{0.7},
       _landing_crawl_speed{0.3},
@@ -508,7 +508,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
      * If we're not handling an action already and landing has been triggered, check if we need to start the safe
      * landing action.
      */
-    if (!_action_triggered && landing_triggered()) {
+    if (!_action_in_progress && landing_triggered()) {
         std::string status{};
 
         /*
@@ -535,7 +535,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Warning, status);
             std::cout << status << std::endl;
 
-            _action_triggered = true;
+            _action_in_progress = true;
             _last_time = now;
         } else if (should_trigger_safe_landing) {
             std::cout << std::string(missionManagerOut) << "Cannot land! ----------------------- ("
@@ -723,7 +723,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                 std::cout << status << std::endl;
             }
 
-            _action_triggered = true;
+            _action_in_progress = true;
             _last_time = now;
         }
     }
@@ -896,12 +896,12 @@ void MissionManager::handle_simple_collision_avoidance(std::chrono::time_point<s
         // std::cout << "Depth measured: " << _distance_to_obstacle_update_callback()
         //           << " | threshold: " << _mission_manager_config.simple_collision_avoid_distance_threshold
         //           << " | in air: " << in_air << " | is action triggered? " << std::boolalpha
-        //           << _action_triggered << std::endl;
+        //           << _action_in_progress << std::endl;
 
         if (std::isfinite(_distance_to_obstacle_update_callback()) &&
             _distance_to_obstacle_update_callback() <=
                 _mission_manager_config.simple_collision_avoid_distance_threshold &&
-            in_air && !_action_triggered) {  // only trigger the condition when the vehicle is in-air
+            in_air && !_action_in_progress) {  // only trigger the condition when the vehicle is in-air
             if (_mission_manager_config.simple_collision_avoid_action_on_condition_true == "HOLD") {
                 _action->hold();
                 std::cout << std::string(missionManagerOut) << "Position hold triggered for Simple Obstacle Avoidance"
@@ -955,7 +955,7 @@ void MissionManager::handle_simple_collision_avoidance(std::chrono::time_point<s
                     << std::endl;
             }
 
-            _action_triggered = true;
+            _action_in_progress = true;
             _last_time = now;
         }
     }
@@ -1018,9 +1018,9 @@ void MissionManager::decision_maker_run() {
             }
 
             // After an action is triggered, we give it 5 seconds to process it before retrying.
-            if (_action_triggered &&
+            if (_action_in_progress &&
                 std::chrono::duration_cast<std::chrono::milliseconds>(now - _last_time).count() >= 5000) {
-                _action_triggered = false;
+                _action_in_progress = false;
                 std::cout << missionManagerOut << "5 seconds have passed since last action." << std::endl;
             }
         }

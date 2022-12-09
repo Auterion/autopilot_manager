@@ -204,7 +204,7 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     std::shared_ptr<mavsdk::ServerUtility> _server_utility;
     std::shared_ptr<mavsdk::MavlinkPassthrough> _mavlink_passthrough;
 
-    std::atomic<bool> _action_triggered;
+    std::atomic<bool> _action_in_progress;
     std::atomic<mavsdk::Telemetry::FlightMode> _flight_mode{mavsdk::Telemetry::FlightMode::Unknown};
     std::atomic<mavsdk::Telemetry::LandedState> _landed_state{mavsdk::Telemetry::LandedState::Unknown};
     std::atomic<mavsdk::Telemetry::LandedState> _previous_landed_state{mavsdk::Telemetry::LandedState::Unknown};
