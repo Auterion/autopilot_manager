@@ -157,6 +157,7 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
                                     const float height_above_obstacle, const bool land_when_found_site);
     void landing_site_search_has_ended(const std::string& _debug = "");
 
+    void create_avoidance_mavlink_heartbeat_message();
     void send_avoidance_mavlink_heartbeat();
 
     void on_mavlink_trajectory_message(const mavlink_message_t& _message);
@@ -249,6 +250,9 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     std::thread _decision_maker_th;
     std::thread _global_origin_reference_th;
 
+    mavlink_message_t _oa_heartbeat_message;
+
+    rclcpp::Time _time_last_heartbeat;
     rclcpp::Time _time_last_traj;
 
     std::atomic<bool> _got_traj;
