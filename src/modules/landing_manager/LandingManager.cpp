@@ -54,6 +54,7 @@ LandingManager::LandingManager(std::shared_ptr<mavsdk::System> mavsdk_system)
       _timer_stats(create_wall_timer(5s, std::bind(&LandingManager::printStats, this))),
       _timer_mapper({}),
       _timer_map_visualizer({}),
+      _health_status{HealthStatus::HEALTHY},
       _state(landing_mapper::eLandingMapperState::UNKNOWN),
       _height_above_obstacle{0.f} {
     _server_utility = std::make_shared<mavsdk::ServerUtility>(_mavsdk_system);
@@ -182,13 +183,9 @@ bool LandingManager::setSearchWindow_m(const double window_size) {
     return true;
 }
 
-bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const {
+bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) {
     static constexpr int16_t MAX_NULL_IMAGE = 5;
     static constexpr int16_t MAX_OLD_TIMESTAMP = 50;
-
-    const auto now = this->now();
-
-    bool healthy{true};
 
     struct HealthHandly {
         int16_t count_image_null{0};
@@ -215,34 +212,30 @@ bool LandingManager::healthCheck(const std::shared_ptr<ExtendedDownsampledImageF
     const bool too_many_null_images = health.count_image_null > MAX_NULL_IMAGE;
     const bool too_many_old_timestamps = health.count_timestamp_old > MAX_OLD_TIMESTAMP;
 
-    if (too_many_null_images || too_many_old_timestamps) {
-        healthy = false;
+    const HealthStatus new_health_status =
+        static_cast<HealthStatus>((HealthStatus::UNHEALTHY_NULL_IMAGES * too_many_null_images) +
+                                  (HealthStatus::UNHEALTHY_OLD_TIMESTAMPS * too_many_old_timestamps));
+    const bool status_changed = new_health_status != _health_status;
+    _health_status = new_health_status;
 
-        const rclcpp::Duration warning_interval(2, 0);
-        static rclcpp::Time last_warning = this->now();
-        const bool is_exceeded = now > (last_warning + warning_interval);
+    if (!isHealthy() && status_changed) {
+        std::stringstream ss;
+        ss << "Mapper input unhealthy";
+        if (too_many_null_images) {
+            ss << " - NULL-images (" << health.count_image_null << ")";
+        }
+        if (too_many_old_timestamps) {
+            ss << " - Old timestamps (" << health.count_timestamp_old << ")";
+        }
 
-        if (is_exceeded) {
-            std::stringstream ss;
-            ss << "Input is unhealthy";
-            if (too_many_null_images) {
-                ss << " - NULL-images (" << health.count_image_null << ")";
-            }
-            if (too_many_old_timestamps) {
-                ss << " - Old timestamps (" << health.count_timestamp_old << ")";
-            }
-
-            const std::string error_string = ss.str();
-            RCLCPP_ERROR(get_logger(), error_string.c_str());
-            if (_server_utility) {
-                _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, error_string);
-            }
-
-            last_warning = now;
+        const std::string error_string = ss.str();
+        RCLCPP_ERROR(get_logger(), error_string.c_str());
+        if (_server_utility) {
+            _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, error_string);
         }
     }
 
-    return healthy;
+    return isHealthy();
 }
 
 void LandingManager::mapper() {

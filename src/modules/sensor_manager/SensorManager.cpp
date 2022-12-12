@@ -53,7 +53,7 @@ SensorManager::SensorManager(std::shared_ptr<mavsdk::System> mavsdk_system)
       _tf_depth_filter(_tf_buffer, NED_FRAME, 10, this->create_sub_node("tf_filter")),
       _time_last_odometry{this->now()},
       _time_last_image{this->now()},
-      _is_healthy{true},
+      _health_status{HealthStatus::HEALTHY},
       _frequency_images("sensor images"),
       _frequency_camera_info("sensor camera_info"),
       _frequency_odometry("sensor odometry") {}
@@ -284,19 +284,17 @@ void SensorManager::health_check() {
 
     const bool is_odom_healthy = s_since_last_odom < std::chrono::duration<double>(2.5s).count();
     const bool is_image_healthy = s_since_last_image < std::chrono::duration<double>(2.5s).count();
-    _is_healthy = is_odom_healthy && is_image_healthy;
 
-    const rclcpp::Duration warning_interval(2, 0);
-    static rclcpp::Time last_warning = now;
-    const bool is_exceeded = this->now() > (last_warning + warning_interval);
+    const HealthStatus new_health_status = static_cast<HealthStatus>(
+        (HealthStatus::UNHEALTHY_ODOMETRY * !is_odom_healthy) + (HealthStatus::UNHEALTHY_IMAGES * !is_image_healthy));
+    const bool status_changed = new_health_status != _health_status;
+    _health_status = new_health_status;
 
-    static bool health_reported_once = false;
+    static bool healthy_reported_once = false;
 
-    if (!_is_healthy && is_exceeded) {
-        last_warning = now;
-
+    if (!isHealthy() && status_changed) {
         std::stringstream ss;
-        ss << "Input unhealthy.";
+        ss << "Sensor input unhealthy.";
         if (!is_odom_healthy) {
             ss << " - Odometry unhealthy.";
         }
@@ -309,8 +307,8 @@ void SensorManager::health_check() {
         if (_server_utility) {
             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, error_string);
         }
-    } else if (!health_reported_once) {
-        health_reported_once = true;
+    } else if (isHealthy() && !healthy_reported_once) {
+        healthy_reported_once = true;
         static const std::string good_to_go = "Safe Landing: Input healthy. Good to go!";
         _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, good_to_go);
         std::cout << sensorManagerOut << good_to_go << std::endl;

@@ -118,11 +118,20 @@ class LandingManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     bool setSearchAltitude_m(double altitude_m);
     bool setSearchWindow_m(double window_size_m);
 
+    bool isHealthy() const { return _health_status == HealthStatus::HEALTHY; }
+
    private:
+    enum HealthStatus {
+        HEALTHY = 0,
+        UNHEALTHY_NULL_IMAGES = 1,
+        UNHEALTHY_OLD_TIMESTAMPS = 2,
+        UNHEALTHY_NULL_IMAGES_AND_OLD_TIMESTAMPS = 3
+    };
+
     void initParameters();
     void updateParameters();
     void mapper();
-    bool healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg) const;
+    bool healthCheck(const std::shared_ptr<ExtendedDownsampledImageF>& depth_msg);
 
     void publishHeightStats(const height_map::HeightMapStats& height_stats) const;
 
@@ -155,6 +164,8 @@ class LandingManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
 
     rclcpp::TimerBase::SharedPtr _timer_mapper;
     rclcpp::TimerBase::SharedPtr _timer_map_visualizer;
+
+    HealthStatus _health_status;
 
     int _images_processed = 0;
     int _points_processed = 0;

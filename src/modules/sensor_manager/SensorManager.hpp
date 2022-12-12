@@ -95,9 +95,11 @@ class SensorManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modul
 
     void set_camera_static_tf(const double x, const double y, const double yaw_deg);
 
-    bool isHealthy() const { return _is_healthy; }
+    bool isHealthy() const { return _health_status == HealthStatus::HEALTHY; }
 
    private:
+    enum HealthStatus { HEALTHY = 0, UNHEALTHY_ODOMETRY = 1, UNHEALTHY_IMAGES = 2, UNHEALTHY_ODOMETRY_AND_IMAGES = 3 };
+
     void handle_incoming_camera_info(const sensor_msgs::msg::CameraInfo::ConstSharedPtr& msg);
     void handle_incoming_depth_image(const sensor_msgs::msg::Image::ConstSharedPtr& msg);
 
@@ -140,7 +142,7 @@ class SensorManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modul
     rclcpp::Time _time_last_odometry;
     rclcpp::Time _time_last_image;
 
-    bool _is_healthy;
+    HealthStatus _health_status;
 
     TimeSync _time_sync;
 

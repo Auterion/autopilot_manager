@@ -457,9 +457,10 @@ void AutopilotManager::run() {
         // Send avoidance heartbeat
         if (_obstacle_avoidance_enabled) {
             const bool sm_healthy = _sensor_manager->isHealthy();
+            const bool lm_healthy = _landing_manager->isHealthy();
             const bool mm_healthy = _mission_manager->isHealthy();
 
-            if (sm_healthy && mm_healthy) {
+            if (sm_healthy && lm_healthy && mm_healthy) {
                 _mavlink_passthrough->send_message(_avoidance_heartbeat_message);
             }
         }
