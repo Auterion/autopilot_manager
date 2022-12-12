@@ -53,6 +53,7 @@ SensorManager::SensorManager(std::shared_ptr<mavsdk::System> mavsdk_system)
       _tf_depth_filter(_tf_buffer, NED_FRAME, 10, this->create_sub_node("tf_filter")),
       _time_last_odometry{this->now()},
       _time_last_image{this->now()},
+      _is_healthy{true},
       _frequency_images("sensor images"),
       _frequency_camera_info("sensor camera_info"),
       _frequency_odometry("sensor odometry") {}
@@ -283,7 +284,7 @@ void SensorManager::health_check() {
 
     const bool is_odom_healthy = s_since_last_odom < std::chrono::duration<double>(2.5s).count();
     const bool is_image_healthy = s_since_last_image < std::chrono::duration<double>(2.5s).count();
-    const bool is_healthy = is_odom_healthy && is_image_healthy;
+    _is_healthy = is_odom_healthy && is_image_healthy;
 
     const rclcpp::Duration warning_interval(2, 0);
     static rclcpp::Time last_warning = now;
@@ -291,7 +292,7 @@ void SensorManager::health_check() {
 
     static bool health_reported_once = false;
 
-    if (!is_healthy && is_exceeded) {
+    if (!_is_healthy && is_exceeded) {
         last_warning = now;
 
         std::stringstream ss;

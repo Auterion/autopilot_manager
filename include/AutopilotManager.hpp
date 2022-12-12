@@ -2,6 +2,7 @@
 
 #include <dbus/dbus.h>
 #include <mavsdk/mavsdk.h>
+#include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
 #include <mavsdk/plugins/param/param.h>
 
 #include <AutopilotManagerConfig.hpp>
@@ -52,10 +53,14 @@ class AutopilotManager {
     void run();
     void update_obstacle_avoidance_enabled();
 
+    void create_avoidance_mavlink_heartbeat_message();
+
     auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
     auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
 
     std::atomic<bool> _obstacle_avoidance_enabled;
+
+    mavlink_message_t _avoidance_heartbeat_message;
 
     uint8_t _autopilot_manager_enabled = false;
     std::string _decision_maker_input_type = "";
@@ -127,6 +132,7 @@ class AutopilotManager {
     std::string _custom_action_config_path =
         "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
 
+    std::shared_ptr<mavsdk::MavlinkPassthrough> _mavlink_passthrough;
     std::shared_ptr<mavsdk::Param> _param;
 
     static constexpr uint8_t kDefaultSystemId = 1;

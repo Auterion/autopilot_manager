@@ -80,6 +80,7 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _landing_planner{},
       _time_last_heartbeat{this->now()},
       _time_last_traj{this->now()},
+      _is_healthy{true},
       _got_traj{true},
       _frequency_traj("traj in") {}
 
@@ -513,9 +514,6 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     } else if (get_traj) {
         _got_traj = true;
     }
-
-    // Send heartbeat while avoidance is available
-    send_avoidance_mavlink_heartbeat();
 
     /*
      * If we're not handling an action already and landing has been triggered, check if we need to start the safe
@@ -1017,6 +1015,8 @@ void MissionManager::decision_maker_run() {
         }
     });
 
+    _is_healthy = true;
+
     while (!int_signal) {
         // Update configuration at each iteration
         _mission_manager_config = _config_update_callback();
@@ -1026,6 +1026,8 @@ void MissionManager::decision_maker_run() {
 
             if (_mission_manager_config.decision_maker_input_type == "SAFE_LANDING") {
                 handle_safe_landing(now);
+                // Mission manager is healthy as long as we have trajectory messages in an auto mode
+                _is_healthy = _got_traj.load() || under_manual_control();
             } else if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
                 handle_simple_collision_avoidance(now);
             }
@@ -1041,4 +1043,6 @@ void MissionManager::decision_maker_run() {
         // Decision maker runs at 20hz
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
+
+    _is_healthy = false;
 }

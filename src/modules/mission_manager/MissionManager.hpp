@@ -147,6 +147,8 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
         _height_above_obstacle_update_callback = callback;
     }
 
+    bool isHealthy() const { return _is_healthy; }
+
     void decision_maker_run();
 
    private:
@@ -255,6 +257,7 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     rclcpp::Time _time_last_heartbeat;
     rclcpp::Time _time_last_traj;
 
+    std::atomic<bool> _is_healthy;
     std::atomic<bool> _got_traj;
 
     timing_tools::FrequencyMeter _frequency_traj;

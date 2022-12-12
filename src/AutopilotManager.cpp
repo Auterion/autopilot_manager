@@ -411,8 +411,14 @@ void AutopilotManager::start() {
         _mission_manager->init();
         _mission_manager_th = std::thread(&AutopilotManager::run_mission_manager, this);
 
+        // MAVLink passthrough
+        _mavlink_passthrough = std::make_shared<mavsdk::MavlinkPassthrough>(system);
+
         // Parameter interface
         _param = std::make_shared<mavsdk::Param>(system);
+
+        // Create reusable heartbeat message
+        create_avoidance_mavlink_heartbeat_message();
 
         // Run the main Autopilot Manager main loop
         run();
@@ -448,6 +454,16 @@ void AutopilotManager::run() {
         // Get COM_OBS_AVOID parameter
         update_obstacle_avoidance_enabled();
 
+        // Send avoidance heartbeat
+        if (_obstacle_avoidance_enabled) {
+            const bool sm_healthy = _sensor_manager->isHealthy();
+            const bool mm_healthy = _mission_manager->isHealthy();
+
+            if (sm_healthy && mm_healthy) {
+                _mavlink_passthrough->send_message(_avoidance_heartbeat_message);
+            }
+        }
+
         // Update at 1Hz
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -482,4 +498,10 @@ void AutopilotManager::update_obstacle_avoidance_enabled() {
     _mission_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
     _landing_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
     _sensor_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
+}
+
+void AutopilotManager::create_avoidance_mavlink_heartbeat_message() {
+    mavlink_heartbeat_t heartbeat;
+    heartbeat.system_status = MAV_STATE_ACTIVE;
+    mavlink_msg_heartbeat_encode(1, MAV_COMP_ID_OBSTACLE_AVOIDANCE, &_avoidance_heartbeat_message, &heartbeat);
 }
