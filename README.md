@@ -8,15 +8,14 @@ An AuterionOS service for higher level interactivity with onboard and flight con
 
 ## Dependencies
 
-_Note: The host system is considered to run Ubuntu 20.04 Focal. Other OS's might be supported, but the provided instructions only cover this OS._
+_Note: These instructions assume the host system is running Ubuntu 20.04. Other OSs may be supported, but are not covered here._
 
 1.  ROS 2 Foxy
 2.  MAVSDK (C++ libs)
-3.  `mavlink-router`
-4.  Micro XRCE-DDS Agent
-5.  Auterion's `configuration-manager`
-6.  DBUS and Glib
-7.  MAVSDK-Python (optional, to run the available examples)
+3.  MAVLink Router
+4.  Auterion's Configuration Manager
+5.  DBUS and Glib
+6.  MAVSDK-Python (optional, to run the available examples)
 
 ### ROS packages and workspace library dependencies
 
@@ -25,11 +24,12 @@ _Note: The host system is considered to run Ubuntu 20.04 Focal. Other OS's might
     - `landing_mapper`
     - `landing_planner`
     - `px4_msgs`
+    - `ros2bagger`
     - `timing_tools`
 2.  Eigen v3.3.9
-3.  If using ROS2 Foxy:
-    - Auterion `ros2bagger`
-    - [`rosbag2`](https://github.com/ros2/rosbag2) at `foxy-future`
+3.  `rosbag2` at `foxy-future`
+
+These packages make up the ROS2 workspace for the Autopilot Manager. The installation procedure is described later in this guide.
 
 ### ROS 2 Foxy
 
@@ -53,16 +53,26 @@ sudo sh -c 'echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.or
 sudo apt update
 sudo apt install -y python3-colcon-common-extensions \
         ros-foxy-ros-base \
+        ros-foxy-gazebo-ros-pkgs \
+        ros-foxy-image-pipeline \
+        ros-foxy-pybind11-vendor \
+        ros-foxy-rmw-cyclonedds-cpp \
         ros-foxy-sensor-msgs \
-        ros-foxy-visualization-msgs\
-        ros-foxy-image-pipeline
+        ros-foxy-test-msgs \
+        ros-foxy-visualization-msgs
+```
+
+It is recommended that the ROS2 middleware is set to Cyclone DDS. Add the following to `~/.bashrc`:
+
+```sh
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
 
 ### MAVSDK
 
-**Note: please request to Auterion the deb files of MAVSDK with the supported features, or request the access to the Auterion/MAVSDK repository**
+Please contact Auterion to request the `.deb` files of MAVSDK with the supported features, or to request access to the Auterion/MAVSDK repository.
 
-#### Installation from deb (recommended)
+#### Installation from Debian package (recommended)
 
 ```bash
 dpkg -i libmavsdk*.deb
@@ -81,20 +91,15 @@ sudo cmake --build build/default --target install
 sudo ldconfig
 ```
 
-### *mavlink-router*
+### MAVLink Router
 
-Please request to Auterion a deb file to install it directly, or follow the instructions in
-<https://github.com/mavlink-router/mavlink-router> to build it and install it from source.
+Please contact Auterion to obtain a `.deb` file to install it directly, or follow the instructions in
+<https://github.com/mavlink-router/mavlink-router> to build and install it from source.
 
-### Micro XRCE-DDS Agent
+### Configuration Manager
 
-Micro XRCE-DDS is used to communicate between PX4 and ROS2. For this, the Micro XRCE-DDS Agent from eProsima is required.
-Install the agent using the [official instructions](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-agent-standalone).
-
-### *configuration-manager*
-
-Please request to Auterion a deb file to install it directly, or follow the instructions in
-bellow to build it and install it from source.
+Please contact Auterion to obtain a `.deb` file to install it directly, or follow the instructions
+below to build and install it from source.
 
 ```bash
 git clone git@github.com:Auterion/configuration-manager.git
@@ -104,7 +109,7 @@ cmake --build build -j$(nproc --all)
 ```
 
 After that, make sure to copy `com.auterion.configuration_manager.conf` to `/usr/share/dbus-1/system.d/`
-and edit it in order to add your system user:
+and edit it to add your system user:
 
 ```xml
 <!DOCTYPE busconfig PUBLIC
@@ -162,21 +167,21 @@ _Note:_ If using ROS2 Galactic, replace `.rosinstall` with `.rosinstall.galactic
 
 #### Installing private repos
 
-Some of the repositories listed above are private but they are required components to enable the safe landing feature in the Autopilot Manager. If you are trying to build this repository to use this capability, please contact Auterion either to request access to the necessary repositories or to a deb package to install the libraries system-wide.
+Some of the repositories listed above are private but are required components to enable the Safe Landing feature. To use Safe Landing, please contact Auterion either to request access to the necessary repositories or to obtain Debian packages to install the libraries system-wide.
 
-### *mavlink-router* config
+### MAVLink Router config
 
-**Warning: if one installs mavlink-router system-wide, one needs to take into account that it is going to route MAVLink data on the system.**
-This might influence the behavior of some of some MAVLink-related applications that the user might have
-installed on their system. Use it cautiously, making sure that 1. one enables or disables the systemd service,
-i.e., for testing/using this application locally, enable the service with `systemctl enable mavlink-router`,
-and after that, disable it if not using it with `systemctl disable mavlink-router`, or 2. make sure that the
-`main.conf` config file has the correct configuration for all MAVLink endpoints.
+**Warning: If one installs `mavlink-router` system-wide, one needs to take into account that it is going to route MAVLink data on the system.**
+This may influence the behaviour of some MAVLink-related applications that the user might have
+installed on their system. Use it cautiously, making sure that
+1. one enables or disables the systemd service
+   (i.e., for testing/using this application locally, enable the service with `systemctl enable mavlink-router`, and after that, disable it if not using it with `systemctl disable mavlink-router`), or
+2. the `main.conf` config file has the correct configuration for all MAVLink endpoints.
 
-To configure the needed endpoints to use with this application, use the following and save it under
+To configure the needed endpoints for this application, use the following and save it under
 `/etc/mavlink-router/main.conf` (or replace/extend the content of the file if it already exists on the system).
-Note that this one has an endpoint configured for PX4 SITL, which should be replaced with a UART connection in
-the case one is installing this on a Mission Computer connect to an autopilot through a serial port.
+Note that this example has an endpoint configured for PX4 SITL, which should be replaced with a UART connection in
+the case one is installing this on a Mission Computer connected to an autopilot through a serial port.
 
 ```
     [General]
@@ -224,14 +229,14 @@ systemctl restart mavlink-router
 
 ### DBUS config
 
-Copy the `com.auterion.autopilot_manager.conf` on the root of the repo to `/usr/share/dbus-1/system.d/`:
+Copy the `com.auterion.autopilot_manager.conf` in the root of the repo to `/usr/share/dbus-1/system.d/`:
 
 ```bash
 sudo cp com.auterion.autopilot_manager.conf /usr/share/dbus-1/system.d/
 ```
 
 Then, make sure you configure `com.auterion.autopilot_manager.conf` with your user. For that, you need to edit
-the file you just copied. Example bellow:
+the file you just copied. For example:
 
 ```xml
 <!DOCTYPE busconfig PUBLIC
@@ -267,7 +272,7 @@ the file you just copied. Example bellow:
 </busconfig>
 ```
 
-### Install the *autopilot-manager*
+### Install the Autopilot Manager
 
 ```bash
 echo "source colcon_ws/install/setup.bash" >> ~/.bashrc
@@ -277,28 +282,15 @@ And then `source ~/.bashrc` or open a new terminal window.
 
 ## Usage
 
-```sh
-$ ros2 run autopilot-manager autopilot-manager [OPTIONS...]
-  -a --file-custom-action-config	Absolute path to configuration file of the custom actions.
-                                        Default: /shared_container_dir/autopilot-manager/data/custom_action/custom_action.json
-  -c --file-autopilot-manager-config	Absolute path to configuration file of the overall autopilot manager service.
-                                        Default: /shared_container_dir/autopilot-manager/data/config/autopilot_manager.conf
-  -m --mavlink-port			MAVLink port to connect the Autopilot Manager MAVSDK instance
-                                        through UDP. Default: 14590
-  -h --help				Print this message
-```
-
-Or use the provided ROS launch files:
+Start the Autopilot Manager with the ROS2 launch file:
 
 ```sh
-$ ros2 launch autopilot-manager autopilot_manager.launch
+ros2 launch autopilot-manager autopilot_manager.launch
 ```
 
-The autopilot-manager will be looking for autopilot HEARTBEATs, which will result and timeout and exit if they are not received.
-So `mavlink-router` should be running and properly configured with the endpoint where the autopilot is connected.
+The Autopilot Manager will be looking for autopilot heartbeats. It will exit if they are not received within a certain time after starting, so `mavlink-router` should be running and properly configured with the endpoint where the autopilot is connected.
 
-The `configuration-manager` should also be running (being it through a systemd service or started manually locally), since it is
-the service that allows the configuration of the Autopilot Mnager parameters through AMC/QGC. To start it manually, use:
+The `configuration-manager` should also be running (either through a systemd service or started manually), since it allows the configuration of the Autopilot Manager parameters through AMC/QGC. To start it manually, use:
 
 ```bash
 configuration-manager
@@ -313,41 +305,9 @@ cd configuration-manager/build/src
 
 ### Simulation
 
-A ROS bool parameter named `sim` can be set when one is using a simulation environment. For that, a ROS param file can be used
-or rather be passed as an argument on `ros2 run`.
+_Before running the Autopilot Manager, make sure that the PX4 SITL daemon, `mavlink-router` and the `configuration-manager` are running._
 
-**Note: Before running the autopilot-manager, make sure that the PX4 SITL daemon, `mavlink-router` and the `configuration-manager` are running.**
-
-#### Terminal 1
-
-```bash
-source colcon_ws/install/setup.bash
-ros2 launch autopilot-manager static_tf.launch
-```
-
-#### Terminal 2
-
-```bash
-source colcon_ws/install/setup.bash
-cd colcon_ws
-# ROS2 run it
-ros2 run autopilot-manager autopilot-manager \
-  -a install/autopilot-manager/share/autopilot-manager/data/example/custom_action/custom_action_sitl.json \
-  -c install/autopilot-manager/share/autopilot-manager/data/config/autopilot_manager.conf \
-  --ros-args -p sim:=true,use_sim_time:=true
-```
-
-#### Terminal 3
-
-```bash
-source colcon_ws/install/setup.bash
-# Start the Micro XRCE-DDS Agent
-MicroXRCEAgent udp4 localhost -p 15555
-```
-
-#### Using ROS2 launch
-
-Replaces the usage of the commands on terminal 1 and 2 above.
+Launch the Autopilot Manager with the simulation-specific launch file:
 
 ```bash
 ros2 launch autopilot-manager autopilot_manager_sim.launch
@@ -355,8 +315,7 @@ ros2 launch autopilot-manager autopilot_manager_sim.launch
 
 ## Packaging
 
-Keep in mind that when cross-compiling, the correct toolchain should be installed. Also, MAVSDK should be also installed
-for that same target.
+When cross-compiling, keep in mind that the correct toolchain for the target architecture should be installed. MAVSDK should also be installed for that architecture.
 
 ### Dependencies
 
@@ -367,20 +326,29 @@ sudo apt install -y  \
 sudo pip3 install ros_cross_compile
 ```
 
-### Use ros_cross_compile
+`ros_cross_compile` requires that the `docker` Python package is version 2, which is not the latest. Install it with:
 
-_ros_cross_compile_ can be used to compile the package for other architectures, like `arm64`. For that, it uses _qemu_ to
-start an emulation in a container of the environment we want to use to build the package. It requires also that MAVSDK
-gets built for that same architecture or installed during the _ros_cross_compile_ process. The `--custom-setup-script`
-`--custom-data-dir` options can be used. `tools/packaging/cross_compile_dependencies.sh` gets loaded to the container so to
-and install the required dependencies to the build process. The following commands can be used to build the package for
-the `arm64` (`aarch64`) arch and ROS 2 Foxy (we will be building MAVSDK and installing it from source):
+```sh
+pip3 remove docker # if a different version is already installed
+pip3 install docker=2.7.0
+```
+
+### Use `ros_cross_compile`
+
+`ros_cross_compile` can be used to compile the package for other architectures, like `arm64`. For that, it uses _qemu_ to
+start an emulation in a container of the environment we want to use to build the package. It also requires that MAVSDK
+is built for that architecture or installed during the `ros_cross_compile` process. The `--custom-setup-script` and
+`--custom-data-dir` options can be used. `tools/packaging/cross_compile_dependencies.sh` gets loaded to the container to
+install the required dependencies during the build process.
+
+The following commands can be used to build the package for `arm64` (`aarch64`) and ROS 2 Foxy, building and installing MAVSDK from source:
 
 ```bash
 # Clone MAVSDK to be built from source
 git clone --recursive https://github.com/Auterion/MAVSDK.git -b main /tmp/MAVSDK
 # Add COLCON_IGNORE to the MAVSDK dir so colcon doesn't build it
 touch /tmp/MAVSDK/COLCON_IGNORE
+
 # Run cross-compilation
 ros_cross_compile colcon_ws/src \
   --arch aarch64 \
@@ -405,7 +373,13 @@ Please follow the contribution guidelines in [CONTRIBUTING](CONTRIBUTING.md).
 
 ### Code format
 
-One requires clang-format-10 to format the code. Use the following command to format it:
+Ensure that `clang-format-10` is installed.
+
+```sh
+sudo apt install -y clang-format-10
+```
+
+Format the code with:
 
 ```sh
 sh tools/dev/fix_style.sh .
