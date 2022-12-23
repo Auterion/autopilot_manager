@@ -78,7 +78,6 @@ MissionManager::MissionManager(std::shared_ptr<mavsdk::System> mavsdk_system,
       _previously_set_waypoint_longitude{0.0},
       _previously_set_waypoint_altitude_amsl{0.0},
       _landing_planner{},
-      _time_last_heartbeat{this->now()},
       _time_last_traj{this->now()},
       _is_healthy{true},
       _got_traj{true},
@@ -105,9 +104,6 @@ void MissionManager::init() {
 
     _custom_action_handler =
         std::make_shared<CustomActionHandler>(_mavsdk_system, _telemetry, _path_to_custom_action_file);
-
-    // Create reusable heartbeat message
-    create_avoidance_mavlink_heartbeat_message();
 }
 
 void MissionManager::deinit() {
@@ -134,23 +130,6 @@ void MissionManager::run() {
                                                   std::bind(&MissionManager::on_mavlink_trajectory_message, this, _1));
 
     rclcpp::spin(shared_from_this());
-}
-
-void MissionManager::create_avoidance_mavlink_heartbeat_message() {
-    mavlink_heartbeat_t heartbeat;
-    heartbeat.system_status = MAV_STATE_ACTIVE;
-    mavlink_msg_heartbeat_encode(1, MAV_COMP_ID_OBSTACLE_AVOIDANCE, &_oa_heartbeat_message, &heartbeat);
-}
-
-void MissionManager::send_avoidance_mavlink_heartbeat() {
-    const auto time_now = this->get_clock()->now();
-    const auto s_since_last_heartbeat = (time_now - _time_last_heartbeat).seconds();
-
-    // Send heartbeat at 5Hz
-    if (s_since_last_heartbeat >= 0.2f) {
-        _mavlink_passthrough->send_message(_oa_heartbeat_message);
-        _time_last_heartbeat = time_now;
-    }
 }
 
 void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _message) {
