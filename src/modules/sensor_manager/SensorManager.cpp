@@ -150,7 +150,8 @@ auto SensorManager::run() -> void {
         _time_sync.run(tsync.ts1, tsync.tc1, this->now().nanoseconds() / 1000ULL);
     });
 
-    _timer_status_task = create_wall_timer(100ms, std::bind(&SensorManager::health_check, this));
+    _timer_health_check_task = create_wall_timer(100ms, std::bind(&SensorManager::health_check, this));
+    _timer_time_sync_task = create_wall_timer(100ms, std::bind(&SensorManager::publish_time_sync, this));
 
     rclcpp::spin(shared_from_this());
 }
@@ -274,25 +275,31 @@ void SensorManager::health_check() {
         return;
     }
 
-    // Do nothing if OA interface is not enabled
-    if (!obstacle_avoidance_is_enabled()) {
-        return;
-    }
-
+    // Check image and odometry health
     const auto s_since_last_odom = (now - _time_last_odometry).seconds();
     const auto s_since_last_image = (now - _time_last_image).seconds();
 
     const bool is_odom_healthy = s_since_last_odom < std::chrono::duration<double>(2.5s).count();
     const bool is_image_healthy = s_since_last_image < std::chrono::duration<double>(2.5s).count();
 
+    // Determine overall health status
     const HealthStatus new_health_status = static_cast<HealthStatus>(
         (HealthStatus::UNHEALTHY_ODOMETRY * !is_odom_healthy) + (HealthStatus::UNHEALTHY_IMAGES * !is_image_healthy));
     const bool status_changed = new_health_status != _health_status;
     _health_status = new_health_status;
 
-    static bool healthy_reported_once = false;
+    // Report the status on startup and whenever it changes
+    static bool should_report_status = true;
+    if (status_changed) {
+        should_report_status = true;
+    }
 
-    if (!isHealthy() && status_changed) {
+    // Don't report status NOW if not needed or if the OA interface is not enabled
+    if (!should_report_status || !obstacle_avoidance_is_enabled()) {
+        return;
+    }
+
+    if (!isHealthy()) {
         std::stringstream ss;
         ss << "Sensor input unhealthy.";
         if (!is_odom_healthy) {
@@ -307,13 +314,16 @@ void SensorManager::health_check() {
         if (_server_utility) {
             _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Alert, error_string);
         }
-    } else if (isHealthy() && !healthy_reported_once) {
-        healthy_reported_once = true;
+    } else {
         static const std::string good_to_go = "Safe Landing: Input healthy. Good to go!";
         _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Info, good_to_go);
         std::cout << sensorManagerOut << good_to_go << std::endl;
     }
+    should_report_status = false;
+}
 
+void SensorManager::publish_time_sync() {
+    // Publish time sync
     mavlink_timesync_t timesync_message;
     timesync_message.ts1 = this->now().nanoseconds();
 

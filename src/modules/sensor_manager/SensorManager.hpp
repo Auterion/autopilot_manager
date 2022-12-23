@@ -107,6 +107,8 @@ class SensorManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modul
 
     void health_check();
 
+    void publish_time_sync();
+
     mutable std::mutex _sensor_manager_mutex;
 
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr _depth_img_camera_info_sub;
@@ -137,7 +139,8 @@ class SensorManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modul
 
     geometry_msgs::msg::TransformStamped _camera_static_tf;
 
-    rclcpp::TimerBase::SharedPtr _timer_status_task;
+    rclcpp::TimerBase::SharedPtr _timer_health_check_task;
+    rclcpp::TimerBase::SharedPtr _timer_time_sync_task;
 
     rclcpp::Time _time_last_odometry;
     rclcpp::Time _time_last_image;
