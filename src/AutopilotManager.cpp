@@ -286,130 +286,11 @@ void AutopilotManager::start() {
         // Get discovered system now
         const auto system = fut.get();
 
-        // Create the Sensor Manager
-        _sensor_manager = std::make_shared<SensorManager>(system);
-
-        // Create the Collision Avoidance Manager
-        _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
-
-        // Create the Landing Manager
-        _landing_manager = std::make_shared<LandingManager>(system);
-
-        // Create Mission Manager
-        _mission_manager = std::make_shared<MissionManager>(system, _custom_action_config_path);
-
-        // Init the callback for setting the Mission Manager parameters
-        _mission_manager->setConfigUpdateCallback([this]() {
-            std::lock_guard<std::mutex> lock(_config_mutex);
-
-            MissionManager::MissionManagerConfiguration config;
-            config.autopilot_manager_enabled = _autopilot_manager_enabled;
-            config.decision_maker_input_type = _decision_maker_input_type;
-            config.script_to_call = _script_to_call;
-            config.api_call = _api_call;
-            config.local_position_offset_x = _local_position_offset_x;
-            config.local_position_offset_y = _local_position_offset_y;
-            config.local_position_offset_z = _local_position_offset_z;
-            config.local_position_waypoint_x = _local_position_waypoint_x;
-            config.local_position_waypoint_y = _local_position_waypoint_y;
-            config.local_position_waypoint_z = _local_position_waypoint_z;
-            config.global_position_offset_lat = _global_position_offset_lat;
-            config.global_position_offset_lon = _global_position_offset_lon;
-            config.global_position_offset_alt_amsl = _global_position_offset_alt_amsl;
-            config.global_position_waypoint_lat = _global_position_waypoint_lat;
-            config.global_position_waypoint_lon = _global_position_waypoint_lon;
-            config.global_position_waypoint_alt_amsl = _global_position_waypoint_alt_amsl;
-            config.safe_landing_enabled = _safe_landing_enabled;
-            config.safe_landing_distance_to_ground = _safe_landing_distance_to_ground;
-            config.safe_landing_on_no_safe_land = _safe_landing_on_no_safe_land;
-            config.safe_landing_try_landing_after_action = _safe_landing_try_landing_after_action;
-            config.landing_site_search_speed = _landing_site_search_speed;
-            config.landing_site_search_max_distance = _landing_site_search_max_distance;
-            config.landing_site_search_min_height = _landing_site_search_min_height;
-            config.landing_site_search_min_distance_after_abort = _landing_site_search_min_distance_after_abort;
-            config.landing_site_search_arrival_radius = _landing_site_search_arrival_radius;
-            config.landing_site_search_assess_time = _landing_site_search_assess_time;
-            config.landing_site_search_strategy = _landing_site_search_strategy;
-            config.landing_site_search_spiral_spacing = _landing_site_search_spiral_spacing;
-            config.landing_site_search_spiral_points = _landing_site_search_spiral_points;
-            config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
-            config.simple_collision_avoid_distance_threshold = _simple_collision_avoid_distance_threshold;
-            config.simple_collision_avoid_action_on_condition_true = _simple_collision_avoid_action_on_condition_true;
-            return config;
-        });
-
-        // Init the callback for setting the Landing Manager parameters
-        _landing_manager->setConfigUpdateCallback([this]() {
-            std::lock_guard<std::mutex> lock(_config_mutex);
-
-            LandingManager::LandingManagerConfiguration config;
-            config.autopilot_manager_enabled = _autopilot_manager_enabled;
-            config.safe_landing_enabled = _safe_landing_enabled;
-            config.safe_landing_area_square_size = _safe_landing_area_square_size;
-            config.safe_landing_distance_to_ground = _safe_landing_distance_to_ground;
-            return config;
-        });
-
-        // Init the callback for setting the Collision Avoidance Manager parameters
-        _collision_avoidance_manager->setConfigUpdateCallback([this]() {
-            std::lock_guard<std::mutex> lock(_config_mutex);
-
-            CollisionAvoidanceManager::CollisionAvoidanceManagerConfiguration config;
-            config.autopilot_manager_enabled = _autopilot_manager_enabled;
-            config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
-            return config;
-        });
-
-        // Init the callbacks for getting the latest downsampled depth data
-        _collision_avoidance_manager->getDownsampledDepthDataCallback([this]() {
-            std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
-            return _sensor_manager->get_lastest_downsampled_depth();
-        });
-        _landing_manager->getDownsampledDepthDataCallback([this]() {
-            std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
-            return _sensor_manager->get_lastest_downsampled_depth();
-        });
-
-        // Init the callback for getting the latest distance to obstacle
-        _mission_manager->getDistanceToObstacleCallback([this]() {
-            std::lock_guard<std::mutex> lock(_distance_to_obstacle_mutex);
-            return _collision_avoidance_manager->get_latest_distance();
-        });
-
-        // Init the callback for getting the latest landing condition state
-        _mission_manager->getCanLandStateCallback([this]() {
-            std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
-            return _landing_manager->get_latest_landing_condition_state();
-        });
-
-        // Init the callback for getting the landing condition state at a particular position
-        _mission_manager->getCanLandAtPositionStateCallback([this](float x, float y) {
-            std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
-            return _landing_manager->get_landing_condition_state_at_position(x, y);
-        });
-
-        // Init the callback for getting the latest landing condition state
-        _mission_manager->getHeightAboveObstacleCallback([this]() {
-            std::lock_guard<std::mutex> lock(_height_above_obstacle_mutex);
-            return _landing_manager->get_latest_height_above_obstacle();
-        });
-
-        // Init and run the Sensor Manager
-        _sensor_manager->init();
-        _sensor_manager->set_camera_static_tf(_camera_offset_x, _camera_offset_y, _camera_yaw);
-        _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
-
-        // Init and run the Collision Avoidance Manager
-        _collision_avoidance_manager->init();
-        _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
-
-        // Init and run the Landing Manager
-        _landing_manager->init();
-        _landing_manager_th = std::thread(&AutopilotManager::run_landing_manager, this);
-
-        // Init and run the Mission Manager
-        _mission_manager->init();
-        _mission_manager_th = std::thread(&AutopilotManager::run_mission_manager, this);
+        // Start modules
+        start_sensor_manager(system);
+        start_collision_avoidance_manager();
+        start_landing_manager(system);
+        start_mission_manager(system);
 
         // MAVLink passthrough
         _mavlink_passthrough = std::make_shared<mavsdk::MavlinkPassthrough>(system);
@@ -427,6 +308,129 @@ void AutopilotManager::start() {
         std::cerr << "[Autopilot Manager] Failed to connect to port! Exiting..." << _mavlink_port << std::endl;
         exit(1);
     }
+}
+
+void AutopilotManager::start_sensor_manager(std::shared_ptr<mavsdk::System> mavsdk_system) {
+    _sensor_manager = std::make_shared<SensorManager>(mavsdk_system);
+    _sensor_manager->init();
+    _sensor_manager->set_camera_static_tf(_camera_offset_x, _camera_offset_y, _camera_yaw);
+    _sensor_manager_th = std::thread(&AutopilotManager::run_sensor_manager, this);
+}
+
+void AutopilotManager::start_collision_avoidance_manager() {
+    _collision_avoidance_manager = std::make_shared<CollisionAvoidanceManager>();
+
+    _collision_avoidance_manager->setConfigUpdateCallback([this]() {
+        std::lock_guard<std::mutex> lock(_config_mutex);
+
+        CollisionAvoidanceManager::CollisionAvoidanceManagerConfiguration config;
+        config.autopilot_manager_enabled = _autopilot_manager_enabled;
+        config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
+        return config;
+    });
+
+    _collision_avoidance_manager->getDownsampledDepthDataCallback([this]() {
+        std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
+        return _sensor_manager->get_lastest_downsampled_depth();
+    });
+
+    _collision_avoidance_manager->init();
+    _collision_avoidance_manager_th = std::thread(&AutopilotManager::run_collision_avoidance_manager, this);
+}
+
+void AutopilotManager::start_landing_manager(std::shared_ptr<mavsdk::System> mavsdk_system) {
+    _landing_manager = std::make_shared<LandingManager>(mavsdk_system);
+
+    _landing_manager->setConfigUpdateCallback([this]() {
+        std::lock_guard<std::mutex> lock(_config_mutex);
+
+        LandingManager::LandingManagerConfiguration config;
+        config.autopilot_manager_enabled = _autopilot_manager_enabled;
+        config.safe_landing_enabled = _safe_landing_enabled;
+        config.safe_landing_area_square_size = _safe_landing_area_square_size;
+        config.safe_landing_distance_to_ground = _safe_landing_distance_to_ground;
+        return config;
+    });
+
+    _landing_manager->getDownsampledDepthDataCallback([this]() {
+        std::lock_guard<std::mutex> lock(_downsampled_depth_callback_mutex);
+        return _sensor_manager->get_lastest_downsampled_depth();
+    });
+
+    _landing_manager->init();
+    _landing_manager_th = std::thread(&AutopilotManager::run_landing_manager, this);
+}
+
+void AutopilotManager::start_mission_manager(std::shared_ptr<mavsdk::System> mavsdk_system) {
+    _mission_manager = std::make_shared<MissionManager>(mavsdk_system, _custom_action_config_path);
+
+    // Init the callback for setting the Mission Manager parameters
+    _mission_manager->setConfigUpdateCallback([this]() {
+        std::lock_guard<std::mutex> lock(_config_mutex);
+
+        MissionManager::MissionManagerConfiguration config;
+        config.autopilot_manager_enabled = _autopilot_manager_enabled;
+        config.decision_maker_input_type = _decision_maker_input_type;
+        config.script_to_call = _script_to_call;
+        config.api_call = _api_call;
+        config.local_position_offset_x = _local_position_offset_x;
+        config.local_position_offset_y = _local_position_offset_y;
+        config.local_position_offset_z = _local_position_offset_z;
+        config.local_position_waypoint_x = _local_position_waypoint_x;
+        config.local_position_waypoint_y = _local_position_waypoint_y;
+        config.local_position_waypoint_z = _local_position_waypoint_z;
+        config.global_position_offset_lat = _global_position_offset_lat;
+        config.global_position_offset_lon = _global_position_offset_lon;
+        config.global_position_offset_alt_amsl = _global_position_offset_alt_amsl;
+        config.global_position_waypoint_lat = _global_position_waypoint_lat;
+        config.global_position_waypoint_lon = _global_position_waypoint_lon;
+        config.global_position_waypoint_alt_amsl = _global_position_waypoint_alt_amsl;
+        config.safe_landing_enabled = _safe_landing_enabled;
+        config.safe_landing_distance_to_ground = _safe_landing_distance_to_ground;
+        config.safe_landing_on_no_safe_land = _safe_landing_on_no_safe_land;
+        config.safe_landing_try_landing_after_action = _safe_landing_try_landing_after_action;
+        config.landing_site_search_speed = _landing_site_search_speed;
+        config.landing_site_search_max_distance = _landing_site_search_max_distance;
+        config.landing_site_search_min_height = _landing_site_search_min_height;
+        config.landing_site_search_min_distance_after_abort = _landing_site_search_min_distance_after_abort;
+        config.landing_site_search_arrival_radius = _landing_site_search_arrival_radius;
+        config.landing_site_search_assess_time = _landing_site_search_assess_time;
+        config.landing_site_search_strategy = _landing_site_search_strategy;
+        config.landing_site_search_spiral_spacing = _landing_site_search_spiral_spacing;
+        config.landing_site_search_spiral_points = _landing_site_search_spiral_points;
+        config.simple_collision_avoid_enabled = _simple_collision_avoid_enabled;
+        config.simple_collision_avoid_distance_threshold = _simple_collision_avoid_distance_threshold;
+        config.simple_collision_avoid_action_on_condition_true = _simple_collision_avoid_action_on_condition_true;
+        return config;
+    });
+
+    // Init the callback for getting the latest distance to obstacle
+    _mission_manager->getDistanceToObstacleCallback([this]() {
+        std::lock_guard<std::mutex> lock(_distance_to_obstacle_mutex);
+        return _collision_avoidance_manager->get_latest_distance();
+    });
+
+    // Init the callback for getting the latest landing condition state
+    _mission_manager->getCanLandStateCallback([this]() {
+        std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
+        return _landing_manager->get_latest_landing_condition_state();
+    });
+
+    // Init the callback for getting the landing condition state at a particular position
+    _mission_manager->getCanLandAtPositionStateCallback([this](float x, float y) {
+        std::lock_guard<std::mutex> lock(_landing_condition_state_mutex);
+        return _landing_manager->get_landing_condition_state_at_position(x, y);
+    });
+
+    // Init the callback for getting the latest landing condition state
+    _mission_manager->getHeightAboveObstacleCallback([this]() {
+        std::lock_guard<std::mutex> lock(_height_above_obstacle_mutex);
+        return _landing_manager->get_latest_height_above_obstacle();
+    });
+
+    // Init and run the Mission Manager
+    _mission_manager->init();
+    _mission_manager_th = std::thread(&AutopilotManager::run_mission_manager, this);
 }
 
 void AutopilotManager::run_sensor_manager() {

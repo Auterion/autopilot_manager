@@ -42,8 +42,17 @@ class AutopilotManager {
         UNKNOWN = 999
     };
 
-    void start();
     void initialProvisioning();
+
+    auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
+    auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
+
+    void start();
+
+    void start_sensor_manager(std::shared_ptr<mavsdk::System> mavsdk_system);
+    void start_collision_avoidance_manager();
+    void start_landing_manager(std::shared_ptr<mavsdk::System> mavsdk_system);
+    void start_mission_manager(std::shared_ptr<mavsdk::System> mavsdk_system);
 
     void run_sensor_manager();
     void run_collision_avoidance_manager();
@@ -54,9 +63,6 @@ class AutopilotManager {
     void update_obstacle_avoidance_enabled();
 
     void create_avoidance_mavlink_heartbeat_message();
-
-    auto SetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
-    auto GetConfiguration(AutopilotManagerConfig config) -> ResponseCode;
 
     std::atomic<bool> _obstacle_avoidance_enabled;
 
