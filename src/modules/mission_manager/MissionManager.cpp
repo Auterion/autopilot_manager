@@ -47,6 +47,9 @@
 using namespace std::placeholders;
 using namespace std::chrono_literals;
 
+static constexpr auto decision_maker_run_interval = 50ms;
+static constexpr auto gps_origin_update_interval = 1s;
+
 static std::atomic<bool> int_signal{false};
 
 using LandingMapperState = landing_mapper::eLandingMapperState;
@@ -322,7 +325,7 @@ void MissionManager::set_global_position_reference() {
         if (status != "") {
             std::cout << status << std::endl;
         }
-        std::this_thread::sleep_for(1s);
+        std::this_thread::sleep_for(gps_origin_update_interval);
     }
 }
 
@@ -1018,9 +1021,7 @@ void MissionManager::decision_maker_run() {
                 std::cout << missionManagerOut << "5 seconds have passed since last action." << std::endl;
             }
         }
-
-        // Decision maker runs at 20hz
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(decision_maker_run_interval);
     }
 
     _is_healthy = false;

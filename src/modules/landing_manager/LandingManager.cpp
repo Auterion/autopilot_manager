@@ -43,6 +43,10 @@
 using namespace std::chrono_literals;
 using namespace std::placeholders;
 
+static constexpr auto mapper_interval = 100ms;
+static constexpr auto visualisation_interval = 1s;
+static constexpr auto print_stats_interval = 5s;
+
 LandingManager::LandingManager(std::shared_ptr<mavsdk::System> mavsdk_system)
     : Node("landing_manager"),
       _mavsdk_system{std::move(mavsdk_system)},
@@ -51,7 +55,7 @@ LandingManager::LandingManager(std::shared_ptr<mavsdk::System> mavsdk_system)
       _visualizer(std::make_shared<viz::MapVisualizer>(this)),
       _frequency_mapper("mapper"),
       _frequency_visualise_map("visualise map"),
-      _timer_stats(create_wall_timer(5s, std::bind(&LandingManager::printStats, this))),
+      _timer_stats(create_wall_timer(print_stats_interval, std::bind(&LandingManager::printStats, this))),
       _timer_mapper({}),
       _timer_map_visualizer({}),
       _health_status{HealthStatus::HEALTHY},
@@ -131,10 +135,12 @@ void LandingManager::init() {
     telemetry_opt.callback_group = _callback_group_telemetry;
 
     // Mapper runs at 10hz
-    _timer_mapper = this->create_wall_timer(100ms, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
+    _timer_mapper =
+        this->create_wall_timer(mapper_interval, std::bind(&LandingManager::mapper, this), _callback_group_mapper);
 
     // Vizualizaion runs at 1hz
-    _timer_map_visualizer = this->create_wall_timer(1000ms, std::bind(&LandingManager::visualizeMap, this));
+    _timer_map_visualizer =
+        this->create_wall_timer(visualisation_interval, std::bind(&LandingManager::visualizeMap, this));
 
     // Setup landing state publisher
     _landing_state_pub = this->create_publisher<std_msgs::msg::String>("landing_manager/landing_state", 10);

@@ -42,6 +42,9 @@
 
 using namespace std::chrono_literals;
 
+static constexpr auto health_check_interval = 100ms;
+static constexpr auto time_sync_publish_interval = 100ms;
+
 SensorManager::SensorManager(std::shared_ptr<mavsdk::System> mavsdk_system)
     : Node("sensor_manager"),
       _mavsdk_system{std::move(mavsdk_system)},
@@ -150,8 +153,9 @@ auto SensorManager::run() -> void {
         _time_sync.run(tsync.ts1, tsync.tc1, this->now().nanoseconds() / 1000ULL);
     });
 
-    _timer_health_check_task = create_wall_timer(100ms, std::bind(&SensorManager::health_check, this));
-    _timer_time_sync_task = create_wall_timer(100ms, std::bind(&SensorManager::publish_time_sync, this));
+    _timer_health_check_task = create_wall_timer(health_check_interval, std::bind(&SensorManager::health_check, this));
+    _timer_time_sync_task =
+        create_wall_timer(time_sync_publish_interval, std::bind(&SensorManager::publish_time_sync, this));
 
     rclcpp::spin(shared_from_this());
 }
