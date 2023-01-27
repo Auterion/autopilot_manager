@@ -33,28 +33,17 @@ jobs:
         run: echo "https://x-access-token:${{ secrets.ACCESS_TOKEN }}@github.com" >> ~/.git-credentials
       - name: Tell git to use https instead of ssh whenever it encounters it
         run: 'git config --global url."https://github.com/".insteadof git@github.com:'
-      - name: Process Github reference
-        id: refs
+      - name: Construct release artifact filename
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         run: |
-          git fetch --all --tags
-          TAG_VERSION=$(bash -c " \\
-            if [ \"$(git show-ref --tags)\" ]; then \\
-              tag=$(git describe --always --tags $(git rev-list --tags --max-count=1) | sed -n 's/v\([0-9]*\.[0-9]*\.[0-9]*\).*$/\1/p'); \\
-              if [[ -z \$(echo $tag | xargs) ]]; then \\
-                echo 1.2.3; \\
-              else \\
-                echo $tag; \\
-              fi; \\
-            else \\
-              echo 1.2.3; \\
-            fi"
-          )
           ARCH=$(bash -c "if [ \"${{ matrix.arch }}\" = \"x86_64\" ]; then echo amd64; elif [ \"${{ matrix.arch }}\" = \"aarch64\" ]; then echo arm64; fi")
-          echo "::set-output name=tag_version::${TAG_VERSION}"
-          echo "::set-output name=package_arch::${ARCH}"
-          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
-          echo "::set-output name=date::$(date +'%Y-%m-%d_%H%M%S')"
+          RELEASE_VERSION=${{ github.ref_name }}
+          echo "artifact_filename=autopilot-manager_${{ matrix.ros2_distro }}_${RELEASE_VERSION}_${ARCH}.zip" >> $GITHUB_ENV
+          # Print out release info
+          echo "ROS distro:      ${{ matrix.ros2_distro }}"
+          echo "Release version: ${RELEASE_VERSION}"
+          echo "Architecture:    ${ARCH}"
+          echo "Artifact file:   ${{ env.artifact_filename }}"
       - name: Install dependencies
         run: |
           sudo apt update && sudo apt install -y --no-install-recommends \
@@ -103,17 +92,18 @@ jobs:
             --skip-rosdep-keys Eigen3 image_downsampler landing_mapper landing_planner px4_msgs timing_tools ros2bagger rosbag2 \
             --colcon-defaults /tmp/colcon_ws/src/autopilot_manager/tools/packaging/defaults.yaml
       - name: Create zip
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         run: |
           cd /tmp/colcon_ws/install_${{ matrix.arch }}
           rm -rf px4_msgs # should be packaged in the px4-bridge
-          zip -r autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip .
-      - name: Publish artefacts
-        if: startsWith(github.ref, 'refs/tags/v')
+          zip -r ${{ env.artifact_filename }} .
+      - name: Publish release artifact
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         uses: svenstaro/upload-release-action@2.2.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /tmp/colcon_ws/install_${{ matrix.arch }}/autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
-          release_name: v${{ steps.refs.outputs.tag_version }}
-          asset_name: autopilot-manager_${{ matrix.ros2_distro }}_v${{ steps.refs.outputs.tag_version }}_${{ steps.refs.outputs.package_arch }}.zip
-          tag: v${{ steps.refs.outputs.tag_version }}
+          file: /tmp/colcon_ws/install_${{ matrix.arch }}/${{ env.artifact_filename }}
+          release_name: ${{ github.ref_name }}
+          asset_name: ${{ env.artifact_filename }}
+          tag: ${{ github.ref_name }}
           overwrite: true
