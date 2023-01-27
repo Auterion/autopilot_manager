@@ -367,6 +367,18 @@ like the Skynode. To use it, just source the `setup.bash` file inside the `insta
 echo "source <prefix_path>/install_aarch64/setup.bash" >> ~/.bashrc
 ```
 
+### Releases
+
+Releases are automatically published by GitHub Actions whenever a tag starting with the letter `v` is created.
+They create a `.zip` file containing the contents of the `install_aarch64` or `install_amd64` directories described above.
+
+The recommended way to publish a release is simply to create a new tag on the release commit and push it to GitHub:
+
+```bash
+git tag <new-tag-name>
+git push --tags
+```
+
 ## Contributing
 
 Please follow the contribution guidelines in [CONTRIBUTING](CONTRIBUTING.md).
