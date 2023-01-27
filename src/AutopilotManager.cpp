@@ -476,12 +476,23 @@ void AutopilotManager::run() {
 
 void AutopilotManager::update_obstacle_avoidance_enabled() {
     // Get 'obstacle avoidance enabled' parameter from PX4
-    const auto [result, value] = _param->get_param_int("COM_OBS_AVOID");
 
-    if (result != mavsdk::Param::Result::Success) {
-        std::cout << autopilotManagerOut << "Could not get parameter COM_OBS_AVOID." << std::endl;
-        return;
-    }
+    /*
+     * HACK ALERT!
+     * Don't request the OA-enabled parameter and assume it's always false.
+     */
+
+    // const auto [result, value] = _param->get_param_int("COM_OBS_AVOID");
+
+    // if (result != mavsdk::Param::Result::Success) {
+    //     std::cout << autopilotManagerOut << "Could not get parameter COM_OBS_AVOID." << std::endl;
+    //     return;
+    // }
+    const int value = 0;
+
+    /*
+     * HACK ENDS
+     */
 
     const bool should_be_enabled = value == 1;
     const bool should_change = should_be_enabled != _obstacle_avoidance_enabled;
