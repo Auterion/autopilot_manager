@@ -3,7 +3,6 @@
 #include <dbus/dbus.h>
 #include <mavsdk/mavsdk.h>
 #include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
-#include <mavsdk/plugins/param/param.h>
 
 #include <AutopilotManagerConfig.hpp>
 #include <DbusInterface.hpp>
@@ -139,7 +138,6 @@ class AutopilotManager {
         "/usr/src/app/autopilot-manager/data/example/custom_action/custom_action.json";
 
     std::shared_ptr<mavsdk::MavlinkPassthrough> _mavlink_passthrough;
-    std::shared_ptr<mavsdk::Param> _param;
 
     static constexpr uint8_t kDefaultSystemId = 1;
     static constexpr uint8_t kMavCompIDOnBoardComputer3 = 193;

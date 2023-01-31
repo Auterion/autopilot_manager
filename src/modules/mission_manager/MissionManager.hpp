@@ -160,6 +160,7 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     void landing_site_search_has_ended(const std::string& _debug = "");
 
     void on_mavlink_trajectory_message(const mavlink_message_t& _message);
+    void check_obstacle_avoidance_status();
     void flight_mode_callback(const mavsdk::Telemetry::FlightMode& flight_mode);
 
     void set_global_position_reference();
@@ -252,7 +253,6 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     rclcpp::Time _time_last_traj;
 
     std::atomic<bool> _is_healthy;
-    std::atomic<bool> _got_traj;
 
     timing_tools::FrequencyMeter _frequency_traj;
 

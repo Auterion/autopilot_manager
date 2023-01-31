@@ -295,9 +295,6 @@ void AutopilotManager::start() {
         // MAVLink passthrough
         _mavlink_passthrough = std::make_shared<mavsdk::MavlinkPassthrough>(system);
 
-        // Parameter interface
-        _param = std::make_shared<mavsdk::Param>(system);
-
         // Create reusable heartbeat message
         create_avoidance_mavlink_heartbeat_message();
 
@@ -455,11 +452,11 @@ void AutopilotManager::run_mission_manager() {
 
 void AutopilotManager::run() {
     while (!_interrupt_received) {
-        // Get COM_OBS_AVOID parameter
+        // Check if obstacle avoidance is enabled
         update_obstacle_avoidance_enabled();
 
-        // Send avoidance heartbeat
-        if (_obstacle_avoidance_enabled) {
+        if (_safe_landing_enabled) {
+            // Send avoidance heartbeat
             const bool sm_healthy = _sensor_manager->isHealthy();
             const bool lm_healthy = _landing_manager->isHealthy();
             const bool mm_healthy = _mission_manager->isHealthy();
@@ -475,17 +472,8 @@ void AutopilotManager::run() {
 }
 
 void AutopilotManager::update_obstacle_avoidance_enabled() {
-    // Get 'obstacle avoidance enabled' parameter from PX4
-    const auto [result, value] = _param->get_param_int("COM_OBS_AVOID");
-
-    if (result != mavsdk::Param::Result::Success) {
-        std::cout << autopilotManagerOut << "Could not get parameter COM_OBS_AVOID." << std::endl;
-        return;
-    }
-
-    const bool should_be_enabled = value == 1;
+    const bool should_be_enabled = _mission_manager->obstacle_avoidance_is_enabled();
     const bool should_change = should_be_enabled != _obstacle_avoidance_enabled;
-    const bool is_valid = value == 0 || value == 1;
 
     if (!should_change) {
         return;
@@ -495,12 +483,7 @@ void AutopilotManager::update_obstacle_avoidance_enabled() {
     std::cout << autopilotManagerOut << "Obstacle avoidance has been " << (should_be_enabled ? "enabled" : "disabled")
               << " in PX4." << std::endl;
 
-    if (!is_valid) {
-        std::cout << autopilotManagerOut << "Unexpected value for parameter COM_OBS_AVOID: " << value << std::endl;
-    }
-
     // Update the modules that use the OA-enabled parameter
-    _mission_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
     _landing_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
     _sensor_manager->set_obstacle_avoidance_enabled(_obstacle_avoidance_enabled);
 }
