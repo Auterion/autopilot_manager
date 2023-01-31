@@ -43,7 +43,6 @@
 
 #include <CustomActionHandler.hpp>
 #include <Eigen/Eigen>
-#include <Eigen/Geometry>
 #include <ModuleBase.hpp>
 #include <ObstacleAvoidanceModule.hpp>
 #include <atomic>
@@ -59,7 +58,6 @@
 #include <mavsdk/plugins/action/action.h>
 #include <mavsdk/plugins/custom_action/custom_action.h>
 #include <mavsdk/plugins/mavlink_passthrough/mavlink_passthrough.h>
-#include <mavsdk/plugins/mission_raw/mission_raw.h>
 #include <mavsdk/plugins/param/param.h>
 #include <mavsdk/plugins/server_utility/server_utility.h>
 #include <mavsdk/plugins/telemetry/telemetry.h>

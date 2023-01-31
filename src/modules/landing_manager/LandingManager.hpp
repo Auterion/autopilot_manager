@@ -52,7 +52,6 @@
 // ROS dependencies
 #include <MapVisualizer.hpp>
 #include <landing_mapper/LandingMapper.hpp>
-#include <rclcpp/qos.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/float32.hpp>

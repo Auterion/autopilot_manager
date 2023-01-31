@@ -10,10 +10,6 @@
 #include <iostream>
 #include <string>
 
-// ROS dependencies
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/utilities.hpp>
-
 // Manager modules
 #include <collision_avoidance_manager/CollisionAvoidanceManager.hpp>
 #include <landing_manager/LandingManager.hpp>

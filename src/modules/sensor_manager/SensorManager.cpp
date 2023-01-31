@@ -38,7 +38,6 @@
  */
 
 #include <SensorManager.hpp>
-#include <sensor_msgs/image_encodings.hpp>
 
 using namespace std::chrono_literals;
 
