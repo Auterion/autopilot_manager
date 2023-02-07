@@ -45,7 +45,7 @@ class ObstacleAvoidanceModule {
    public:
     void set_obstacle_avoidance_enabled(const bool enabled) { _oa_enabled = enabled; };
 
-    bool obstacle_avoidance_is_enabled() { return _oa_enabled; };
+    bool is_obstacle_avoidance_enabled() { return _oa_enabled; };
 
    private:
     std::atomic<bool> _oa_enabled{false};

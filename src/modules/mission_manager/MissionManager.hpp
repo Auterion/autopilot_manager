@@ -158,7 +158,7 @@ class MissionManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
     void landing_site_search_has_ended(const std::string& _debug = "");
 
     void on_mavlink_trajectory_message(const mavlink_message_t& _message);
-    void check_obstacle_avoidance_status();
+    void update_obstacle_avoidance_status();
     void flight_mode_callback(const mavsdk::Telemetry::FlightMode& flight_mode);
 
     void set_global_position_reference();

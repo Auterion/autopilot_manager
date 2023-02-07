@@ -258,7 +258,7 @@ void LandingManager::mapper() {
     // decision maker, and the OA interface is enabled (i.e. the user has activated Safe Landing).
     const bool should_build_landing_map = _landing_manager_config.autopilot_manager_enabled &&
                                           _landing_manager_config.safe_landing_enabled &&
-                                          obstacle_avoidance_is_enabled();
+                                          is_obstacle_avoidance_enabled();
 
     if (should_build_landing_map) {
         timing_tools::Timer timer_mapper("mapper: total", true);

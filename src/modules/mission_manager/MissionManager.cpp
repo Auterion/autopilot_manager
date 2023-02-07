@@ -237,15 +237,15 @@ void MissionManager::on_mavlink_trajectory_message(const mavlink_message_t& _mes
     }
 }
 
-void MissionManager::check_obstacle_avoidance_status() {
-    /* Check whether obstacle avoidance is enabled in PX4 by checking that desired trajectory waypoints are being
-     * received from PX4.
-     */
+/* Check whether obstacle avoidance is enabled in PX4 by checking that
+ * desired trajectory waypoints are being received from PX4.
+ */
+void MissionManager::update_obstacle_avoidance_status() {
     const auto ros_now = this->get_clock()->now();
     const auto s_since_last_traj = (ros_now - _time_last_traj).seconds();
     const bool received_recent_trajectory_message = s_since_last_traj < 0.5f;
 
-    if (obstacle_avoidance_is_enabled() == received_recent_trajectory_message) {
+    if (is_obstacle_avoidance_enabled() == received_recent_trajectory_message) {
         // No change in OA-enabled status
         return;
     }
@@ -490,10 +490,10 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
     const LandingMapperState safe_landing_state = _landing_condition_state_update_callback();
     const float height_above_obstacle = _height_above_obstacle_update_callback();
 
-    check_obstacle_avoidance_status();
+    update_obstacle_avoidance_status();
 
     // Do nothing if Safe Landing or OA is disabled
-    if (!safe_landing_enabled || !obstacle_avoidance_is_enabled()) {
+    if (!safe_landing_enabled || !is_obstacle_avoidance_enabled()) {
         // Stop the landing site search if active
         if (_landing_planner.isActive()) {
             _landing_planner.endSearch();
@@ -584,7 +584,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                 std::cout << status << std::endl;
 
             } else if (safe_landing_on_no_safe_land == "LANDING_SITE_SEARCH") {
-                if (_global_origin_reference_set && obstacle_avoidance_is_enabled()) {
+                if (_global_origin_reference_set && is_obstacle_avoidance_enabled()) {
                     std::cout << "*" << std::endl
                               << "***" << std::endl
                               << "***** Starting Landing Site Search" << std::endl
@@ -634,7 +634,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
 
                     status = std::string(missionManagerOut) + "Global position reference not set. Holding position...";
                     _server_utility->send_status_text(mavsdk::ServerUtility::StatusTextType::Error, status);
-                } else if (!obstacle_avoidance_is_enabled()) {
+                } else if (!is_obstacle_avoidance_enabled()) {
                     _action->hold();
                     landing_site_search_has_ended("No OA");
 
@@ -739,7 +739,7 @@ void MissionManager::handle_safe_landing(std::chrono::time_point<std::chrono::sy
                                                             // always communicated when Land WP is inside a mission
         const bool manual_control = under_manual_control();
         const bool rtl_active = _flight_mode == mavsdk::Telemetry::FlightMode::ReturnToLaunch;
-        const bool avoidance_interface_not_active = !obstacle_avoidance_is_enabled();
+        const bool avoidance_interface_not_active = !is_obstacle_avoidance_enabled();
 
         const bool end_landing_site_search =
             on_ground || manual_control || rtl_active || avoidance_interface_not_active;
@@ -1016,7 +1016,7 @@ void MissionManager::decision_maker_run() {
             if (_mission_manager_config.decision_maker_input_type == "SAFE_LANDING") {
                 handle_safe_landing(now);
                 // Mission manager is healthy as long as we have trajectory messages in an auto mode
-                _is_healthy = obstacle_avoidance_is_enabled() || under_manual_control();
+                _is_healthy = is_obstacle_avoidance_enabled() || under_manual_control();
             } else if (_mission_manager_config.decision_maker_input_type == "SIMPLE_COLLISION_AVOIDANCE") {
                 handle_simple_collision_avoidance(now);
             }

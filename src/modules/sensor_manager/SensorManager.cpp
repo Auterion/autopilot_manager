@@ -298,7 +298,7 @@ void SensorManager::health_check() {
     }
 
     // Don't report status NOW if not needed or if the OA interface is not enabled
-    if (!should_report_status || !obstacle_avoidance_is_enabled()) {
+    if (!should_report_status || !is_obstacle_avoidance_enabled()) {
         return;
     }
 

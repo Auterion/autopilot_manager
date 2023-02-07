@@ -472,7 +472,7 @@ void AutopilotManager::run() {
 }
 
 void AutopilotManager::update_obstacle_avoidance_enabled() {
-    const bool should_be_enabled = _mission_manager->obstacle_avoidance_is_enabled();
+    const bool should_be_enabled = _mission_manager->is_obstacle_avoidance_enabled();
     const bool should_change = should_be_enabled != _obstacle_avoidance_enabled;
 
     if (!should_change) {
