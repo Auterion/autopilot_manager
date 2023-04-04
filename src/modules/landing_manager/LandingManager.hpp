@@ -142,6 +142,8 @@ class LandingManager : public rclcpp::Node, public ObstacleAvoidanceModule, Modu
 
     void printStats();
 
+    bool isEnabledInConfig() const;
+
     std::shared_ptr<mavsdk::System> _mavsdk_system;
     std::shared_ptr<mavsdk::ServerUtility> _server_utility;
 

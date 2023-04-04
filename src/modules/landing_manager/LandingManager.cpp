@@ -256,9 +256,7 @@ void LandingManager::mapper() {
 
     // Only process the data to build a landing map when the Autopilot Manager is enabled, Safe Landing is set as the
     // decision maker, and the OA interface is enabled (i.e. the user has activated Safe Landing).
-    const bool should_build_landing_map = _landing_manager_config.autopilot_manager_enabled &&
-                                          _landing_manager_config.safe_landing_enabled &&
-                                          is_obstacle_avoidance_enabled();
+    const bool should_build_landing_map = isEnabledInConfig() && is_obstacle_avoidance_enabled();
 
     if (should_build_landing_map) {
         timing_tools::Timer timer_mapper("mapper: total", true);
@@ -419,6 +417,9 @@ void LandingManager::visualizeGroundPlane(const Eigen::Vector3f& normal, const E
 }
 
 void LandingManager::visualizeMap() {
+    if (!isEnabledInConfig()) {
+        return;
+    }
     _frequency_visualise_map.tic();
     timing_tools::Timer timer_visualise_map("visualise map", true);
     _visualizer->visualizeHeightMap(_mapper->getHeightMap(), now(), _visualize);
@@ -426,28 +427,31 @@ void LandingManager::visualizeMap() {
 }
 
 void LandingManager::printStats() {
-    std::stringstream ss;
+    // Only produce log output if the autopilot manager and safe landing are enabled
+    if (isEnabledInConfig()) {
+        std::stringstream ss;
 
-    // Timing stats
-    timing_tools::printTimers(ss);
-    timing_tools::printFrequencies(ss);
+        // Timing stats
+        timing_tools::printTimers(ss);
+        timing_tools::printFrequencies(ss);
 
-    // Image processing stats
-    static constexpr size_t width = 10;
-    float points_per_image = 0.;
-    if (_images_processed) {
-        points_per_image = 1. * _points_processed / _images_processed;
+        // Image processing stats
+        static constexpr size_t width = 10;
+        float points_per_image = 0.;
+        if (_images_processed) {
+            points_per_image = 1. * _points_processed / _images_processed;
+        }
+        int percent_points = 0;
+        if (_points_received) {
+            percent_points = (int)100. * _points_processed / _points_received;
+        }
+        ss << "=== Image processing statistics ===" << std::endl;
+        ss << "Images processed" << std::setw(width) << _images_processed << std::endl;
+        ss << "Points processed" << std::setw(width) << _points_processed << std::endl;
+        ss << "Points / image  " << std::setw(width) << points_per_image << " (" << percent_points << "%)" << std::endl;
+
+        std::cout << std::endl << ss.str() << std::endl;
     }
-    int percent_points = 0.;
-    if (_points_received) {
-        percent_points = 100. * _points_processed / _points_received;
-    }
-    ss << "=== Image processing statistics ===" << std::endl;
-    ss << "Images processed" << std::setw(width) << _images_processed << std::endl;
-    ss << "Points processed" << std::setw(width) << _points_processed << std::endl;
-    ss << "Points / image  " << std::setw(width) << points_per_image << " (" << percent_points << "%)" << std::endl;
-
-    std::cout << std::endl << ss.str() << std::endl;
 
     // Reset
     timing_tools::resetTimingStatistics();
@@ -455,4 +459,10 @@ void LandingManager::printStats() {
     _images_processed = 0;
     _points_processed = 0;
     _points_received = 0;
+}
+
+bool LandingManager::isEnabledInConfig() const {
+    // Is Safe Landing configured as enabled in the config file?
+    // This doesn't mean it has been enabled by the operator in AMC.
+    return _landing_manager_config.autopilot_manager_enabled && _landing_manager_config.safe_landing_enabled;
 }
