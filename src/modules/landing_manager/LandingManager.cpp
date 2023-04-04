@@ -45,7 +45,7 @@ using namespace std::placeholders;
 
 static constexpr auto mapper_interval = 100ms;
 static constexpr auto visualisation_interval = 1s;
-static constexpr auto print_stats_interval = 5s;
+static constexpr auto print_stats_interval = 30s;
 
 LandingManager::LandingManager(std::shared_ptr<mavsdk::System> mavsdk_system)
     : Node("landing_manager"),
