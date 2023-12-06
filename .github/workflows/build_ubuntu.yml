@@ -82,6 +82,11 @@ jobs:
         cd /tmp/colcon_ws/src/landing_mapper
         git checkout develop
         cd -
+    - name: DEBUG - Use amentify branch of landing_planner
+      run: |
+        cd /tmp/colcon_ws/src/landing_planner
+        git checkout amentify
+        cd -
     - name: Build
       working-directory: /tmp/colcon_ws
       run: |
