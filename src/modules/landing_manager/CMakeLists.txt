@@ -50,7 +50,7 @@ target_link_libraries(landing-manager
   MAVSDK::mavsdk_server_utility
   MAVSDK::mavsdk
   Eigen3::Eigen
-  landing_mapper
+  ${landing_mapper_LIBRARIES}
   ${rclcpp_LIBRARIES}
   ${image_downsampler_LIBRARIES}
   ${std_msgs_LIBRARIES}
