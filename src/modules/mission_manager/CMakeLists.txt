@@ -39,8 +39,8 @@ target_link_libraries(mission-manager
     MAVSDK::mavsdk_mavlink_passthrough
     MAVSDK::mavsdk
     Eigen3::Eigen
-    landing_mapper
-    landing_planner
+    ${landing_mapper_LIBRARIES}
+    ${landing_planner_LIBRARIES}
     ${rclcpp_LIBRARIES}
 )
 
@@ -49,6 +49,7 @@ target_include_directories(mission-manager PUBLIC
     $<INSTALL_INTERFACE:include/autopilot_manager/mission_manager>
     ${Eigen3_INCLUDE_DIRS}
     ${landing_planner_INCLUDE_DIRS}
+    ${landing_mapper_INCLUDE_DIRS}
 )
 
 install(TARGETS mission-manager
